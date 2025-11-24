@@ -1413,7 +1413,7 @@
                             </svg>
                         </button>
 
-                        <button onclick="handleTopProfileClick()" data-screen="profile-screen" id="nav-profile-button" class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-indigo-500/50 active:scale-95">
+                        <button onclick="handleTopProfileClick()" data-screen="profile-screen" id="nav-profile-button" class="hidden w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-indigo-500/50 active:scale-95">
                             P
                         </button>
                     </div>
@@ -1429,18 +1429,18 @@
                 <button id="mobile-signin-btn" onclick="window.location.href='login.html'" style="display: none;" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50">
                     Sign In
                 </button>
-                <button id="mobile-profile-btn" onclick="handleMobileProfileClick()" class="w-9 h-9 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transition-transform">
+                <button id="mobile-profile-btn" onclick="handleMobileProfileClick()" class="hidden w-9 h-9 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transition-transform">
                     P
                 </button>
             </div>
         </div>
     </div>
 
-    <div class="min-h-screen relative pt-20 md:pt-[90px]">
+    <div class="min-h-screen relative pt-16 md:pt-[70px]">
 
             <main class="max-w-md md:max-w-xl lg:max-w-7xl mx-auto relative p-4">
 
-            <div id="login-screen" class="screen screen-active space-y-6 max-w-md mx-auto lg:max-w-lg lg:space-y-8">
+            <div id="login-screen" class="screen screen-inactive space-y-6 max-w-md mx-auto lg:max-w-lg lg:space-y-8">
                 <h1 class="text-3xl lg:text-4xl font-bold gradient-text text-center">Welcome to Predora</h1>
                 <p class="text-center text-gray-300 lg:text-lg">Select a demo account to get started.</p>
 
