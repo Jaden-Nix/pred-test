@@ -5515,8 +5515,9 @@
 
         window.stakeMarket = async function(pick) {
             // Guest mode check
-            if (isGuestMode) {
+            if (isGuestMode && !isDemoAccount) {
                 showToast('Sign in to place stakes', 'info');
+                showScreen('guest-login-screen');
                 return;
             }
             
@@ -5846,6 +5847,13 @@
          * Handles the (YES/NO/SKIP) swipe/button press on the Quick Play screen.
          */
         window.handleQuickPlay = (vote) => {
+            // Guest mode check for quick play betting
+            if (isGuestMode && !isDemoAccount && vote !== 'skip') {
+                showToast('Sign in to place bets', 'info');
+                showScreen('guest-login-screen');
+                return;
+            }
+            
             if (isAnimating) return; // Prevent double-clicks
             isAnimating = true;
 
