@@ -4175,6 +4175,14 @@
             if (isGuestMode) { showToast('Sign in to react to posts', 'info'); return; }
             const btn = event?.target?.closest('button');
             if (btn) { btn.classList.add('reaction-bounce'); setTimeout(() => btn.classList.remove('reaction-bounce'), 600); }
+            
+            // Update UI immediately (optimistic update)
+            const countSpan = btn?.querySelector('span:last-child');
+            if (countSpan) {
+                const currentCount = parseInt(countSpan.innerText) || 0;
+                countSpan.innerText = currentCount + 1;
+            }
+            
             try {
                 const response = await fetch('/api/social/react', {
                     method: 'POST',
@@ -4183,10 +4191,15 @@
                 });
                 
                 if (!response.ok) throw new Error('Reaction failed');
-                setTimeout(() => { loadSocialFeed(); }, 200);
+                // NO RELOAD - just keep the optimistic update
             } catch (error) {
                 console.error('Reaction error:', error);
                 showToast('Failed to react', 'error');
+                // Revert the optimistic update if failed
+                if (countSpan) {
+                    const currentCount = parseInt(countSpan.innerText) || 1;
+                    countSpan.innerText = Math.max(0, currentCount - 1);
+                }
             }
         };
 
@@ -4304,6 +4317,14 @@
             const content = input.value.trim();
             if (!content) return;
             if (btn) btn.disabled = true;
+            
+            // Update comment count immediately (optimistic update)
+            const commentCountEl = document.querySelector(`.comment-count-${postId}`);
+            const prevCount = commentCountEl ? parseInt(commentCountEl.innerText) || 0 : 0;
+            if (commentCountEl) {
+                commentCountEl.innerText = prevCount + 1;
+            }
+            
             try {
                 const response = await fetch('/api/social/comment', {
                     method: 'POST',
@@ -4321,11 +4342,16 @@
                 input.placeholder = 'Add a comment...';
                 delete input.dataset.replyTo;
                 if (btn) btn.disabled = false;
-                window.toggleComments(postId);
+                showToast('Comment added!', 'success');
+                // NO RELOAD - just keep optimistic update
             } catch (e) { 
                 console.error('Comment error:', e);
                 showToast('Failed to add comment', 'error');
                 if (btn) btn.disabled = false;
+                // Revert optimistic update on failure
+                if (commentCountEl) {
+                    commentCountEl.innerText = prevCount;
+                }
             }
         };
         
