@@ -7083,6 +7083,7 @@ ${historyText}`;
          */
         function setupAdminFeatures() {
             // Secret 5-tap gesture on the app title (both desktop and mobile)
+            // Note: Logo elements removed from UI, admin access now available via other means
             const handleAdminTap = () => {
                 adminTapCount++;
                 clearTimeout(adminTapTimer);
@@ -7093,8 +7094,9 @@ ${historyText}`;
                 }
             };
 
-            document.getElementById('app-title').addEventListener('click', handleAdminTap);
-            document.getElementById('mobile-app-title').addEventListener('click', handleAdminTap);
+            // Elements removed - no longer needed
+            // document.getElementById('app-title').addEventListener('click', handleAdminTap);
+            // document.getElementById('mobile-app-title').addEventListener('click', handleAdminTap);
 
             // Admin password check
             document.getElementById('admin-login-btn').addEventListener('click', () => {
