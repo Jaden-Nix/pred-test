@@ -3331,14 +3331,16 @@
             if (guestSignInBtn) guestSignInBtn.style.display = 'block';
             if (mobileSignInBtn) mobileSignInBtn.style.display = 'block';
             
-            // Hide restricted buttons for guests (only show Home and Social)
+            // Hide Create and Quick buttons, but show Profile with "Sign In" label
             const createBtn = document.getElementById('nav-create-btn');
             const quickBtn = document.getElementById('nav-quick-btn');
             const profileBtn = document.getElementById('nav-profile-btn');
+            const profileLabel = profileBtn ? profileBtn.querySelector('.text-xs') : null;
             
             if (createBtn) createBtn.style.display = 'none';
             if (quickBtn) quickBtn.style.display = 'none';
-            if (profileBtn) profileBtn.style.display = 'none';
+            if (profileBtn) profileBtn.style.display = '';
+            if (profileLabel) profileLabel.innerText = 'Sign In';
             
             // Set up guest listeners for read-only access
             attachDataListeners();
@@ -3369,10 +3371,12 @@
             const createBtn = document.getElementById('nav-create-btn');
             const quickBtn = document.getElementById('nav-quick-btn');
             const profileBtn = document.getElementById('nav-profile-btn');
+            const profileLabel = profileBtn ? profileBtn.querySelector('.text-xs') : null;
             
             if (createBtn) createBtn.style.display = '';
             if (quickBtn) quickBtn.style.display = '';
             if (profileBtn) profileBtn.style.display = '';
+            if (profileLabel) profileLabel.innerText = 'Profile';
             userProfile.displayName = displayName;
 
             showLoadingOverlay(true, `Logging in as ${displayName}...`);
