@@ -3870,9 +3870,9 @@
         window.showScreen = (screenId) => {
             if (!screenId) return;
             
-            // Guest mode restriction: only allow home and social feed screens
+            // Guest mode restriction: only allow home, social feed, and login screens
             if (isGuestMode && !isDemoAccount) {
-                const allowedScreens = ['home-screen', 'social-feed-screen'];
+                const allowedScreens = ['home-screen', 'social-feed-screen', 'guest-login-screen'];
                 if (!allowedScreens.includes(screenId)) {
                     showToast('Sign in to access this. Guest mode is read-only.', 'info');
                     return;
@@ -3888,7 +3888,8 @@
                     'quick-play-screen', 
                     'admin-password-screen',
                     'login-screen',
-                    'otp-screen'
+                    'otp-screen',
+                    'guest-login-screen'
                 ];
 
                 const shouldHideNavs = noNavScreens.includes(screenId);
