@@ -1366,22 +1366,22 @@
                         </button>
                     </div>
 
-                    <!-- Center: Desktop Navigation - Centered Pill Style -->
-                    <div class="flex items-center gap-2 bg-[#161B22]/60 backdrop-blur-xl px-4 py-2.5 rounded-full border border-[#30363D]/50 shadow-lg shadow-black/10">
-                        <button data-screen="home-screen" class="top-nav-btn px-2 md:px-4 py-2 rounded-full text-xs md:text-sm font-semibold transition-all duration-300">
-                            <svg class="w-4 h-4 inline-block mr-0.5 md:mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6-4v4m0-4h4"></path></svg>
+                    <!-- Center: Desktop Navigation - Modern Style -->
+                    <div class="flex items-center gap-3 px-4 py-2.5">
+                        <button data-screen="home-screen" class="top-nav-btn group px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-gradient-to-r hover:from-sky-500/20 hover:to-indigo-500/20 border border-transparent hover:border-sky-400/30">
+                            <svg class="w-5 h-5 inline-block mr-2 -mt-0.5 group-hover:text-sky-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6-4v4m0-4h4"></path></svg>
                             <span class="hidden sm:inline">Home</span>
                         </button>
-                        <button data-screen="social-feed-screen" class="top-nav-btn px-2 md:px-4 py-2 rounded-full text-xs md:text-sm font-semibold transition-all duration-300">
-                            <svg class="w-4 h-4 inline-block mr-0.5 md:mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                        <button data-screen="social-feed-screen" class="top-nav-btn group px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-pink-500/20 border border-transparent hover:border-purple-400/30">
+                            <svg class="w-5 h-5 inline-block mr-2 -mt-0.5 group-hover:text-purple-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
                             <span class="hidden sm:inline">Leaders</span>
                         </button>
-                        <button data-screen="pledge-pool-screen" class="top-nav-btn px-2 md:px-4 py-2 rounded-full text-xs md:text-sm font-semibold transition-all duration-300">
-                            <svg class="w-4 h-4 inline-block mr-0.5 md:mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <button data-screen="pledge-pool-screen" class="top-nav-btn group px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-gradient-to-r hover:from-amber-500/20 hover:to-orange-500/20 border border-transparent hover:border-amber-400/30">
+                            <svg class="w-5 h-5 inline-block mr-2 -mt-0.5 group-hover:text-amber-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                             <span class="hidden sm:inline">Quick</span>
                         </button>
-                        <button data-screen="create-market-screen" class="top-nav-btn px-2 md:px-4 py-2 rounded-full text-xs md:text-sm font-semibold transition-all duration-300">
-                            <svg class="w-4 h-4 inline-block mr-0.5 md:mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        <button data-screen="create-market-screen" class="top-nav-btn group px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-gradient-to-r hover:from-rose-500/20 hover:to-red-500/20 border border-transparent hover:border-rose-400/30">
+                            <svg class="w-5 h-5 inline-block mr-2 -mt-0.5 group-hover:text-rose-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             <span class="hidden sm:inline">Create</span>
                         </button>
                     </div>
@@ -4826,7 +4826,19 @@
                 dom.profileDisplayName.innerText = profile.displayName || '...';
                 dom.profileWalletAddress.innerText = truncateAddress(profile.walletAddress) || "No wallet connected";
                 dom.profileXpBadge.innerText = `${profile.xp.toLocaleString()} XP`;
-                dom.mockBalance.innerText = `$${profile.balance.toFixed(2)}`;
+                
+                // Hide balance for guests
+                const mockBalance = document.getElementById('mock-balance');
+                const guestBalanceMsg = document.getElementById('guest-balance-message');
+                if (isGuestMode && !isDemoAccount) {
+                    if (mockBalance) mockBalance.classList.add('hidden');
+                    if (guestBalanceMsg) guestBalanceMsg.classList.remove('hidden');
+                } else {
+                    dom.mockBalance.innerText = `$${profile.balance.toFixed(2)}`;
+                    if (mockBalance) mockBalance.classList.remove('hidden');
+                    if (guestBalanceMsg) guestBalanceMsg.classList.add('hidden');
+                }
+                
                 dom.profileRankBadge.innerText = `Rank: #${profile.xp > 1000 ? '1' : '12'}`; 
                 dom.profileAccuracyBadge.innerText = `${profile.xp > 0 ? '82' : '0'}% Accuracy`; 
 
