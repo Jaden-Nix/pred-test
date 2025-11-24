@@ -2867,6 +2867,7 @@
         let historyStakesUnsubscribe = null;
         let leaderboardUnsubscribe = null;
         let detailMarketUnsubscribe = null; // --- RACE CONDITION FIX (NEW) ---
+        let socialFeedUnsubscribe = null; // Real-time social feed listener
         let userHistoryData = []; // To store history for AI summary
         let userActiveStakesData = []; // To store active stakes for sharing
 
@@ -4011,28 +4012,36 @@
         window.loadSocialFeed = async () => {
             const container = document.getElementById('social-feed-container');
             if (!container) return;
-            container.innerHTML = '<div class="text-center py-8"><p class="text-gray-400">Loading feed...</p></div>';
+            
             try {
-                const { collection, query, orderBy, getDocs, where, limit } = window.firebase.firestore;
+                const { collection, query, orderBy, onSnapshot, where, limit } = window.firebase.firestore;
+                
+                // Clean up old listener if exists
+                if (socialFeedUnsubscribe) {
+                    socialFeedUnsubscribe();
+                    socialFeedUnsubscribe = null;
+                }
+                
+                // Set up real-time listener for social posts
                 const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts'), orderBy('timestamp', 'desc'), limit(15));
-                const snapshot = await getDocs(q);
                 
-                let userStakes = {};
-                if (currentUserId) {
-                    const stakesQ = query(collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION), where('userId', '==', currentUserId));
-                    const stakesSnapshot = await getDocs(stakesQ);
-                    stakesSnapshot.forEach(doc => {
-                        const stake = doc.data();
-                        userStakes[stake.marketId] = stake.selectedStance;
-                    });
-                }
-                
-                if (snapshot.empty) {
-                    container.innerHTML = '<p class="text-gray-400 text-center py-8">No posts yet. Be the first to share!</p>';
-                    return;
-                }
-                let html = '';
-                snapshot.forEach(doc => {
+                socialFeedUnsubscribe = onSnapshot(q, async (snapshot) => {
+                    let userStakes = {};
+                    if (currentUserId) {
+                        const stakesQ = query(collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION), where('userId', '==', currentUserId));
+                        const stakesSnapshot = await (await import('https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js').then(() => window.firebase.firestore)).getDocs(stakesQ);
+                        stakesSnapshot.forEach(doc => {
+                            const stake = doc.data();
+                            userStakes[stake.marketId] = stake.selectedStance;
+                        });
+                    }
+                    
+                    if (snapshot.empty) {
+                        container.innerHTML = '<p class="text-gray-400 text-center py-8">No posts yet. Be the first to share!</p>';
+                        return;
+                    }
+                    let html = '';
+                    snapshot.forEach(doc => {
                     const post = { ...doc.data(), postId: doc.id };
                     const reactLike = (post.reactions?.like || []).length;
                     const reactHeart = (post.reactions?.heart || []).length;
@@ -4635,6 +4644,7 @@
             if (leaderboardUnsubscribe) { leaderboardUnsubscribe(); leaderboardUnsubscribe = null; }
             if (tickerUnsubscribe) { tickerUnsubscribe(); tickerUnsubscribe = null; }
             if (detailMarketUnsubscribe) { detailMarketUnsubscribe(); detailMarketUnsubscribe = null; } // --- RACE CONDITION FIX (NEW) ---
+            if (socialFeedUnsubscribe) { socialFeedUnsubscribe(); socialFeedUnsubscribe = null; } // Clean up social feed listener
 
             // Clear local data
             userHistoryData = [];
