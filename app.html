@@ -1361,7 +1361,7 @@
                     <!-- Left: Predora Branding + Guest Sign In Button -->
                     <div class="flex items-center gap-3">
                         <div class="text-xl font-bold gradient-text">Predora</div>
-                        <button id="guest-signin-btn" onclick="showScreen('guest-login-screen')" style="display: none;" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-full hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/50 active:scale-95 border border-sky-400/30">
+                        <button id="guest-signin-btn" onclick="window.location.href='login.html'" style="display: none;" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-full hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/50 active:scale-95 border border-sky-400/30">
                             Sign In
                         </button>
                     </div>
@@ -1426,7 +1426,7 @@
         <div class="flex items-center justify-between gap-2">
             <div class="text-lg font-bold gradient-text">Predora</div>
             <div class="flex items-center gap-2">
-                <button id="mobile-signin-btn" onclick="showScreen('guest-login-screen')" style="display: none;" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50">
+                <button id="mobile-signin-btn" onclick="window.location.href='login.html'" style="display: none;" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50">
                     Sign In
                 </button>
                 <button id="mobile-profile-btn" onclick="handleMobileProfileClick()" class="w-9 h-9 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transition-transform">
@@ -1469,22 +1469,6 @@
                 <button onclick="mockOtpLogin()" class="btn btn-primary w-full lg:text-lg">Verify & Sign In</button>
             </div>
 
-            <div id="guest-login-screen" class="screen screen-inactive space-y-6 max-w-md mx-auto lg:max-w-lg lg:space-y-8">
-                <button onclick="showScreen('home-screen')" class="flex items-center text-sky-400 font-medium lg:text-lg">
-                    <svg class="w-5 h-5 mr-1 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    Back
-                </button>
-                <div class="text-center">
-                    <h1 class="text-3xl lg:text-4xl font-bold gradient-text mb-3">Sign In Required</h1>
-                    <p class="text-gray-300 lg:text-lg">You're browsing as a guest. Sign in to unlock full features.</p>
-                </div>
-
-                <div class="space-y-3 lg:space-y-4">
-                    <button onclick="mockLogin('judge-123', 'Judge')" class="btn btn-primary lg:text-lg">Sign in as Judge</button>
-                    <button onclick="mockLogin('alice-456', 'Alice')" class="btn btn-secondary lg:text-lg">Sign in as Alice</button>
-                    <button onclick="mockLogin('bob-789', 'Bob')" class="btn btn-secondary lg:text-lg">Sign in as Bob</button>
-                </div>
-            </div>
 
                 <div id="home-screen" class="screen screen-inactive space-y-5">
 
@@ -3870,9 +3854,9 @@
         window.showScreen = (screenId) => {
             if (!screenId) return;
             
-            // Guest mode restriction: only allow home, social feed, and login screens
+            // Guest mode restriction: only allow home and social feed screens
             if (isGuestMode && !isDemoAccount) {
-                const allowedScreens = ['home-screen', 'social-feed-screen', 'guest-login-screen'];
+                const allowedScreens = ['home-screen', 'social-feed-screen'];
                 if (!allowedScreens.includes(screenId)) {
                     showToast('Sign in to access this. Guest mode is read-only.', 'info');
                     return;
@@ -3888,8 +3872,7 @@
                     'quick-play-screen', 
                     'admin-password-screen',
                     'login-screen',
-                    'otp-screen',
-                    'guest-login-screen'
+                    'otp-screen'
                 ];
 
                 const shouldHideNavs = noNavScreens.includes(screenId);
@@ -4853,7 +4836,7 @@
         window.handleGuestQuickPlayClick = () => {
             if (isGuestMode && !isDemoAccount) {
                 showToast('Sign in to access Quick Play', 'info');
-                showScreen('guest-login-screen');
+                window.location.href='login.html';
                 return;
             }
             showScreen('quick-play-screen');
@@ -4862,7 +4845,7 @@
         window.handleGuestCreateClick = () => {
             if (isGuestMode && !isDemoAccount) {
                 showToast('Sign in to create markets', 'info');
-                showScreen('guest-login-screen');
+                window.location.href='login.html';
                 return;
             }
             showScreen('create-market-screen');
@@ -4871,7 +4854,7 @@
         window.handleGuestQuickClick = () => {
             if (isGuestMode && !isDemoAccount) {
                 showToast('Sign in to access pledge pools', 'info');
-                showScreen('guest-login-screen');
+                window.location.href='login.html';
                 return;
             }
             showScreen('pledge-pool-screen');
@@ -4880,7 +4863,7 @@
         window.handleProfileClick = () => {
             if (isGuestMode && !isDemoAccount) {
                 showToast('Sign in to view profile', 'info');
-                showScreen('guest-login-screen');
+                window.location.href='login.html';
                 return;
             }
             showScreen('profile-screen');
@@ -4889,7 +4872,7 @@
         window.handleTopProfileClick = () => {
             if (isGuestMode && !isDemoAccount) {
                 showToast('Sign in to view profile', 'info');
-                showScreen('guest-login-screen');
+                window.location.href='login.html';
                 return;
             }
             showScreen('profile-screen');
@@ -4897,11 +4880,12 @@
 
         window.handleMobileProfileClick = () => {
             if (isGuestMode && !isDemoAccount) {
-                showScreen('guest-login-screen');
+                window.location.href='login.html';
                 return;
             }
             showScreen('profile-screen');
         };
+
 
         /**
          * Handles the tab switching on the profile screen (Active, History, Assets).
@@ -5565,7 +5549,7 @@
             // Guest mode check
             if (isGuestMode && !isDemoAccount) {
                 showToast('Sign in to place stakes', 'info');
-                showScreen('guest-login-screen');
+                window.location.href='login.html';
                 return;
             }
             
@@ -5898,7 +5882,7 @@
             // Guest mode check for quick play betting
             if (isGuestMode && !isDemoAccount && vote !== 'skip') {
                 showToast('Sign in to place bets', 'info');
-                showScreen('guest-login-screen');
+                window.location.href='login.html';
                 return;
             }
             
