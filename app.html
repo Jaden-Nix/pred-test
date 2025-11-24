@@ -1405,7 +1405,7 @@
                             </svg>
                         </button>
 
-                        <button onclick="showScreen('profile-screen')" data-screen="profile-screen" id="nav-profile-button" class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-indigo-500/50 active:scale-95">
+                        <button onclick="handleTopProfileClick()" data-screen="profile-screen" id="nav-profile-button" class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-indigo-500/50 active:scale-95">
                             P
                         </button>
                     </div>
@@ -1446,9 +1446,26 @@
                 <button onclick="mockOtpLogin()" class="btn btn-primary w-full lg:text-lg">Verify & Sign In</button>
             </div>
 
+            <div id="guest-login-screen" class="screen screen-inactive space-y-6 max-w-md mx-auto lg:max-w-lg lg:space-y-8">
+                <button onclick="showScreen('home-screen')" class="flex items-center text-sky-400 font-medium lg:text-lg">
+                    <svg class="w-5 h-5 mr-1 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    Back
+                </button>
+                <div class="text-center">
+                    <h1 class="text-3xl lg:text-4xl font-bold gradient-text mb-3">Sign In Required</h1>
+                    <p class="text-gray-300 lg:text-lg">You're browsing as a guest. Sign in to unlock full features.</p>
+                </div>
+
+                <div class="space-y-3 lg:space-y-4">
+                    <button onclick="mockLogin('judge-123', 'Judge')" class="btn btn-primary lg:text-lg">Sign in as Judge</button>
+                    <button onclick="mockLogin('alice-456', 'Alice')" class="btn btn-secondary lg:text-lg">Sign in as Alice</button>
+                    <button onclick="mockLogin('bob-789', 'Bob')" class="btn btn-secondary lg:text-lg">Sign in as Bob</button>
+                </div>
+            </div>
+
                 <div id="home-screen" class="screen screen-inactive space-y-5">
 
-                <div onclick="showScreen('quick-play-screen')" class="ui-panel glowing-card flex items-center justify-between p-4 lg:p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02]">
+                <div id="quick-play-panel-home" onclick="handleGuestQuickPlayClick()" class="ui-panel glowing-card flex items-center justify-between p-4 lg:p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02]">
                     <div>
                         <h3 class="text-lg lg:text-xl font-bold gradient-text">Quick Plays</h3>
                         <p class="text-sm lg:text-base text-gray-300">Fast markets, fast results.</p>
@@ -2423,14 +2440,14 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12a4 4 0 11-8 0 4 4 0 018 0zM14 12a4 4 0 11-8 0 4 4 0 018 0zM21 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                 <span class="text-xs mt-1">Social</span>
             </button>
-            <button onclick="showScreen('create-market-screen')" class="nav-button flex flex-col items-center text-gray-400 -mt-2 bg-gradient-to-br from-indigo-600 to-blue-600 p-3 rounded-full shadow-lg shadow-blue-500/30 border-2 border-sky-400">
+            <button id="nav-create-btn" onclick="handleGuestCreateClick()" class="nav-button flex flex-col items-center text-gray-400 -mt-2 bg-gradient-to-br from-indigo-600 to-blue-600 p-3 rounded-full shadow-lg shadow-blue-500/30 border-2 border-sky-400">
                 <svg class="w-5 h-5" fill="none" stroke="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
             </button>
-            <button onclick="showScreen('pledge-pool-screen')" class="nav-button flex flex-col items-center text-gray-400">
+            <button id="nav-quick-btn" onclick="handleGuestQuickClick()" class="nav-button flex flex-col items-center text-gray-400">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 <span class="text-xs mt-1">Quick</span>
             </button>
-            <button onclick="showScreen('profile-screen')" class="nav-button flex flex-col items-center text-gray-400">
+            <button id="nav-profile-btn" onclick="handleProfileClick()" class="nav-button flex flex-col items-center text-gray-400">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                 <span class="text-xs mt-1">Profile</span>
             </button>
@@ -3287,6 +3304,15 @@
             currentUserId = 'guest-' + Date.now();
             userProfile.displayName = 'Guest';
             
+            // Hide restricted buttons for guests (only show Home and Social)
+            const createBtn = document.getElementById('nav-create-btn');
+            const quickBtn = document.getElementById('nav-quick-btn');
+            const profileBtn = document.getElementById('nav-profile-btn');
+            
+            if (createBtn) createBtn.style.display = 'none';
+            if (quickBtn) quickBtn.style.display = 'none';
+            if (profileBtn) profileBtn.style.display = 'none';
+            
             // Set up guest listeners for read-only access
             attachDataListeners();
             showScreen('home-screen');
@@ -3305,6 +3331,15 @@
             isGuestMode = false;
             isDemoAccount = true;
             currentUserId = userId;
+            
+            // Show restricted buttons for logged-in users
+            const createBtn = document.getElementById('nav-create-btn');
+            const quickBtn = document.getElementById('nav-quick-btn');
+            const profileBtn = document.getElementById('nav-profile-btn');
+            
+            if (createBtn) createBtn.style.display = '';
+            if (quickBtn) quickBtn.style.display = '';
+            if (profileBtn) profileBtn.style.display = '';
             userProfile.displayName = displayName;
 
             showLoadingOverlay(true, `Logging in as ${displayName}...`);
@@ -4771,6 +4806,54 @@
                     updateStreakMultiplier(profile.streak || 0);
                 }
             }
+
+        /**
+         * Guest mode handlers for restricted features
+         */
+        window.handleGuestQuickPlayClick = () => {
+            if (isGuestMode && !isDemoAccount) {
+                showToast('Sign in to access Quick Play', 'info');
+                showScreen('guest-login-screen');
+                return;
+            }
+            showScreen('quick-play-screen');
+        };
+
+        window.handleGuestCreateClick = () => {
+            if (isGuestMode && !isDemoAccount) {
+                showToast('Sign in to create markets', 'info');
+                showScreen('guest-login-screen');
+                return;
+            }
+            showScreen('create-market-screen');
+        };
+
+        window.handleGuestQuickClick = () => {
+            if (isGuestMode && !isDemoAccount) {
+                showToast('Sign in to access pledge pools', 'info');
+                showScreen('guest-login-screen');
+                return;
+            }
+            showScreen('pledge-pool-screen');
+        };
+
+        window.handleProfileClick = () => {
+            if (isGuestMode && !isDemoAccount) {
+                showToast('Sign in to view profile', 'info');
+                showScreen('guest-login-screen');
+                return;
+            }
+            showScreen('profile-screen');
+        };
+
+        window.handleTopProfileClick = () => {
+            if (isGuestMode && !isDemoAccount) {
+                showToast('Sign in to view profile', 'info');
+                showScreen('guest-login-screen');
+                return;
+            }
+            showScreen('profile-screen');
+        };
 
         /**
          * Handles the tab switching on the profile screen (Active, History, Assets).
