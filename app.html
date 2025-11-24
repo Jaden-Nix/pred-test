@@ -1928,7 +1928,7 @@
                                 </div>
                             </div>
 
-                            <div class="ui-panel space-y-4">
+                            <div id="stake-panel" class="ui-panel space-y-4">
                                 <h2 class="text-base font-semibold text-gray-200">Place Your Stake</h2>
 
                                 <div class="space-y-2">
@@ -1955,6 +1955,11 @@
                                 <div id="multi-option-stake-section" class="hidden space-y-2">
                                     <!-- Dynamically populated -->
                                 </div>
+                            </div>
+
+                            <div id="guest-stake-message" class="ui-panel p-4 text-center space-y-3 hidden">
+                                <p class="text-gray-300 font-medium">Sign in to place stakes</p>
+                                <button onclick="window.location.href='login.html'" class="btn btn-primary w-full">Sign In Now</button>
                             </div>
                         </div>
                     </div>
@@ -2192,6 +2197,7 @@
                                 <div>
                                     <span class="text-xs text-gray-400">Mock BUSD</span>
                                     <p id="mock-balance" class="text-xl lg:text-2xl font-semibold text-green-400">$100.00</p>
+                    <p id="guest-balance-message" class="text-sm text-gray-400 hidden">Guest Mode - No Balance</p>
                                 </div>
                             </div>
                         </div>
@@ -3854,9 +3860,9 @@
         window.showScreen = (screenId) => {
             if (!screenId) return;
             
-            // Guest mode restriction: only allow home and social feed screens
+            // Guest mode restriction: allow viewing but not interacting
             if (isGuestMode && !isDemoAccount) {
-                const allowedScreens = ['home-screen', 'social-feed-screen'];
+                const allowedScreens = ['home-screen', 'social-feed-screen', 'quick-play-screen', 'market-detail-screen'];
                 if (!allowedScreens.includes(screenId)) {
                     showToast('Sign in to access this. Guest mode is read-only.', 'info');
                     return;
@@ -4834,11 +4840,6 @@
          * Guest mode handlers for restricted features
          */
         window.handleGuestQuickPlayClick = () => {
-            if (isGuestMode && !isDemoAccount) {
-                showToast('Sign in to access Quick Play', 'info');
-                window.location.href='login.html';
-                return;
-            }
             showScreen('quick-play-screen');
         };
 
@@ -5421,6 +5422,29 @@
                     dom.stakeAmountInput.value = '';
 
                     populateAssetSelector();
+                    
+                    // Hide staking for guests
+                    const stakePanel = document.getElementById('stake-panel');
+                    const guestStakeMsg = document.getElementById('guest-stake-message');
+                    if (isGuestMode && !isDemoAccount) {
+                        if (stakePanel) stakePanel.classList.add('hidden');
+                        if (guestStakeMsg) guestStakeMsg.classList.remove('hidden');
+                    } else {
+                        if (stakePanel) stakePanel.classList.remove('hidden');
+                        if (guestStakeMsg) guestStakeMsg.classList.add('hidden');
+                    }
+
+                    // Hide balance for guests
+                    const mockBalance = document.getElementById('mock-balance');
+                    const guestBalanceMsg = document.getElementById('guest-balance-message');
+                    if (isGuestMode && !isDemoAccount) {
+                        if (mockBalance) mockBalance.classList.add('hidden');
+                        if (guestBalanceMsg) guestBalanceMsg.classList.remove('hidden');
+                    } else {
+                        if (mockBalance) mockBalance.classList.remove('hidden');
+                        if (guestBalanceMsg) guestBalanceMsg.classList.add('hidden');
+                    }
+
                     showScreen('market-detail-screen');
 
                     // Setup yield calculator for no-loss markets
