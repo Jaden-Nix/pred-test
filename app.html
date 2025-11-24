@@ -1422,15 +1422,17 @@
         </nav>
 
     <!-- Mobile Header (hidden on desktop) -->
-    <div id="mobile-header" class="md:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-black/80 to-black/40 backdrop-blur-md border-b border-white/10 px-4 py-3">
-        <div class="flex items-center justify-between">
+    <div id="mobile-header" class="md:hidden fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-sky-500/20 px-4 py-3">
+        <div class="flex items-center justify-between gap-2">
             <div class="text-lg font-bold gradient-text">Predora</div>
-            <button id="mobile-signin-btn" onclick="showScreen('guest-login-screen')" style="display: none;" class="px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-full hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 border border-sky-400/30">
-                Sign In
-            </button>
-            <button id="mobile-profile-btn" onclick="handleProfileClick()" class="w-8 h-8 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg">
-                P
-            </button>
+            <div class="flex items-center gap-2">
+                <button id="mobile-signin-btn" onclick="showScreen('guest-login-screen')" style="display: none;" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50">
+                    Sign In
+                </button>
+                <button id="mobile-profile-btn" onclick="handleMobileProfileClick()" class="w-9 h-9 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg hover:scale-110 transition-transform">
+                    P
+                </button>
+            </div>
         </div>
     </div>
 
@@ -4886,6 +4888,14 @@
         window.handleTopProfileClick = () => {
             if (isGuestMode && !isDemoAccount) {
                 showToast('Sign in to view profile', 'info');
+                showScreen('guest-login-screen');
+                return;
+            }
+            showScreen('profile-screen');
+        };
+
+        window.handleMobileProfileClick = () => {
+            if (isGuestMode && !isDemoAccount) {
                 showScreen('guest-login-screen');
                 return;
             }
