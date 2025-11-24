@@ -279,8 +279,43 @@ async function autoResolveMarkets() {
             const outcome = response.candidates[0].content.parts[0].text.trim().toUpperCase();
 
             if (outcome === 'YES' || outcome === 'NO') {
-                // ... (Payout logic )
-                 await doc.ref.update({ isResolved: true, winningOutcome: outcome });
+                // Payout logic: distribute winnings to correct predictors
+                try {
+                    const pledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
+                    const pledgeSnaps = await pledgesRef.where('marketId', '==', marketId).get();
+                    
+                    let totalWinnings = 0;
+                    const winners = [];
+                    
+                    for (const pledgeSnap of pledgeSnaps.docs) {
+                        const pledge = pledgeSnap.data();
+                        if (pledge.prediction === outcome) {
+                            winners.push(pledge);
+                            totalWinnings += pledge.amount || 0;
+                        }
+                    }
+                    
+                    if (winners.length > 0 && totalWinnings > 0) {
+                        const poolTotal = market.totalPool || (market.yesAmount || 0) + (market.noAmount || 0);
+                        const winningsPerUser = poolTotal / winners.length;
+                        
+                        for (const winner of winners) {
+                            const userRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(winner.userId);
+                            const userSnap = await userRef.get();
+                            if (userSnap.exists) {
+                                const userData = userSnap.data();
+                                await userRef.update({
+                                    balance: (userData.balance || 0) + winningsPerUser,
+                                    xp: (userData.xp || 0) + 50
+                                });
+                            }
+                        }
+                    }
+                } catch (payoutError) {
+                    console.error(`ORACLE: Payout failed for ${marketId}:`, payoutError.message);
+                }
+                
+                 await doc.ref.update({ isResolved: true, winningOutcome: outcome, resolvedAt: new Date() });
                  console.log(`ORACLE: Resolved ${market.title} as ${outcome}`);
             }
         } catch (e) {
@@ -328,6 +363,12 @@ app.post('/api/auth/send-otp', requireFirebase, async (req, res) => {
     
     if (!email) {
         return res.status(400).json({ error: 'Email required' });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
     }
     
     try {
@@ -445,6 +486,17 @@ app.post('/api/auth/signup', requireFirebase, async (req, res) => {
     
     if (!email || !name) {
         return res.status(400).json({ error: 'Email and name required' });
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+    }
+    
+    // Validate name length
+    if (name.length < 2 || name.length > 50) {
+        return res.status(400).json({ error: 'Name must be between 2 and 50 characters' });
     }
     
     try {
@@ -616,8 +668,13 @@ app.post('/api/dispute-market', requireAuth, requireFirebase, async (req, res) =
             return res.status(404).json({ error: 'No leaderboard users found' });
         }
         
-        const shuffled = snapshot.docs.sort(() => 0.5 - Math.random());
-        const selected = shuffled.slice(0, Math.min(5, shuffled.length));
+        // Fisher-Yates shuffle algorithm (proper random selection)
+        const docs = snapshot.docs;
+        for (let i = docs.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [docs[i], docs[j]] = [docs[j], docs[i]];
+        }
+        const selected = docs.slice(0, Math.min(5, docs.length));
         
         const selectedJurors = [];
         const expiryTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
