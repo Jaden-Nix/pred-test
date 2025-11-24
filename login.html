@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predora - Login</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(-45deg, #0a0e27, #0d1b3a, #1a0f3a, #0f0a2e);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 2rem 1.5rem;
+            overflow-y: auto;
+            min-height: 100vh;
+            position: relative;
+            transition: background 0.5s ease;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+            animation: pulseGradient 8s ease-in-out infinite;
+        }
+
+        @keyframes pulseGradient {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        body.light-mode {
+            background: linear-gradient(-45deg, #ffffff, #f0f9ff, #f5f3ff, #fef7ff);
+            background-size: 400% 400%;
+            animation: gradientShiftLight 15s ease infinite;
+            color: #0f172a;
+        }
+
+        @keyframes gradientShiftLight {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body.light-mode::before {
+            background: radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-size: 1.5rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+        }
+
+        body.light-mode .theme-toggle {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: #0f172a;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.4);
+            transform: scale(1.1);
+            backdrop-filter: blur(12px);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: slideUp 0.6s ease-out;
+            position: relative;
+            z-index: 2;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-container {
+            width: 100px;
+            height: 100px;
+            background: #000000;
+            border-radius: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 15px 40px rgba(59, 130, 246, 0.25), 
+                        0 0 60px rgba(139, 92, 246, 0.15);
+            animation: float 3s ease-in-out infinite;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .logo-container img {
+            width: 70%;
+            height: 70%;
+            object-fit: contain;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+            animation: gradientText 6s ease-in-out infinite;
+        }
+
+        @keyframes gradientText {
+            0%, 100% { 
+                background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            50% { 
+                background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 50%, #3b82f6 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+        }
+
+        body.light-mode .title {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #ffffff;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(90deg, #ffffff, #a0aec0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body.light-mode .tagline {
+            background: linear-gradient(90deg, #111827, #4b5563);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .description {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+        }
+
+        body.light-mode .description {
+            color: #6b7280;
+        }
+
+        .divider {
+            width: 100%;
+            text-align: center;
+            margin: 1.5rem 0;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #64748b;
+            letter-spacing: 0.5px;
+        }
+
+        body.light-mode .divider {
+            color: #9ca3af;
+        }
+
+        .auth-options {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 1rem;
+            border: 1.5px solid #334155;
+            background: rgba(59, 130, 246, 0.05);
+            border-radius: 0.75rem;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            font-family: inherit;
+            position: relative;
+            backdrop-filter: blur(4px);
+        }
+
+        body.light-mode .auth-btn {
+            border-color: #e5e7eb;
+            background: rgba(59, 130, 246, 0.03);
+            color: #111827;
+        }
+
+        .auth-btn:hover:not(:disabled) {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.15);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+        }
+
+        body.light-mode .auth-btn:hover:not(:disabled) {
+            border-color: #2563eb;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .auth-btn.active {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+
+        body.light-mode .auth-btn.active {
+            border-color: #2563eb;
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .badge {
+            position: absolute;
+            right: 1rem;
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            color: #000;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .info-box {
+            width: 100%;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1.5px solid rgba(59, 130, 246, 0.3);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            backdrop-filter: blur(8px);
+        }
+
+        body.light-mode .info-box {
+            background: rgba(59, 130, 246, 0.05);
+            border-color: rgba(59, 130, 246, 0.2);
+            color: #6b7280;
+        }
+
+        .info-box strong {
+            color: #3b82f6;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        body.light-mode .info-box strong {
+            color: #2563eb;
+        }
+
+        .demo-btn {
+            width: 100%;
+            padding: 1rem;
+            border: 1.5px solid rgba(59, 130, 246, 0.5);
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 0.75rem;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            backdrop-filter: blur(4px);
+        }
+
+        body.light-mode .demo-btn {
+            border-color: rgba(59, 130, 246, 0.3);
+            background: rgba(59, 130, 246, 0.05);
+            color: #111827;
+        }
+
+        .demo-btn:hover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+        }
+
+        body.light-mode .demo-btn:hover {
+            background: rgba(59, 130, 246, 0.15);
+        }
+
+        .screen {
+            width: 100%;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .btn-back {
+            background: transparent;
+            border: none;
+            color: #3b82f6;
+            padding: 0 0 1rem 0;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        body.light-mode .btn-back {
+            color: #2563eb;
+        }
+
+        .btn-back:hover {
+            transform: translateX(-2px);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border: none;
+            border-radius: 0.75rem;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 41, 0.6);
+            border: 1.5px solid #334155;
+            border-radius: 0.625rem;
+            color: #ffffff;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        body.light-mode .form-input {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: #e5e7eb;
+            color: #111827;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(15, 23, 41, 0.8);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 8px 16px rgba(59, 130, 246, 0.1);
+        }
+
+        body.light-mode .form-input:focus {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .otp-container {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+
+        .otp-input {
+            width: 3rem;
+            height: 3rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-align: center;
+            background: rgba(15, 23, 41, 0.6);
+            border: 1.5px solid #334155;
+            border-radius: 0.625rem;
+            color: #ffffff;
+            font-family: 'Monaco', monospace;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        body.light-mode .otp-input {
+            background: rgba(255, 255, 255, 0.7);
+            border-color: #e5e7eb;
+            color: #111827;
+        }
+
+        .otp-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .demo-users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+            width: 100%;
+        }
+
+        .demo-user-card {
+            padding: 1.5rem 1rem;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1.5px solid rgba(59, 130, 246, 0.3);
+            border-radius: 0.75rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        body.light-mode .demo-user-card {
+            background: rgba(59, 130, 246, 0.05);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .demo-user-card:hover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.2);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .demo-user-avatar {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .demo-user-name {
+            font-weight: 600;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        body.light-mode .demo-user-name {
+            color: #111827;
+        }
+
+        .demo-user-role {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            border: 2px solid rgba(59, 130, 246, 0.1);
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 1.25rem;
+            height: 1.25rem;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            border-radius: 0.625rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+            animation: slideInRight 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+
+        .toast.hidden {
+            display: none;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                max-width: 100%;
+            }
+
+            .title {
+                font-size: 2rem;
+            }
+
+            .logo-container {
+                width: 80px;
+                height: 80px;
+            }
+
+            .otp-input {
+                width: 2.75rem;
+                height: 2.75rem;
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <span id="theme-icon">🌙</span>
+    </button>
+
+    <!-- Landing Screen -->
+    <div id="landing-screen" class="container screen">
+        <div class="logo-container">
+            <img src="https://res.cloudinary.com/djslxbghy/image/upload/IMG_4551_e9bv2x.jpg" alt="Predora">
+        </div>
+        <div class="header">
+            <h1 class="title">Welcome to Predora</h1>
+            <p class="tagline">Where Opinions Have Liquidity</p>
+        </div>
+        <p class="description">
+            AI-powered prediction markets.<br>
+            Trade your insights, earn rewards.
+        </p>
+
+        <div class="divider">OR CONTINUE WITH</div>
+
+        <div class="auth-options">
+            <button class="auth-btn" disabled>
+                <span>🔵</span> Continue with Google
+                <span class="badge">COMING SOON</span>
+            </button>
+            <button class="auth-btn" disabled>
+                <span>𝕏</span> Continue with X
+                <span class="badge">COMING SOON</span>
+            </button>
+            <button class="auth-btn active" onclick="showEmail()">
+                <span>✉️</span> Continue with Email
+            </button>
+        </div>
+
+        <div class="info-box">
+            <strong>📧 Email → Password → OTP Verification</strong>
+            Sign up with email and password, then verify with a 6-digit code sent to your inbox. Set your display name to complete onboarding.
+        </div>
+
+        <button class="demo-btn" onclick="tryDemo()">
+            🎮 Try Demo Mode
+        </button>
+    </div>
+
+    <!-- Email Screen -->
+    <div id="email-screen" class="container screen hidden">
+        <button class="btn-back" onclick="showLanding()">← Back</button>
+        
+        <div class="header" style="margin-top: 1rem;">
+            <h2 class="title" style="font-size: 2rem;">Sign In</h2>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="email-input" placeholder="your@email.com" class="form-input">
+        </div>
+
+        <button onclick="sendOTP()" id="continue-btn" class="btn-primary">
+            Continue with Email
+        </button>
+
+        <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #94a3b8;">
+            Don't have an account? <button onclick="showSignup()" style="background: none; border: none; color: #3b82f6; cursor: pointer; font-weight: 500;">Sign up</button>
+        </div>
+    </div>
+
+    <!-- OTP Screen -->
+    <div id="otp-screen" class="container screen hidden">
+        <button class="btn-back" onclick="showEmail()">← Back</button>
+        
+        <div class="header" style="margin-top: 1rem;">
+            <h2 class="title" style="font-size: 2rem;">Check Your Email</h2>
+        </div>
+
+        <p class="description" style="margin-bottom: 1.5rem;">
+            Enter the 6-digit code sent to <span id="masked-email-display" style="font-weight: 600; color: #3b82f6;"></span>
+        </p>
+        
+        <p id="verification-attempts" style="text-align: center; font-size: 0.85rem; color: #f87171; margin-bottom: 1rem; display: none;">
+            Attempts remaining: <strong id="attempts-count">5</strong>
+        </p>
+
+        <div class="otp-container">
+            <input type="text" maxlength="1" class="otp-input" id="otp-1" oninput="handleOTPInput(event, 1)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-2" oninput="handleOTPInput(event, 2)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-3" oninput="handleOTPInput(event, 3)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-4" oninput="handleOTPInput(event, 4)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-5" oninput="handleOTPInput(event, 5)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-6" oninput="handleOTPInput(event, 6)">
+        </div>
+
+        <button onclick="verifyOTP()" id="verify-btn" class="btn-primary" style="margin-top: 1.5rem;">
+            Verify Code
+        </button>
+
+        <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #94a3b8;">
+            Didn't receive? <button onclick="resendOTP()" id="resend-btn" style="background: none; border: none; color: #3b82f6; cursor: pointer; font-weight: 500;">Resend (<span id="countdown">30</span>s)</button>
+            <span style="margin: 0 0.5rem;">•</span>
+            <button onclick="changeEmail()" id="change-email-btn" style="background: none; border: none; color: #3b82f6; cursor: pointer; font-weight: 500;">Change Email</button>
+        </div>
+    </div>
+
+    <!-- Signup Screen -->
+    <div id="signup-screen" class="container screen hidden">
+        <button class="btn-back" onclick="showLanding()">← Back</button>
+        
+        <div class="header" style="margin-top: 1rem;">
+            <h2 class="title" style="font-size: 2rem;">Create Account</h2>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="signup-name" placeholder="John Doe" class="form-input">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="signup-email" placeholder="your@email.com" class="form-input">
+        </div>
+
+        <button onclick="signup()" id="signup-btn" class="btn-primary">
+            Create Account
+        </button>
+
+        <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #94a3b8;">
+            Already have an account? <button onclick="showEmail()" style="background: none; border: none; color: #3b82f6; cursor: pointer; font-weight: 500;">Sign in</button>
+        </div>
+    </div>
+
+    <!-- Demo Users Screen -->
+    <div id="demo-screen" class="container screen hidden">
+        <button class="btn-back" onclick="showLanding()">← Back</button>
+        
+        <div class="header" style="margin-top: 1rem;">
+            <h2 class="title" style="font-size: 2rem;">Demo Users</h2>
+            <p class="tagline" style="margin-top: 0.5rem;">Choose a demo account to explore</p>
+        </div>
+
+        <div class="demo-users-grid">
+            <div class="demo-user-card" onclick="loginDemoUser('alice-456', 'Alice', '👩')">
+                <div class="demo-user-avatar">👩</div>
+                <div class="demo-user-name">ALICE</div>
+                <div class="demo-user-role">Trader</div>
+            </div>
+            <div class="demo-user-card" onclick="loginDemoUser('bob-789', 'Bob', '👨')">
+                <div class="demo-user-avatar">👨</div>
+                <div class="demo-user-name">BOB</div>
+                <div class="demo-user-role">Analyst</div>
+            </div>
+            <div class="demo-user-card" onclick="loginDemoUser('judge-123', 'Judge', '⚖️')">
+                <div class="demo-user-avatar">⚖️</div>
+                <div class="demo-user-name">JUDGE</div>
+                <div class="demo-user-role">Arbiter</div>
+            </div>
+        </div>
+
+        <p class="description" style="text-align: center; margin-top: 2rem;">
+            Each demo account has sample markets and trading history pre-populated.
+        </p>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script type="module">
+        window.addEventListener('unhandledrejection', (event) => {
+            if (event.reason?.message?.includes('WKWebView')) {
+                event.preventDefault();
+            }
+        });
+        
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+        import { getAuth, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyBmFYjhVwZ0n5n_QrZMaLh5DwQmBjT8Qvs",
+            authDomain: "predora-hackathon.firebaseapp.com",
+            projectId: "predora-hackathon",
+            storageBucket: "predora-hackathon.firebasestorage.app",
+            messagingSenderId: "419892726134",
+            appId: "1:419892726134:web:e3e3f3d3f3d3f3d3f3d3f3"
+        };
+        
+        try {
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            window.firebaseAuth = auth;
+        } catch (e) {
+            console.warn('Firebase init error (non-critical):', e.message);
+        }
+    </script>
+
+    <script>
+        let currentEmail = '';
+        let currentName = '';
+        let resendCountdown = 0;
+        let currentTheme = 'dark';
+        let otpVerificationAttempts = 5;
+
+        function initTheme() {
+            // Try localStorage first, fall back to session storage or memory
+            try {
+                currentTheme = localStorage.getItem('theme') || 'dark';
+            } catch (e) {
+                try {
+                    currentTheme = sessionStorage.getItem('theme') || 'dark';
+                } catch (e2) {
+                    currentTheme = 'dark';
+                }
+            }
+            
+            if (currentTheme === 'light') {
+                document.body.classList.add('light-mode');
+                document.getElementById('theme-icon').textContent = '☀️';
+            } else {
+                document.body.classList.remove('light-mode');
+                document.getElementById('theme-icon').textContent = '🌙';
+            }
+        }
+
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light-mode');
+            currentTheme = isLight ? 'light' : 'dark';
+            document.getElementById('theme-icon').textContent = isLight ? '☀️' : '🌙';
+            
+            // Try all storage options
+            try {
+                localStorage.setItem('theme', currentTheme);
+            } catch (e1) {
+                try {
+                    sessionStorage.setItem('theme', currentTheme);
+                } catch (e2) {
+                    // Silently fail - use in-memory storage only
+                }
+            }
+        }
+
+        function hideAll() {
+            document.getElementById('landing-screen').classList.add('hidden');
+            document.getElementById('email-screen').classList.add('hidden');
+            document.getElementById('otp-screen').classList.add('hidden');
+            document.getElementById('signup-screen').classList.add('hidden');
+            document.getElementById('demo-screen').classList.add('hidden');
+        }
+
+        function showLanding() {
+            hideAll();
+            document.getElementById('landing-screen').classList.remove('hidden');
+        }
+
+        function showEmail() {
+            hideAll();
+            document.getElementById('email-screen').classList.remove('hidden');
+            document.getElementById('email-input').focus();
+        }
+
+        function showOTP() {
+            hideAll();
+            document.getElementById('otp-screen').classList.remove('hidden');
+            document.getElementById('otp-1').focus();
+        }
+
+        function showSignup() {
+            hideAll();
+            document.getElementById('signup-screen').classList.remove('hidden');
+            document.getElementById('signup-name').focus();
+        }
+
+        function showDemo() {
+            hideAll();
+            document.getElementById('demo-screen').classList.remove('hidden');
+        }
+
+        function showToast(msg, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast ' + (type === 'error' ? 'error' : type === 'success' ? 'success' : '');
+            setTimeout(() => toast.classList.remove('hidden'), 10);
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        function maskEmail(email) {
+            const [localPart, domain] = email.split('@');
+            const visibleChars = Math.max(1, Math.floor(localPart.length / 2));
+            const masked = localPart.substring(0, visibleChars) + '****';
+            return masked + '@' + domain;
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        async function sendOTP() {
+            const email = document.getElementById('email-input').value.trim();
+            if (!email) {
+                showToast('Enter your email', 'error');
+                return;
+            }
+            if (!isValidEmail(email)) {
+                showToast('Invalid email format', 'error');
+                return;
+            }
+            currentEmail = email;
+            otpVerificationAttempts = 5;
+            const btn = document.getElementById('continue-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>';
+            try {
+                const res = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('masked-email-display').textContent = maskEmail(email);
+                    document.getElementById('verification-attempts').style.display = 'block';
+                    document.getElementById('attempts-count').textContent = '5';
+                    otpVerificationAttempts = 5;
+                    showOTP();
+                    startResendCountdown();
+                    showToast('Code sent to your email', 'success');
+                } else {
+                    showToast(data.error || 'Failed', 'error');
+                }
+            } catch (e) {
+                showToast('Network error', 'error');
+            }
+            btn.disabled = false;
+            btn.textContent = 'Continue with Email';
+        }
+
+        function handleOTPInput(e, idx) {
+            if (e.target.value && idx < 6) {
+                document.getElementById(`otp-${idx + 1}`).focus();
+            }
+            const otp = [1,2,3,4,5,6].map(i => document.getElementById(`otp-${i}`).value).join('');
+            if (otp.length === 6) verifyOTP();
+        }
+
+        function clearOTPFields() {
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`otp-${i}`).value = '';
+            }
+            document.getElementById('otp-1').focus();
+        }
+
+        async function verifyOTP() {
+            const otp = [1,2,3,4,5,6].map(i => document.getElementById(`otp-${i}`).value).join('');
+            if (otp.length !== 6) {
+                showToast('Enter all 6 digits', 'error');
+                return;
+            }
+            
+            if (otpVerificationAttempts <= 0) {
+                showToast('Too many failed attempts. Request a new code.', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('verify-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>';
+            try {
+                const res = await fetch('/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentEmail, otp })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    // Store email and name for app.html to use
+                    try {
+                        sessionStorage.setItem('emailUserId', currentEmail);
+                        if (currentName) sessionStorage.setItem('emailUserName', currentName);
+                    } catch (e) {}
+                    try {
+                        localStorage.setItem('emailUserId', currentEmail);
+                        if (currentName) localStorage.setItem('emailUserName', currentName);
+                    } catch (e) {}
+                    
+                    showToast('Welcome!', 'success');
+                    // Redirect to app with email and name params as backup
+                    let redirectUrl = `/app.html?emailUser=${encodeURIComponent(currentEmail)}`;
+                    if (currentName) {
+                        redirectUrl += `&emailUserName=${encodeURIComponent(currentName)}`;
+                    }
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 800);
+                } else {
+                    otpVerificationAttempts--;
+                    document.getElementById('attempts-count').textContent = otpVerificationAttempts;
+                    
+                    if (otpVerificationAttempts <= 0) {
+                        showToast('Too many failed attempts. Request a new code.', 'error');
+                        clearOTPFields();
+                    } else {
+                        showToast(`Invalid code. ${otpVerificationAttempts} attempts left`, 'error');
+                        clearOTPFields();
+                    }
+                    btn.disabled = false;
+                    btn.textContent = 'Verify Code';
+                }
+            } catch (e) {
+                console.error('OTP verification error:', e);
+                showToast('Verification failed', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Verify Code';
+            }
+        }
+
+        async function resendOTP() {
+            if (resendCountdown > 0) {
+                showToast(`Wait ${resendCountdown}s before resending`, 'error');
+                return;
+            }
+            // Resend OTP to the current email
+            const btn = document.getElementById('resend-btn');
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentEmail })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    clearOTPFields();
+                    otpVerificationAttempts = 5;
+                    document.getElementById('attempts-count').textContent = '5';
+                    showToast('New code sent to your email', 'success');
+                    startResendCountdown();
+                } else {
+                    showToast(data.error || 'Failed to resend', 'error');
+                }
+            } catch (e) {
+                showToast('Network error', 'error');
+            }
+            btn.disabled = false;
+        }
+
+        function changeEmail() {
+            clearOTPFields();
+            otpVerificationAttempts = 5;
+            showEmail();
+        }
+
+        function startResendCountdown() {
+            resendCountdown = 30;
+            const el = document.getElementById('countdown');
+            const btn = document.getElementById('resend-btn');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            const iv = setInterval(() => {
+                resendCountdown--;
+                el.textContent = resendCountdown;
+                if (resendCountdown <= 0) {
+                    clearInterval(iv);
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }
+            }, 1000);
+        }
+
+        async function signup() {
+            const name = document.getElementById('signup-name').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            if (!name || !email) {
+                showToast('Fill in all fields', 'error');
+                return;
+            }
+            if (!isValidEmail(email)) {
+                showToast('Invalid email format', 'error');
+                return;
+            }
+            currentEmail = email;
+            currentName = name;
+            otpVerificationAttempts = 5;
+            const btn = document.getElementById('signup-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>';
+            try {
+                const res = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, name })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('masked-email-display').textContent = maskEmail(email);
+                    document.getElementById('verification-attempts').style.display = 'block';
+                    document.getElementById('attempts-count').textContent = '5';
+                    otpVerificationAttempts = 5;
+                    showOTP();
+                    startResendCountdown();
+                    showToast('Check your email', 'success');
+                } else {
+                    showToast(data.error || 'Signup failed', 'error');
+                }
+            } catch (e) {
+                showToast('Network error', 'error');
+            }
+            btn.disabled = false;
+            btn.textContent = 'Create Account';
+        }
+
+        function tryDemo() {
+            showDemo();
+        }
+
+        async function loginDemoUser(userId, userName, emoji) {
+            try {
+                const res = await fetch('/api/auth/demo-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, userName })
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    showToast(data.error || 'Demo login failed', 'error');
+                    console.error('Demo login failed:', data);
+                    return;
+                }
+                
+                const data = await res.json();
+                
+                // Try to store in both localStorage and sessionStorage
+                try {
+                    localStorage.setItem('demoUserId', userId);
+                    localStorage.setItem('demoDisplayName', userName);
+                } catch (e) {
+                    try {
+                        sessionStorage.setItem('demoUserId', userId);
+                        sessionStorage.setItem('demoDisplayName', userName);
+                    } catch (e2) {
+                        console.warn('Could not store demo user in any storage:', e2);
+                    }
+                }
+                
+                showToast(`Welcome ${userName}!`, 'success');
+                
+                // Redirect to app with demo user params as backup
+                setTimeout(() => {
+                    window.location.href = `/app.html?demoUser=${encodeURIComponent(userId)}&demoName=${encodeURIComponent(userName)}`;
+                }, 800);
+            } catch (e) {
+                console.error('Demo login error:', e);
+                showToast('Demo login error: ' + e.message, 'error');
+            }
+        }
+
+        initTheme();
+    </script>
+</body>
+</html>

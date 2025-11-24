@@ -1,0 +1,19 @@
+{
+  "name": "predora-server",
+  "version": "1.0.0",
+  "description": "Backend server for Predora",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "firebase": "^12.5.0",
+    "firebase-admin": "^13.6.0",
+    "node-fetch": "^3.3.2",
+    "openai": "^6.9.1"
+  }
+}
