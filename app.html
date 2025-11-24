@@ -2806,6 +2806,8 @@
         let currentScreenId = 'login-screen'; 
         let currentUserId = null;
         let authToken = null;
+        let isGuestMode = false;
+        let isDemoAccount = false;
         let userProfile = { 
             xp: 0, displayName: '', walletAddress: '', isApproved: false, 
             balance: 100, bnbBalance: 0.2, cakeBalance: 150 
@@ -3128,9 +3130,9 @@
                         showScreen('login-screen');
                     });
                 } else {
-                    // No session, show the login screen
-                    console.log("No user session found, showing login screen.");
-                    showScreen('login-screen');
+                    // No session, initialize guest mode
+                    console.log("No user session found, initializing guest mode.");
+                    initializeGuestMode();
                 }
 
             } catch (error) {
@@ -3276,6 +3278,21 @@
 
 
         /**
+         * Initializes guest mode - allows browsing but not interactions
+         */
+        function initializeGuestMode() {
+            console.log("Initializing guest mode...");
+            isGuestMode = true;
+            isDemoAccount = false;
+            currentUserId = 'guest-' + Date.now();
+            userProfile.displayName = 'Guest';
+            
+            // Set up guest listeners for read-only access
+            attachDataListeners();
+            showScreen('home-screen');
+        }
+
+        /**
          * Logs in as a demo user. Cleans up old listeners, sets localStorage,
          * and initializes the user's profile in Firebase.
          */
@@ -3285,6 +3302,8 @@
             console.log(`Mock login as: ${displayName}`);
             localStorage.setItem('demoUserId', userId);
             localStorage.setItem('demoDisplayName', displayName);
+            isGuestMode = false;
+            isDemoAccount = true;
             currentUserId = userId;
             userProfile.displayName = displayName;
 
@@ -3776,6 +3795,16 @@
          */
         window.showScreen = (screenId) => {
             if (!screenId) return;
+            
+            // Guest mode restriction: only allow home and social feed screens
+            if (isGuestMode && !isDemoAccount) {
+                const allowedScreens = ['home-screen', 'social-feed-screen'];
+                if (!allowedScreens.includes(screenId)) {
+                    showToast('Sign in to access this. Guest mode is read-only.', 'info');
+                    return;
+                }
+            }
+            
             console.log(`Navigating to: ${screenId}`);
 
             // Special case: Hide nav bars on full-screen game modes and auth screens
@@ -4003,6 +4032,7 @@
 
         window.submitPost = async () => {
             if (!currentUserId) { showToast('Please sign in', 'info'); return; }
+            if (isGuestMode) { showToast('Sign in to create posts', 'info'); return; }
             const content = document.getElementById('post-content-input')?.value?.trim() || '';
             if (!content && !attachedImage) { showToast('Write something or add an image', 'error'); return; }
             
@@ -4069,6 +4099,7 @@
 
         window.toggleReaction = async (postId, reactionType) => {
             if (!currentUserId) { showToast('Sign in to react', 'info'); return; }
+            if (isGuestMode) { showToast('Sign in to react to posts', 'info'); return; }
             const btn = event?.target?.closest('button');
             if (btn) { btn.classList.add('reaction-bounce'); setTimeout(() => btn.classList.remove('reaction-bounce'), 600); }
             try {
@@ -4135,6 +4166,7 @@
 
         window.toggleComments = async (postId) => {
             if (!currentUserId) { showToast('Sign in to comment', 'info'); return; }
+            if (isGuestMode && !isDemoAccount) { showToast('Sign in to view comments', 'info'); return; }
             const section = document.getElementById(`comments-section-${postId}`);
             if (!section) return;
             section.classList.toggle('hidden');
@@ -4192,6 +4224,7 @@
 
         window.submitCommentQuick = async (postId) => {
             if (!currentUserId) return;
+            if (isGuestMode) { showToast('Sign in to comment', 'info'); return; }
             const input = document.getElementById(`comment-box-${postId}`);
             const btn = event?.target?.closest('button');
             if (!input) return;
@@ -5398,6 +5431,12 @@
         //
 
         window.stakeMarket = async function(pick) {
+            // Guest mode check
+            if (isGuestMode) {
+                showToast('Sign in to place stakes', 'info');
+                return;
+            }
+            
             // 1. Get all Firebase functions
             const { doc, updateDoc, increment, addDoc, collection, serverTimestamp, runTransaction } = window.firebase.firestore;
 

@@ -4,12 +4,18 @@
 Predora is a decentralized prediction market platform with AI-powered market resolution, social features, and a comprehensive admin panel. This project uses Firebase for data storage, OpenAI for swarm-based verification, and Google's Gemini AI for market resolution.
 
 ## Recent Changes (November 24, 2025)
+- **Guest Mode**: App now opens in guest mode by default - users can browse markets and social feed without signing in
+- **Restricted Guest Access**: Guests can only view home and social feed screens; all interactions (create post, react, comment, place stakes) prompt sign-in
+- **Demo Accounts**: Judge/Alice/Bob demo accounts have full unrestricted access like real users
+- **Social Feed API Integration**: Rewritten to use backend APIs (fixed XSS vulnerability, race conditions, security issues)
+- **Removed Logos**: Cleaned up UI - no redundant logos in app header
+- **Fixed Social Feed Bugs**: 10+ bugs fixed including race conditions, wrong avatars, missing error handling
+- **Backend API Endpoints**: Added delete/edit endpoints for posts and comments
 - **Integrated Email/OTP Authentication System**: Added passwordless login with 6-digit OTP codes
 - **Social Feed System**: Implemented post creation, reactions, comments, and social interactions
 - **Admin Panel**: Added administrative controls for market resolution and platform management
 - **Jury System**: Implemented dispute resolution with 5-juror voting system and 30-minute dispute windows
 - **AI Guardrails**: Added content moderation using OpenAI's moderation API
-- **Backend API Endpoints**: Created comprehensive REST API for all features
 - **Login Page**: Created standalone login.html with modern UI
 
 ## Project Structure
@@ -97,6 +103,10 @@ All data is stored in: `artifacts/predora-hackathon/public/data/`
 - `POST /api/social/create-post` - Create social post
 - `POST /api/social/react` - Add reaction to post
 - `POST /api/social/comment` - Add comment to post
+- `POST /api/social/delete-post` - Delete own post
+- `POST /api/social/edit-post` - Edit own post
+- `POST /api/social/delete-comment` - Delete own comment
+- `POST /api/social/edit-comment` - Edit own comment
 
 ### Dispute & Jury System
 - `POST /api/dispute-market` - Initiate market dispute
@@ -115,14 +125,17 @@ All data is stored in: `artifacts/predora-hackathon/public/data/`
 ## Features Integrated
 
 ### ✅ Completed
+- [x] Guest Mode (read-only browsing, no interactions without sign-in)
+- [x] Demo Accounts (full access with isDemoAccount flag)
 - [x] Email/OTP Authentication
-- [x] Social Feed (posts, reactions, comments)
+- [x] Social Feed (posts, reactions, comments) - Secure backend APIs
 - [x] Admin Panel (market resolution, stats)
 - [x] Jury System (dispute handling, 5-juror voting)
 - [x] AI Guardrails (content moderation)
 - [x] API Endpoints (authentication, social, admin)
 - [x] Login Page (standalone authentication UI)
 - [x] Workflow Configuration (Express server on port 5000)
+- [x] Social Feed Security (backend APIs, no direct Firebase writes)
 
 ### 🔨 Partially Implemented (Backend Complete)
 - [ ] Swarm-Verify Oracle (multi-agent Byzantine consensus) - Backend ready, needs OpenAI key
@@ -160,7 +173,9 @@ https://your-app.com/app.html?admin=1
 Then enter the `ADMIN_SECRET` password when prompted.
 
 ## User Preferences
-None yet - will be documented as users request specific configurations.
+- **Color Scheme**: Sky blue (#38BDF8) with purple accents throughout the app
+- **Landing Page Only**: Logo appears only on landing page, not in app
+- **Guest Mode**: App opens in guest mode by default, no login screen flash
 
 ## Architecture
 
