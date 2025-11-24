@@ -1353,28 +1353,11 @@
     </style>
 </head>
 <body class="text-gray-100">
-    <!-- Mobile Header (visible on mobile only) -->
-    <header id="mobile-header" class="sticky top-0 z-50 md:hidden backdrop-blur-xl bg-gradient-to-r from-[#0D1117]/95 to-[#161B22]/95 dark:from-[#0D1117]/95 dark:to-[#161B22]/95 light:from-white/98 light:to-gray-50/98 border-b border-[#30363D]/30 dark:border-[#30363D]/30 light:border-gray-200/50 shadow-lg shadow-black/5">
-        <div class="max-w-7xl mx-auto px-6 py-4">
-            <div class="flex items-center justify-center relative">
-                <!-- Centered Logo with Glow Effect -->
-                <h1 id="mobile-app-title" class="text-2xl font-black gradient-text tracking-tight cursor-pointer transition-transform duration-200 active:scale-95 relative">
-                    Predora
-                    <div class="absolute -inset-2 bg-gradient-to-r from-sky-400/20 to-indigo-400/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"></div>
-                </h1>
-            </div>
-        </div>
-    </header>
 
     <!-- Desktop Navigation (hidden on mobile) -->
     <nav id="top-nav" class="hidden md:block sticky top-0 z-50 shadow-lg shadow-black/20">
             <div class="max-w-7xl mx-auto px-6 py-4">
-                <div class="flex justify-between items-center gap-8">
-                    <!-- Logo -->
-                    <div>
-                        <h1 id="app-title" class="text-2xl md:text-3xl font-extrabold gradient-text tracking-tight cursor-pointer" onclick="showScreen('home-screen')">Predora</h1>
-                    </div>
-
+                <div class="flex justify-center items-center gap-8">
                     <!-- Desktop Navigation - Centered Pill Style -->
                     <div class="flex items-center gap-2 bg-[#161B22]/60 backdrop-blur-xl px-4 py-2.5 rounded-full border border-[#30363D]/50 shadow-lg shadow-black/10">
                         <button data-screen="home-screen" class="top-nav-btn px-2 md:px-4 py-2 rounded-full text-xs md:text-sm font-semibold transition-all duration-300">
@@ -1396,7 +1379,7 @@
                     </div>
 
                     <!-- Right Side: Live Counter + Notifications + Theme + Profile -->
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 ml-auto">
                         <div id="live-user-counter" class="hidden sm:flex items-center text-xs md:text-sm text-gray-300">
                             <span class="w-2 h-2 bg-green-400 rounded-full mr-2 live-dot"></span>
                             <span id="live-user-count-text">147</span>
@@ -2822,9 +2805,26 @@
         let db, auth;
         let currentScreenId = 'login-screen'; 
         let currentUserId = null;
+        let authToken = null;
         let userProfile = { 
             xp: 0, displayName: '', walletAddress: '', isApproved: false, 
             balance: 100, bnbBalance: 0.2, cakeBalance: 150 
+        };
+        
+        // Helper function to get auth token
+        const getAuthToken = async () => {
+            try {
+                const { getAuth } = window.firebase.auth;
+                const currentAuth = getAuth();
+                const user = currentAuth.currentUser;
+                if (user) {
+                    authToken = await user.getIdToken();
+                    return authToken;
+                }
+            } catch (e) {
+                console.error('Error getting auth token:', e);
+            }
+            return null;
         };
 
         // --- Firestore Real-time Listeners (for cleanup) ---
@@ -4007,31 +4007,39 @@
             if (!content && !attachedImage) { showToast('Write something or add an image', 'error'); return; }
             
             try {
-                const { collection, addDoc, serverTimestamp } = window.firebase.firestore;
-                const postData = {
-                    userId: currentUserId,
-                    displayName: userProfile?.displayName || currentUserId,
-                    avatarUrl: LOGO_URL,
-                    content: content,
-                    commentCount: 0,
-                    reactions: { like: [], heart: [], fire: [], rocket: [] },
-                    timestamp: serverTimestamp()
-                };
-                if (attachedImage) postData.imageUrl = attachedImage;
-                if (attachedMarket && attachedMarket.id) {
-                    postData.attachedMarket = {
-                        id: attachedMarket.id,
-                        title: attachedMarket.title || '',
-                        stance: attachedMarket.stance || ''
-                    };
+                const btn = document.getElementById('submit-post-btn');
+                if (btn) btn.disabled = true;
+                
+                const response = await fetch('/api/social/create-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({
+                        displayName: userProfile?.displayName || currentUserId,
+                        avatarUrl: userProfile?.photoURL || LOGO_URL,
+                        content: content,
+                        imageUrl: attachedImage || null,
+                        attachedMarket: attachedMarket && attachedMarket.id ? {
+                            id: attachedMarket.id,
+                            title: attachedMarket.title || '',
+                            stance: attachedMarket.stance || ''
+                        } : null
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to create post');
                 }
-                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts'), postData);
+                
                 showToast('Post created!', 'success');
                 closeCreatePost();
                 loadSocialFeed();
             } catch (error) {
                 showToast('Failed to create post', 'error');
                 console.error(error);
+            } finally {
+                const btn = document.getElementById('submit-post-btn');
+                if (btn) btn.disabled = false;
             }
         };
 
@@ -4061,25 +4069,20 @@
 
         window.toggleReaction = async (postId, reactionType) => {
             if (!currentUserId) { showToast('Sign in to react', 'info'); return; }
-            const btn = event.target.closest('button');
+            const btn = event?.target?.closest('button');
             if (btn) { btn.classList.add('reaction-bounce'); setTimeout(() => btn.classList.remove('reaction-bounce'), 600); }
-            const { doc: firestoreDoc, getDoc, updateDoc, arrayUnion, arrayRemove } = window.firebase.firestore;
-            const postRef = firestoreDoc(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts', postId);
             try {
-                const postSnap = await getDoc(postRef);
-                if (!postSnap.exists()) return;
-                const reactions = postSnap.data().reactions || { like: [], heart: [], fire: [], rocket: [] };
-                const userIdString = String(currentUserId);
-                if ((reactions[reactionType] || []).includes(userIdString)) {
-                    await updateDoc(postRef, { [`reactions.${reactionType}`]: arrayRemove(userIdString) });
-                } else {
-                    await updateDoc(postRef, { [`reactions.${reactionType}`]: arrayUnion(userIdString) });
-                }
-                setTimeout(() => {
-                    loadSocialFeed();
-                }, 200);
+                const response = await fetch('/api/social/react', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ postId, reaction: reactionType })
+                });
+                
+                if (!response.ok) throw new Error('Reaction failed');
+                setTimeout(() => { loadSocialFeed(); }, 200);
             } catch (error) {
                 console.error('Reaction error:', error);
+                showToast('Failed to react', 'error');
             }
         };
 
@@ -4087,8 +4090,13 @@
             if (currentUserId !== authorId) { showToast('You can only delete your own posts', 'error'); return; }
             if (!confirm('Delete this post?')) return;
             try {
-                const { doc: firestoreDoc, deleteDoc } = window.firebase.firestore;
-                await deleteDoc(firestoreDoc(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts', postId));
+                const response = await fetch('/api/social/delete-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ postId })
+                });
+                
+                if (!response.ok) throw new Error('Delete failed');
                 showToast('Post deleted', 'success');
                 loadSocialFeed();
             } catch (error) {
@@ -4101,8 +4109,13 @@
             const newContent = prompt('Edit your post:', currentContent);
             if (!newContent || newContent.trim() === '' || newContent === currentContent) return;
             try {
-                const { doc: firestoreDoc, updateDoc } = window.firebase.firestore;
-                await updateDoc(firestoreDoc(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts', postId), { content: newContent.trim(), editedAt: new Date().toISOString() });
+                const response = await fetch('/api/social/edit-post', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ postId, content: newContent.trim() })
+                });
+                
+                if (!response.ok) throw new Error('Edit failed');
                 showToast('Post updated!', 'success');
                 loadSocialFeed();
             } catch (error) {
@@ -4180,28 +4193,24 @@
         window.submitCommentQuick = async (postId) => {
             if (!currentUserId) return;
             const input = document.getElementById(`comment-box-${postId}`);
-            const btn = event?.target.closest('button');
+            const btn = event?.target?.closest('button');
             if (!input) return;
             const content = input.value.trim();
             if (!content) return;
             if (btn) btn.disabled = true;
             try {
-                const { collection, addDoc, serverTimestamp, doc: firestoreDoc, getDoc, updateDoc } = window.firebase.firestore;
-                const commentData = {
-                    userId: currentUserId,
-                    displayName: userProfile?.displayName || currentUserId,
-                    avatarUrl: LOGO_URL,
-                    content: content,
-                    timestamp: serverTimestamp()
-                };
-                if (input.dataset.replyTo) {
-                    commentData.parentCommentId = input.dataset.replyTo;
-                }
-                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts', postId, 'comments'), commentData);
-                const postRef = firestoreDoc(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts', postId);
-                const postSnap = await getDoc(postRef);
-                const currentCount = postSnap.exists() ? (postSnap.data().commentCount || 0) : 0;
-                await updateDoc(postRef, { commentCount: currentCount + 1 });
+                const response = await fetch('/api/social/comment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({
+                        postId,
+                        displayName: userProfile?.displayName || currentUserId,
+                        avatarUrl: userProfile?.photoURL || LOGO_URL,
+                        content: content
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Comment failed');
                 input.value = '';
                 input.placeholder = 'Add a comment...';
                 delete input.dataset.replyTo;
@@ -4219,8 +4228,13 @@
             const newContent = prompt('Edit your comment:', currentContent);
             if (!newContent || newContent.trim() === '' || newContent === currentContent) return;
             try {
-                const { doc: firestoreDoc, updateDoc } = window.firebase.firestore;
-                await updateDoc(firestoreDoc(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts', postId, 'comments', commentId), { content: newContent.trim() });
+                const response = await fetch('/api/social/edit-comment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ postId, commentId, content: newContent.trim() })
+                });
+                
+                if (!response.ok) throw new Error('Edit failed');
                 showToast('Comment updated!', 'success');
                 window.toggleComments(postId);
             } catch (error) {
@@ -4233,12 +4247,13 @@
             if (currentUserId !== authorId) { showToast('Can only delete your own comments', 'error'); return; }
             if (!confirm('Delete comment?')) return;
             try {
-                const { doc: firestoreDoc, deleteDoc, updateDoc, getDoc } = window.firebase.firestore;
-                await deleteDoc(firestoreDoc(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts', postId, 'comments', commentId));
-                const postRef = firestoreDoc(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts', postId);
-                const postSnap = await getDoc(postRef);
-                const currentCount = postSnap.exists() ? (postSnap.data().commentCount || 0) : 0;
-                await updateDoc(postRef, { commentCount: Math.max(0, currentCount - 1) });
+                const response = await fetch('/api/social/delete-comment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    body: JSON.stringify({ postId, commentId })
+                });
+                
+                if (!response.ok) throw new Error('Delete failed');
                 showToast('Comment deleted', 'success');
                 window.toggleComments(postId);
             } catch (e) { 

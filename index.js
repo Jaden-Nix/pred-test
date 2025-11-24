@@ -861,6 +861,108 @@ app.post('/api/social/comment', requireAuth, requireFirebase, async (req, res) =
     }
 });
 
+app.post('/api/social/delete-post', requireAuth, requireFirebase, async (req, res) => {
+    const { postId } = req.body;
+    const userId = req.user.uid;
+    
+    try {
+        const postRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts`).doc(postId);
+        const postSnap = await postRef.get();
+        
+        if (!postSnap.exists) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+        
+        if (postSnap.data().userId !== userId) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+        
+        await postRef.delete();
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error deleting post:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/social/edit-post', requireAuth, requireFirebase, async (req, res) => {
+    const { postId, content } = req.body;
+    const userId = req.user.uid;
+    
+    try {
+        const postRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts`).doc(postId);
+        const postSnap = await postRef.get();
+        
+        if (!postSnap.exists) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+        
+        if (postSnap.data().userId !== userId) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+        
+        await postRef.update({ content: content.trim(), editedAt: new Date() });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error editing post:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/social/delete-comment', requireAuth, requireFirebase, async (req, res) => {
+    const { postId, commentId } = req.body;
+    const userId = req.user.uid;
+    
+    try {
+        const commentRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts/${postId}/comments`).doc(commentId);
+        const commentSnap = await commentRef.get();
+        
+        if (!commentSnap.exists) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+        
+        if (commentSnap.data().userId !== userId) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+        
+        await commentRef.delete();
+        
+        const postRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts`).doc(postId);
+        const postSnap = await postRef.get();
+        const currentCount = postSnap.data().commentCount || 0;
+        await postRef.update({ commentCount: Math.max(0, currentCount - 1) });
+        
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error deleting comment:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/social/edit-comment', requireAuth, requireFirebase, async (req, res) => {
+    const { postId, commentId, content } = req.body;
+    const userId = req.user.uid;
+    
+    try {
+        const commentRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts/${postId}/comments`).doc(commentId);
+        const commentSnap = await commentRef.get();
+        
+        if (!commentSnap.exists) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+        
+        if (commentSnap.data().userId !== userId) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+        
+        await commentRef.update({ content: content.trim(), editedAt: new Date() });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error editing comment:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // =============================================================================
 // AI GUARDRAILS ENDPOINTS
 // =============================================================================
