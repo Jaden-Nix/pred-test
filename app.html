@@ -3605,7 +3605,7 @@
                             await initializeUserProfile();
                             attachDataListeners();
                             // Don't override admin screens that were accessed via URL/tap
-                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-jury-screen'];
+                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen'];
                             console.log('🔐 Session resume check - isAdminMode:', isAdminMode, 'currentScreenId:', currentScreenId);
                             if (!isAdminMode && !adminScreens.includes(currentScreenId)) {
                                 showScreen('home-screen');
@@ -3630,7 +3630,7 @@
                             await initializeUserProfile();
                             attachDataListeners();
                             // Don't override admin screens that were accessed via URL/tap
-                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-jury-screen'];
+                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen'];
                             console.log('🔐 Session resume check - isAdminMode:', isAdminMode, 'currentScreenId:', currentScreenId);
                             if (!isAdminMode && !adminScreens.includes(currentScreenId)) {
                                 showScreen('home-screen');
@@ -4355,7 +4355,7 @@
             if (!screenId) return;
             
             // Protect admin screens from being redirected away unless explicitly allowed
-            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen'];
+            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen'];
             if (adminScreens.includes(currentScreenId) && !adminScreens.includes(screenId) && !forceOverride) {
                 console.log('🔒 Blocked redirect from admin screen. isAdminMode:', isAdminMode);
                 return;
@@ -4379,7 +4379,6 @@
                     'quick-play-screen', 
                     'admin-password-screen',
                     'admin-panel-screen',
-                    'admin-markets-screen',
                     'admin-resolution-screen',
                     'admin-quickplay-screen',
                     'admin-quickpoll-screen',
@@ -11047,7 +11046,7 @@ ${historyText}`;
          */
         function handleSearch() {
             // Don't process search if on admin screens
-            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-resolution-screen'];
+            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen'];
             if (adminScreens.includes(currentScreenId)) {
                 return;
             }
