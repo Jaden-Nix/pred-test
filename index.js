@@ -1446,7 +1446,7 @@ app.post('/api/user/update-profile', requireFirebase, async (req, res) => {
             updateData.avatarColor = avatarColor;
         }
         
-        await userRef.update(updateData);
+        await userRef.set(updateData, { merge: true });
         
         console.log(`👤 Profile updated for ${userId}: ${displayName}`);
         res.status(200).json({ success: true, message: 'Profile updated' });
