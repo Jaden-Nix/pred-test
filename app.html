@@ -4223,7 +4223,14 @@
                 } else {
                     // --- 2. EXISTING USER PATH ---
                     console.log("Demo profile loaded from Firebase.");
-                    userProfile = { ...defaultProfile, ...docSnap.data() }; 
+                    const firestoreData = docSnap.data();
+                    userProfile = { ...defaultProfile, ...firestoreData };
+                    
+                    // Ensure avatarUrl from Firestore takes priority if it exists and is not the default
+                    if (firestoreData?.avatarUrl && firestoreData.avatarUrl !== LOGO_URL) {
+                        userProfile.avatarUrl = firestoreData.avatarUrl;
+                        console.log('✅ Custom avatar loaded from Firestore');
+                    } 
 
                     // Ensure public profile exists
                     const publicProfileRef = doc(db, 'artifacts', APP_ID, 'public', 'data', PUBLIC_LEADERBOARD_COLLECTION, currentUserId);
