@@ -1401,10 +1401,7 @@ app.post('/api/report-content', requireAuth, requireFirebase, async (req, res) =
 app.get('/api/admin/safety-reports', requireAdmin, requireFirebase, async (req, res) => {
     try {
         const reportsRef = db.collection(`artifacts/${APP_ID}/public/data/safety_reports`);
-        const snapshot = await reportsRef
-            .where('status', '==', 'pending')
-            .orderBy('createdAt', 'desc')
-            .get();
+        const snapshot = await reportsRef.where('status', '==', 'pending').get();
         
         const reports = [];
         for (const doc of snapshot.docs) {
@@ -1414,6 +1411,13 @@ app.get('/api/admin/safety-reports', requireAdmin, requireFirebase, async (req, 
                 ...data
             });
         }
+        
+        // Sort by createdAt in descending order (in code to avoid composite index)
+        reports.sort((a, b) => {
+            const timeA = a.createdAt?.toDate?.() || new Date(a.createdAt);
+            const timeB = b.createdAt?.toDate?.() || new Date(b.createdAt);
+            return timeB - timeA;
+        });
         
         res.status(200).json({ reports, count: reports.length });
         
