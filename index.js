@@ -726,11 +726,11 @@ async function autoResolveQuickPolls() {
 
                                 // Update user profile XP
                                 const profileRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(userId);
-                                batch.update(profileRef, { xp: admin.firestore.FieldValue.increment(totalReward) });
+                                batch.set(profileRef, { xp: admin.firestore.FieldValue.increment(totalReward) }, { merge: true });
 
                                 // Update leaderboard XP
                                 const leaderboardRef = db.collection(`artifacts/${APP_ID}/public/data/leaderboard`).doc(userId);
-                                batch.update(leaderboardRef, { xp: admin.firestore.FieldValue.increment(totalReward) });
+                                batch.set(leaderboardRef, { xp: admin.firestore.FieldValue.increment(totalReward) }, { merge: true });
 
                                 console.log(`💰 ORACLE: User ${userId} won ${Math.round(totalReward)} XP on poll (${voter.xpStaked} stake + ${Math.round(winningsPerWinner)} share)`);
                             }
@@ -745,10 +745,10 @@ async function autoResolveQuickPolls() {
                             totalWinningsDistributed += xpStaked;
                             
                             const profileRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(userId);
-                            batch.update(profileRef, { xp: admin.firestore.FieldValue.increment(xpStaked) });
+                            batch.set(profileRef, { xp: admin.firestore.FieldValue.increment(xpStaked) }, { merge: true });
 
                             const leaderboardRef = db.collection(`artifacts/${APP_ID}/public/data/leaderboard`).doc(userId);
-                            batch.update(leaderboardRef, { xp: admin.firestore.FieldValue.increment(xpStaked) });
+                            batch.set(leaderboardRef, { xp: admin.firestore.FieldValue.increment(xpStaked) }, { merge: true });
 
                             console.log(`🤝 ORACLE: User ${userId} got back ${xpStaked} XP (tie result)`);
                         }
