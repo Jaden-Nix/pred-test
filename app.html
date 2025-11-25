@@ -4243,8 +4243,22 @@
                             const imageHtml = post.imageUrl ? `<img data-lightbox-image class="w-full rounded-lg max-h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity" src="${post.imageUrl.replace(/"/g, '&quot;')}">` : '';
                             let marketHtml = '';
                             if (post.attachedMarket) {
-                                const hasStake = userStakesCache[post.attachedMarket.id] || (post.userId === currentUserId && post.attachedMarket.stance);
+                                // Check if user has staked OR if this is the post author's market with a stance
+                                const userHasStake = userStakesCache[post.attachedMarket.id];
+                                const isAuthorWithStance = post.userId?.toLowerCase() === currentUserId?.toLowerCase() && post.attachedMarket.stance;
+                                const hasStake = userHasStake || isAuthorWithStance;
                                 const stakeLabel = hasStake ? `<span class="text-green-400 font-semibold">Skin in game</span>` : `<span class="text-gray-400">No stake</span>`;
+                                console.log('📊 Market Stake Check:', {
+                                    marketId: post.attachedMarket.id,
+                                    marketTitle: post.attachedMarket.title,
+                                    userStakesCache: userStakesCache[post.attachedMarket.id],
+                                    postUserId: post.userId,
+                                    currentUserId: currentUserId,
+                                    isAuthorWithStance: isAuthorWithStance,
+                                    userHasStake: userHasStake,
+                                    hasStake: hasStake,
+                                    label: hasStake ? '✅ Skin in game' : '❌ No stake'
+                                });
                                 marketHtml = `<div class="bg-sky-400/10 p-3 rounded border border-sky-400/30 text-sm"><p class="text-sky-300 font-medium">${post.attachedMarket.title}</p>${stakeLabel}</div>`;
                             }
                             const getRelativeTime = (timestamp) => {
