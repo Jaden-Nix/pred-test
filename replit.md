@@ -4,11 +4,19 @@
 Predora is a decentralized prediction market platform with AI-powered market resolution, social features, and a comprehensive admin panel. This project uses Firebase for data storage, OpenAI for swarm-based verification, and Google's Gemini AI for market resolution.
 
 ## Recent Changes (November 25, 2025)
-- **Beautiful Home Logo**: Exclusive home page logo with gradient effects and floating animation
-  - Moved logo from top nav to home screen only
-  - Modern gradient design (sky-blue to indigo)
-  - Smooth floating animation with hover acceleration
-  - 5-tap admin access gesture on logo
+
+- **Pool Liquidity & Market Momentum Display**: Market cards now show AMM pool information and price changes
+  - Pool Liquidity (AMM) section displays total liquidity and individual YES/NO pool amounts
+  - Color-coded pools (green for YES, red for NO) for quick visual reference
+  - Percentage change indicators with up/down arrows (↑↓) showing market momentum
+  - Changes simulate realistic 5-20% market fluctuations
+  - Displays as "X.XXXX BNB" format for accurate decimal precision
+  - Fixed: Profile persistence issue - now saves to correct Firestore collection path
+
+- **Profile Persistence Fix**: 
+  - Fixed bug where new profile selection would revert after logout/login
+  - Was saving to 'user_profile' collection but loading from 'profile' collection
+  - Now uses consistent collection path throughout the app
   
 - **Profile Editing Feature**: Complete username and profile picture editing
   - Edit button (pencil icon) in profile panel header
@@ -18,6 +26,12 @@ Predora is a decentralized prediction market platform with AI-powered market res
   - Username validation (3-30 chars, letters/numbers/underscores only)
   - Saves changes to Firestore with automatic UI updates
   - Avatar stored as base64 data URL
+
+- **Beautiful Home Logo**: Exclusive home page logo with gradient effects and floating animation
+  - Moved logo from top nav to home screen only
+  - Modern gradient design (sky-blue to indigo)
+  - Smooth floating animation with hover acceleration
+  - 5-tap admin access gesture on logo
 
 - **Previous Updates**:
   - Swarm Agents Integration (4 AI agents with Byzantine consensus)

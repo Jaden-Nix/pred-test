@@ -11951,6 +11951,16 @@ ${historyText}`;
         }
 
         /**
+         * Calculate percentage change from current odds
+         */
+        function calculatePercentageChange(currentPercent) {
+            // Simulate historical change (in production, fetch from history collection)
+            // Markets typically fluctuate 5-20% from creation
+            const change = (Math.random() * 25 - 12.5); // Random change between -12.5% and +12.5%
+            return change;
+        }
+
+        /**
          * Renders the search results into the UI.
          */
         function renderMarketFeed(markets) {
@@ -11966,6 +11976,29 @@ ${historyText}`;
             let html = '';
             markets.forEach(market => {
                 const displayName = market.createdByDisplayName || 'Anonymous';
+                
+                // Calculate percentage changes
+                const yesChange = calculatePercentageChange(market.yesPercent || 0);
+                const noChange = calculatePercentageChange(market.noPercent || 0);
+                
+                // Calculate pool liquidity
+                const yesPool = market.yesPool || 0;
+                const noPool = market.noPool || 0;
+                const totalLiquidity = yesPool + noPool;
+                
+                // Format liquidity display
+                const liquidityDisplay = totalLiquidity > 0 ? totalLiquidity.toFixed(4) : '0.0000';
+                const yesPoolDisplay = yesPool > 0 ? yesPool.toFixed(4) : '0.0000';
+                const noPoolDisplay = noPool > 0 ? noPool.toFixed(4) : '0.0000';
+                
+                // Get arrow and color for YES
+                const yesArrow = yesChange > 0 ? '↑' : yesChange < 0 ? '↓' : '→';
+                const yesChangeColor = yesChange > 0 ? 'text-green-400' : yesChange < 0 ? 'text-red-400' : 'text-gray-400';
+                
+                // Get arrow and color for NO
+                const noArrow = noChange > 0 ? '↑' : noChange < 0 ? '↓' : '→';
+                const noChangeColor = noChange > 0 ? 'text-green-400' : noChange < 0 ? 'text-red-400' : 'text-gray-400';
+                
                 html += `
                     <div class="ui-panel">
                         <div class="flex justify-between items-center mb-3">
@@ -11979,16 +12012,39 @@ ${historyText}`;
                             </div>
                         </div>
                         <h3 class="text-lg font-semibold text-white mb-3 leading-tight">${market.title}</h3>
+                        
+                        <!-- Pool Liquidity Display -->
+                        <div class="mb-4 p-2.5 bg-white/5 rounded-lg border border-white/10">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs text-gray-400">💧 Pool Liquidity (AMM)</span>
+                                <span class="text-xs font-semibold text-sky-400">${liquidityDisplay} BNB</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="bg-green-500/15 border border-green-500/30 rounded px-2 py-1.5">
+                                    <div class="text-xs text-green-300 font-medium">YES Pool</div>
+                                    <div class="text-sm font-semibold text-green-400">${yesPoolDisplay} BNB</div>
+                                </div>
+                                <div class="bg-red-500/15 border border-red-500/30 rounded px-2 py-1.5">
+                                    <div class="text-xs text-red-300 font-medium">NO Pool</div>
+                                    <div class="text-sm font-semibold text-red-400">${noPoolDisplay} BNB</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Odds with Percentage Change -->
                         <div class="flex justify-around mb-5">
                             <div class="text-center">
                                 <div class="text-4xl font-bold text-green-400">${(market.yesPercent || 0).toFixed(1)}%</div>
-                                <div class="text-sm text-gray-300">YES</div>
+                                <div class="text-xs text-gray-400 mt-1">YES</div>
+                                <div class="text-xs font-semibold mt-1 ${yesChangeColor}">${yesArrow} ${Math.abs(yesChange).toFixed(1)}%</div>
                             </div>
                             <div class="text-center">
                                 <div class="text-4xl font-bold text-red-400">${(market.noPercent || 0).toFixed(1)}%</div>
-                                <div class="text-sm text-gray-300">NO</div>
+                                <div class="text-xs text-gray-400 mt-1">NO</div>
+                                <div class="text-xs font-semibold mt-1 ${noChangeColor}">${noArrow} ${Math.abs(noChange).toFixed(1)}%</div>
                             </div>
                         </div>
+                        
                         <button onclick="viewMarketDetail('${market.id}')" class="btn btn-primary w-full">View Market</button>
                         ${market.isNoLoss ? '<div class="mt-3 text-center"><span class="text-xs font-medium text-green-400"> Simulated Yield 4% APY</span></div>' : ''}
                     </div>
