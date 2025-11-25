@@ -816,29 +816,29 @@ async function createDailyMarkets() {
     
     const sampleMarkets = [
         {
-            title: "Will Bitcoin reach $100k by end of year?",
+            title: "Will Bitcoin reach $120k by end of 2025?",
             category: "Crypto",
-            description: "Bitcoin prediction market"
+            description: "Bitcoin price prediction for year-end 2025"
         },
         {
-            title: "Will Ethereum reach $5,000 by end of year?",
+            title: "Will Ethereum reach $7,000 by end of 2025?",
             category: "Crypto",
-            description: "Ethereum prediction market"
+            description: "Ethereum price prediction for year-end 2025"
         },
         {
-            title: "Will the Fed cut rates in the next FOMC meeting?",
-            category: "Finance",
-            description: "Federal Reserve interest rate prediction"
-        },
-        {
-            title: "Will Trump win the 2024 election?",
-            category: "Politics",
-            description: "2024 US Presidential election"
-        },
-        {
-            title: "Will AI companies raise over $50B in funding this year?",
+            title: "Will AI surpass GPT-4 capabilities in 2025?",
             category: "Tech",
-            description: "AI funding prediction"
+            description: "AI advancement prediction for 2025"
+        },
+        {
+            title: "Will tech stocks outperform the market in 2025?",
+            category: "Finance",
+            description: "Tech sector market performance prediction"
+        },
+        {
+            title: "Will a new Gen-Z social platform reach 100M users by EOY 2025?",
+            category: "Tech",
+            description: "Social media adoption prediction"
         }
     ];
     
