@@ -4079,7 +4079,7 @@
                 }
                 
                 // Set up real-time listener for social posts
-                const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts'), orderBy('timestamp', 'desc'), limit(15));
+                const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts'), orderBy('timestamp', 'desc'), limit(50));
                 
                 socialFeedUnsubscribe = onSnapshot(q, (snapshot) => {
                     try {
@@ -4088,9 +4088,36 @@
                             return;
                         }
                         
-                        let html = '';
+                        // Fetch all posts and apply filtering
+                        let posts = [];
                         snapshot.forEach(doc => {
                             const post = { ...doc.data(), postId: doc.id };
+                            posts.push(post);
+                        });
+                        
+                        // Apply filter based on socialFeedFilter
+                        let filteredPosts = posts;
+                        
+                        if (socialFeedFilter === 'trending') {
+                            // Sort by total reactions (most reactions first)
+                            filteredPosts = posts.slice().sort((a, b) => {
+                                const aTotal = (a.reactions?.like?.length || 0) + (a.reactions?.heart?.length || 0) + (a.reactions?.fire?.length || 0) + (a.reactions?.rocket?.length || 0);
+                                const bTotal = (b.reactions?.like?.length || 0) + (b.reactions?.heart?.length || 0) + (b.reactions?.fire?.length || 0) + (b.reactions?.rocket?.length || 0);
+                                return bTotal - aTotal;
+                            });
+                        } else if (socialFeedFilter === 'following') {
+                            // TODO: Filter by followed users (requires following system)
+                            // For now, show posts from demo accounts as "trending" follow suggestions
+                            const demoUsers = ['judge', 'alice', 'bob'];
+                            filteredPosts = posts.filter(post => demoUsers.includes(post.userId?.toLowerCase()));
+                            if (filteredPosts.length === 0) {
+                                filteredPosts = posts.slice(0, 5); // Show recent posts if no followed users
+                            }
+                        }
+                        // 'all' filter uses all posts as-is
+                        
+                        let html = '';
+                        filteredPosts.forEach(post => {
                             const reactLike = (post.reactions?.like || []).length;
                             const reactHeart = (post.reactions?.heart || []).length;
                             const reactFire = (post.reactions?.fire || []).length;
