@@ -4159,8 +4159,8 @@
                             const reactFire = (post.reactions?.fire || []).length;
                             const reactRocket = (post.reactions?.rocket || []).length;
                             const isAuthor = post.userId?.toLowerCase() === currentUserId?.toLowerCase();
-                            const menuHtml = isAuthor ? `<div class="relative z-50"><button onclick="togglePostMenu('${post.postId}')" class="text-gray-400 hover:text-white p-1 text-lg">⋮</button><div id="post-menu-${post.postId}" class="hidden fixed top-10 right-4 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-50 min-w-40"><button onclick="editPost('${post.postId}', '${post.userId}', '${post.content.replace(/'/g, "\\'")}}', '${post.displayName}')" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-t-lg">✏️ Edit</button><button onclick="deletePost('${post.postId}', '${post.userId}')" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400 rounded-b-lg">🗑️ Delete</button></div></div>` : '';
-                            const imageHtml = post.imageUrl ? `<img src="${post.imageUrl}" onclick="openLightbox('${post.imageUrl}')" class="w-full rounded-lg max-h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity">` : '';
+                            const menuHtml = isAuthor ? `<div class="relative z-50"><button data-post-menu-toggle data-post-id="${post.postId}" class="text-gray-400 hover:text-white p-1 text-lg">⋮</button><div id="post-menu-${post.postId}" class="hidden fixed top-10 right-4 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-50 min-w-40"><button data-post-edit data-post-id="${post.postId}" data-user-id="${post.userId}" data-content="${post.content.replace(/"/g, '&quot;')}" data-display-name="${post.displayName}" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-t-lg">✏️ Edit</button><button data-post-delete data-post-id="${post.postId}" data-user-id="${post.userId}" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400 rounded-b-lg">🗑️ Delete</button></div></div>` : '';
+                            const imageHtml = post.imageUrl ? `<img data-lightbox-image class="w-full rounded-lg max-h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity" src="${post.imageUrl.replace(/"/g, '&quot;')}">` : '';
                             let marketHtml = '';
                             if (post.attachedMarket) {
                                 const hasStake = userStakesCache[post.attachedMarket.id] || (post.userId === currentUserId && post.attachedMarket.stance);
@@ -4178,7 +4178,7 @@
                                 return Math.floor(diff / 86400) + 'd ago';
                             };
                             const timeStr = getRelativeTime(post.timestamp);
-                            html += `<div class="card-micro ui-panel backdrop-blur-md bg-white/5 border border-white/10 p-5 space-y-3 cursor-pointer"><div class="flex gap-3 items-start"><img src="${post.avatarUrl || LOGO_URL}" class="w-12 h-12 rounded-full ring-2 ring-sky-400/30"><div class="flex-1"><p class="font-bold text-white">${post.displayName}</p><p class="text-xs text-gray-500">· ${timeStr}</p></div>${menuHtml}</div><p class="text-gray-200 leading-relaxed">${post.content}</p>${imageHtml}${marketHtml}<div class="bg-white/5 border border-white/10 rounded-full px-3 py-2 inline-flex items-center gap-4"><button onclick="toggleReaction('${post.postId}', 'like')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>👍</span><span class="text-xs text-gray-400">${reactLike}</span></button><button onclick="toggleReaction('${post.postId}', 'heart')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>❤️</span><span class="text-xs text-gray-400">${reactHeart}</span></button><button onclick="toggleReaction('${post.postId}', 'fire')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>🔥</span><span class="text-xs text-gray-400">${reactFire}</span></button><button onclick="toggleReaction('${post.postId}', 'rocket')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>🚀</span><span class="text-xs text-gray-400">${reactRocket}</span></button><button onclick="toggleComments('${post.postId}')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1 ml-2 border-l border-white/20 pl-4"><span>💬</span><span class="text-xs text-gray-400">${post.commentCount || 0}</span></button></div><div id="comments-section-${post.postId}" class="hidden mt-4 pt-4 border-t border-white/10"><div id="comments-list-${post.postId}" class="space-y-3 mb-3 max-h-60 overflow-y-auto"></div><div class="flex gap-2"><input id="comment-box-${post.postId}" type="text" class="flex-1 text-sm bg-white/10 border border-white/20 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-sky-400" placeholder="Add a comment..."><button onclick="submitCommentQuick('${post.postId}')" class="btn btn-primary px-3 py-1 text-sm">Post</button></div></div></div>`;
+                            html += `<div class="card-micro ui-panel backdrop-blur-md bg-white/5 border border-white/10 p-5 space-y-3 cursor-pointer"><div class="flex gap-3 items-start"><img src="${post.avatarUrl || LOGO_URL}" class="w-12 h-12 rounded-full ring-2 ring-sky-400/30"><div class="flex-1"><p class="font-bold text-white">${post.displayName}</p><p class="text-xs text-gray-500">· ${timeStr}</p></div>${menuHtml}</div><p class="text-gray-200 leading-relaxed">${post.content}</p>${imageHtml}${marketHtml}<div class="bg-white/5 border border-white/10 rounded-full px-3 py-2 inline-flex items-center gap-4"><button data-react data-post-id="${post.postId}" data-reaction="like" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>👍</span><span class="text-xs text-gray-400">${reactLike}</span></button><button data-react data-post-id="${post.postId}" data-reaction="heart" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>❤️</span><span class="text-xs text-gray-400">${reactHeart}</span></button><button data-react data-post-id="${post.postId}" data-reaction="fire" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>🔥</span><span class="text-xs text-gray-400">${reactFire}</span></button><button data-react data-post-id="${post.postId}" data-reaction="rocket" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>🚀</span><span class="text-xs text-gray-400">${reactRocket}</span></button><button data-toggle-comments data-post-id="${post.postId}" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1 ml-2 border-l border-white/20 pl-4"><span>💬</span><span class="text-xs text-gray-400">${post.commentCount || 0}</span></button></div><div id="comments-section-${post.postId}" class="hidden mt-4 pt-4 border-t border-white/10"><div id="comments-list-${post.postId}" class="space-y-3 mb-3 max-h-60 overflow-y-auto"></div><div class="flex gap-2"><input id="comment-box-${post.postId}" type="text" class="flex-1 text-sm bg-white/10 border border-white/20 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-sky-400" placeholder="Add a comment..."><button onclick="submitCommentQuick('${post.postId}')" class="btn btn-primary px-3 py-1 text-sm">Post</button></div></div></div>`;
                         });
                         container.innerHTML = html;
                     } catch (err) {
@@ -4191,6 +4191,50 @@
                 container.innerHTML = '<p class="text-red-400">Failed to load feed</p>';
             }
         };
+
+        // Event delegation for post actions
+        document.addEventListener('click', async (e) => {
+            // Post menu toggle
+            if (e.target.closest('[data-post-menu-toggle]')) {
+                const btn = e.target.closest('[data-post-menu-toggle]');
+                const postId = btn.dataset.postId;
+                window.togglePostMenu(postId);
+            }
+            // Post edit
+            else if (e.target.closest('[data-post-edit]')) {
+                const btn = e.target.closest('[data-post-edit]');
+                const postId = btn.dataset.postId;
+                const userId = btn.dataset.userId;
+                const content = btn.dataset.content;
+                const displayName = btn.dataset.displayName;
+                window.editPost(postId, userId, content, displayName);
+            }
+            // Post delete
+            else if (e.target.closest('[data-post-delete]')) {
+                const btn = e.target.closest('[data-post-delete]');
+                const postId = btn.dataset.postId;
+                const userId = btn.dataset.userId;
+                window.deletePost(postId, userId);
+            }
+            // Reaction
+            else if (e.target.closest('[data-react]')) {
+                const btn = e.target.closest('[data-react]');
+                const postId = btn.dataset.postId;
+                const reaction = btn.dataset.reaction;
+                window.toggleReaction(postId, reaction);
+            }
+            // Toggle comments
+            else if (e.target.closest('[data-toggle-comments]')) {
+                const btn = e.target.closest('[data-toggle-comments]');
+                const postId = btn.dataset.postId;
+                window.toggleComments(postId);
+            }
+            // Lightbox image
+            else if (e.target.closest('[data-lightbox-image]')) {
+                const img = e.target.closest('[data-lightbox-image]');
+                window.openLightbox(img.src);
+            }
+        });
 
         window.filterSocialFeed = (filter) => {
             socialFeedFilter = filter;
@@ -4350,20 +4394,30 @@
         };
 
         window.deletePost = async (postId, authorId) => {
-            if (currentUserId?.toLowerCase() !== authorId?.toLowerCase()) { showToast('You can only delete your own posts', 'error'); return; }
+            console.log('🗑️ Delete attempt - postId:', postId, 'authorId:', authorId, 'currentUserId:', currentUserId);
+            if (currentUserId?.toLowerCase() !== authorId?.toLowerCase()) { 
+                console.log('❌ Authorization failed:', currentUserId?.toLowerCase(), '!==', authorId?.toLowerCase());
+                showToast('You can only delete your own posts', 'error'); 
+                return; 
+            }
             if (!confirm('Delete this post?')) return;
             try {
+                console.log('📤 Sending delete request for postId:', postId);
                 const response = await fetch('/api/social/delete-post', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                     body: JSON.stringify({ postId })
                 });
                 
-                if (!response.ok) throw new Error('Delete failed');
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || 'Delete failed');
+                }
                 showToast('Post deleted', 'success');
                 loadSocialFeed();
             } catch (error) {
-                console.error('Delete error:', error);
+                console.error('❌ Delete error:', error.message);
                 showToast('Failed to delete post', 'error');
             }
         };
