@@ -2558,39 +2558,21 @@
                             </div>
                         </div>
                     </button>
-                </div>
 
-                <div class="ui-panel p-4 space-y-4">
-                    <h2 class="text-lg font-semibold text-white">Quick Play Publisher</h2>
-                    <p class="text-sm text-gray-400">Use the AI to pre-fill, or create manually.</p>
-
-                    <div class="space-y-2">
-                        <label for="admin-ai-prompt" class="text-sm font-medium text-gray-300">AI Prompt (Optional)</label>
-                        <div class="flex space-x-2">
-                            <textarea id="admin-ai-prompt" rows="1" class="ui-input" placeholder="e.g., 'Grammys'"></textarea>
-                            <button id="admin-generate-btn" class="btn btn-secondary w-28 flex-shrink-0">AI Fill</button>
+                    <!-- Quick Poll -->
+                    <button onclick="showScreen('admin-quickpoll-screen')" class="admin-nav-card text-left">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center border border-orange-500/30">
+                                <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">Quick Poll</h3>
+                                <p class="text-sm text-gray-400">Create & resolve polls</p>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label for="admin-qp-title" class="text-sm font-medium text-gray-300">Title</label>
-                        <textarea id="admin-qp-title" rows="2" class="ui-input"></textarea>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div class="space-y-2">
-                            <label for="admin-qp-duration" class="text-sm font-medium text-gray-300">Duration</label>
-                            <input id="admin-qp-duration" type="text" class="ui-input" placeholder="e.g., 24h">
-                        </div>
-                        <div class="space-y-2">
-                            <label for="admin-qp-yes" class="text-sm font-medium text-gray-300">YES %</label>
-                            <input id="admin-qp-yes" type="number" class="ui-input" placeholder="50">
-                        </div>
-                        <div class="space-y-2">
-                            <label for="admin-qp-no" class="text-sm font-medium text-gray-300">NO %</label>
-                            <input id="admin-qp-no" type="number" class="ui-input" placeholder="50">
-                        </div>
-                    </div>
-                    <button id="admin-publish-btn" class="btn btn-primary w-full">Publish Quick Play</button>
+                    </button>
                 </div>
 
                 <button id="admin-logout-btn" class="btn btn-secondary w-full">Log Out of Admin</button>
@@ -2723,6 +2705,64 @@
                     </div>
                     <div id="quick-play-resolution-list" class="space-y-4">
                         <p class="text-gray-400 text-center py-8">Loading quick plays...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN QUICK POLL SCREEN -->
+            <div id="admin-quickpoll-screen" class="screen screen-inactive space-y-6">
+                <button onclick="showScreen('admin-panel-screen')" class="flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Admin Panel
+                </button>
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold gradient-text mb-2">📋 Quick Poll Management</h1>
+                    <p class="text-gray-400 text-sm">Create and manually resolve quick polls</p>
+                </div>
+
+                <!-- Create Quick Poll Form -->
+                <div class="ui-panel p-4 space-y-4">
+                    <h2 class="text-lg font-semibold text-white">Create Quick Poll</h2>
+                    <p class="text-sm text-gray-400 mb-4">Create a new poll for quick community voting</p>
+                    
+                    <div class="space-y-2">
+                        <label for="admin-poll-title" class="text-sm font-medium text-gray-300">Poll Question</label>
+                        <textarea id="admin-poll-title" rows="2" class="ui-input" placeholder="e.g., 'Best movie of the year?'"></textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label for="admin-poll-duration" class="text-sm font-medium text-gray-300">Duration</label>
+                        <input id="admin-poll-duration" type="text" class="ui-input" placeholder="e.g., 24h, 48h">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-sm font-medium text-gray-300">Poll Options (comma-separated)</label>
+                        <textarea id="admin-poll-options" rows="3" class="ui-input" placeholder="Option 1, Option 2, Option 3, Option 4"></textarea>
+                    </div>
+
+                    <button id="admin-publish-poll-btn" class="btn btn-primary w-full">Create Poll</button>
+                </div>
+
+                <!-- Search Active Polls -->
+                <div class="ui-panel p-4">
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" id="poll-search-input" class="ui-input pl-10" placeholder="Search active polls...">
+                    </div>
+                </div>
+
+                <!-- Active Polls for Manual Resolution -->
+                <div class="ui-panel p-4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-semibold text-white">Active Polls</h2>
+                        <span id="polls-count" class="text-sm text-gray-400">Loading...</span>
+                    </div>
+                    <div id="polls-resolution-list" class="space-y-4">
+                        <p class="text-gray-400 text-center py-8">Loading polls...</p>
                     </div>
                 </div>
             </div>
