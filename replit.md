@@ -11,6 +11,7 @@ Predora is a decentralized prediction market platform with AI-powered market res
   - Percentage change indicators with up/down arrows (↑↓) showing market momentum
   - Changes simulate realistic 5-20% market fluctuations
   - **Currency**: Displays as "X.XXXX BUSD" - tied to actual market pool data from Firestore
+  - **Auto-Refresh**: Market feed automatically refreshes when returning to home screen, showing updated pool values after stakes
   - Fixed: Profile persistence issue - now saves to correct Firestore collection path
 
 - **Profile Persistence Fix**: 
