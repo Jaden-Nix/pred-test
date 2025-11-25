@@ -906,47 +906,50 @@ async function createDailyMarkets() {
         console.log(`   ETH: $${Math.round(marketData.eth.price)} (24h: ${marketData.eth.change24h.toFixed(2)}%) | Volatility: ${marketData.eth.volatility.toFixed(1)}% | Sentiment: ${marketData.eth.sentiment.label}`);
         
         // Build advanced prompt with technical + sentiment analysis
-        const systemPrompt = `You are an ADVANCED prediction market analyst with expertise in:
-- Technical analysis (support/resistance, volatility, momentum)
-- Market sentiment analysis (Fear vs Greed)
-- Risk management and probability weighting
-- Trend analysis and event-based predictions
+        const systemPrompt = `You are an ADVANCED prediction market analyst across ALL categories:
+- Crypto/Finance: Technical analysis, sentiment, market data
+- Sports: Teams, games, outcomes, league predictions
+- Entertainment: Awards, releases, celebrity events, streaming hits
+- Tech: Product launches, company announcements, AI developments
+- Politics: Elections, legislation, political events
+- Other: Weather, news, viral trends
 
-Generate 3 HOTTEST, MOST TRADABLE prediction market questions that will attract sophisticated traders.
+Generate 5 HOTTEST, MOST TRADABLE prediction market questions across DIVERSE CATEGORIES.
 
 RULES:
-1. Use ONLY real market data provided - NO hallucinated numbers
-2. Create realistic price targets considering volatility and support/resistance levels
-3. Consider market sentiment (fear/greed) in predictions
-4. Make predictions that are plausible but exciting
-5. Balance between bullish and bearish perspectives
-6. Factor in recent momentum (24h/7d changes)
+1. Use ONLY real market data provided for crypto - NO hallucinated numbers
+2. Create realistic targets considering all available data
+3. Make predictions that are plausible but exciting
+4. DIVERSITY: Cover at least 3+ different categories (crypto, sports, entertainment, tech, politics)
+5. Mix binary YES/NO AND multi-option questions (3-4 outcomes)
+6. Balance between different timeframes
 
 Return ONLY a JSON array with objects containing:
 - title: specific, time-bound prediction question
-- category: Crypto/Tech/Finance/Sports/Entertainment
+- category: Crypto/Tech/Finance/Sports/Entertainment/Politics/Other
 - description: short analysis explaining why this matters
-- confidence: HIGH/MEDIUM/LOW (based on data quality)
+- confidence: HIGH/MEDIUM/LOW
+- type: binary (YES/NO) or multi (3-4 options)
+- options: [for multi-option only] array of 3-4 outcome names
 
-Example: [{"title": "Will BTC hit X by date?", "category": "Crypto", "description": "...", "confidence": "HIGH"}]`;
+Example binary: [{"title": "Will BTC hit X by date?", "category": "Crypto", "description": "...", "confidence": "HIGH", "type": "binary"}]
+Example multi: [{"title": "Which team wins...", "category": "Sports", "type": "multi", "options": ["Team A", "Team B", "Team C"]}]`;
 
         const userPrompt = `TODAY: November 25, 2025
 
-REAL MARKET DATA:
-Bitcoin: $${Math.round(marketData.btc.price)} (24h: ${marketData.btc.change24h.toFixed(2)}%, 7d: ${marketData.btc.change7d.toFixed(2)}%)
-- Volatility: ${marketData.btc.volatility.toFixed(1)}% | Sentiment: ${marketData.btc.sentiment.label} (${marketData.btc.sentiment.score}/100)
-- Support: $${Math.round(marketData.btc.support)} | Resistance: $${Math.round(marketData.btc.resistance)}
+CRYPTO MARKET DATA (for reference):
+Bitcoin: $${Math.round(marketData.btc.price)} (24h: ${marketData.btc.change24h.toFixed(2)}%) | Sentiment: ${marketData.btc.sentiment.label}
+Ethereum: $${Math.round(marketData.eth.price)} (24h: ${marketData.eth.change24h.toFixed(2)}%) | Sentiment: ${marketData.eth.sentiment.label}
 
-Ethereum: $${Math.round(marketData.eth.price)} (24h: ${marketData.eth.change24h.toFixed(2)}%, 7d: ${marketData.eth.change7d.toFixed(2)}%)
-- Volatility: ${marketData.eth.volatility.toFixed(1)}% | Sentiment: ${marketData.eth.sentiment.label} (${marketData.eth.sentiment.score}/100)
-- Support: $${Math.round(marketData.eth.support)} | Resistance: $${Math.round(marketData.eth.resistance)}
-
-TASK: Generate 3 SMART prediction markets for December 2025 (30-45 day timeframe).
-- Make them specific and plausible (use support/resistance levels as anchors)
-- Consider current volatility when setting targets
-- Mix bullish + bearish scenarios
-- Include technical + fundamental + sentiment factors
-- Focus on what WILL HAPPEN, not what SHOULD happen`;
+TASK: Generate 5 SMART prediction markets for December 2025.
+REQUIREMENTS:
+- Mix categories: generate crypto, sports, entertainment, tech, and other predictions
+- Include 3 BINARY markets (YES/NO) and 2 MULTI-OPTION markets (3-4 outcomes each)
+- Make them INTERESTING and TRADABLE - focus on hot topics people care about
+- For sports: use real upcoming games/tournaments in Dec 2025
+- For entertainment: use real events (awards, releases, streaming)
+- For tech: use real company announcements or AI developments
+- All dates must be in December 2025 or early Jan 2026`;
 
         const payload = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -981,23 +984,53 @@ TASK: Generate 3 SMART prediction markets for December 2025 (30-45 day timeframe
                     continue;
                 }
 
-                await marketRef.set({
-                    id: marketRef.id,
-                    title: marketData.title || "Prediction Market",
-                    category: marketData.category || "General",
-                    description: marketData.description || "",
-                    createdByDisplayName: 'PredoraOracle',
-                    createdAt: new Date(),
-                    isResolved: false,
-                    resolutionDate: resolutionDate.toISOString().split('T')[0],
-                    status: 'active',
-                    yesAmount: 100000,  // Increased liquidity for better AMM
-                    noAmount: 100000,
-                    yesPercent: 50,
-                    noPercent: 50,
-                    totalPool: 200000,
-                    isMock: false
-                });
+                // Handle both binary and multi-option markets
+                if (marketData.type === 'multi' && marketData.options && marketData.options.length > 0) {
+                    // Multi-option market
+                    const poolPerOption = 50000; // $50k per option
+                    const optionAmounts = marketData.options.reduce((acc, opt) => {
+                        acc[opt] = poolPerOption;
+                        return acc;
+                    }, {});
+                    
+                    await marketRef.set({
+                        id: marketRef.id,
+                        title: marketData.title || "Prediction Market",
+                        category: marketData.category || "General",
+                        description: marketData.description || "",
+                        createdByDisplayName: 'PredoraOracle',
+                        createdAt: new Date(),
+                        isResolved: false,
+                        resolutionDate: resolutionDate.toISOString().split('T')[0],
+                        status: 'active',
+                        marketType: 'multi',
+                        options: marketData.options,
+                        optionAmounts: optionAmounts,
+                        totalPool: poolPerOption * marketData.options.length,
+                        isMock: false
+                    });
+                    console.log(`✅ Created multi-option market: ${marketData.title} (Options: ${marketData.options.join(', ')})`);
+                } else {
+                    // Binary YES/NO market
+                    await marketRef.set({
+                        id: marketRef.id,
+                        title: marketData.title || "Prediction Market",
+                        category: marketData.category || "General",
+                        description: marketData.description || "",
+                        createdByDisplayName: 'PredoraOracle',
+                        createdAt: new Date(),
+                        isResolved: false,
+                        resolutionDate: resolutionDate.toISOString().split('T')[0],
+                        status: 'active',
+                        yesAmount: 100000,
+                        noAmount: 100000,
+                        yesPercent: 50,
+                        noPercent: 50,
+                        totalPool: 200000,
+                        marketType: 'binary',
+                        isMock: false
+                    });
+                }
 
                 console.log(`✅ Created market: ${marketData.title} (Resolves: ${resolutionDate.toISOString().split('T')[0]})`);
             } catch (marketError) {
@@ -1017,41 +1050,47 @@ async function autoGenerateQuickPlays() {
         // Get advanced market data for quick plays
         const qpMarketData = await getAdvancedMarketData();
         
-        // Use Gemini to generate SMART quick play questions
-        const systemPrompt = `You are an EXPERT quick play market specialist for prediction markets. Generate 4 HOTTEST quick-play predictions (24-48 hour resolution).
+        // Use Gemini to generate DIVERSE quick play questions
+        const systemPrompt = `You are an EXPERT quick play market specialist across ALL categories. Generate 6 HOTTEST quick-play predictions (24-48 hour resolution).
 
 EXPERTISE:
-- Intraday crypto volatility and momentum patterns
-- Real market catalysts and news events
+- Intraday crypto volatility and momentum
+- Real-time sports events and games
+- Entertainment news and trending topics
+- Market catalysts and news events
 - Statistical probability of moves
-- Risk/reward optimization for short timeframes
+- Risk/reward optimization
 
 RULES:
-1. Use ONLY the real market data provided
-2. Price targets must be within 2-3% of current levels (realistic for 24-48h)
+1. Use ONLY the real market data provided for crypto
+2. Price targets must be realistic for 24-48h timeframes
 3. Consider daily volatility when setting targets
-4. Mix YES/NO scenarios for balanced trading
-5. Focus on high-probability + high-interest events
-6. Think about what traders would actually want to bet on
+4. DIVERSITY: Include crypto, sports, and entertainment quick plays
+5. Focus on HIGH-PROBABILITY + HIGH-INTEREST events
+6. Create events happening Nov 26-27, 2025
 
 Return ONLY a JSON array with:
 - title: specific, short-term prediction
-- category: Crypto/Tech/Finance/Sports/Entertainment  
-- duration: 24h/48h (resolution window)
-- rationale: why this move is likely (short explanation)
+- category: Crypto/Tech/Finance/Sports/Entertainment
+- duration: 24h/48h
+- type: binary or multi
+- options: [for multi only] array of outcomes
+- rationale: why this move is likely
 
-Example: [{"title": "Will BTC stay above $X on Nov 26?", "category": "Crypto", "duration": "24h", "rationale": "..."}]`;
+Example binary: [{"title": "Will BTC stay above $X on Nov 26?", "category": "Crypto", "duration": "24h", "type": "binary"}]
+Example multi: [{"title": "Which team wins...", "category": "Sports", "duration": "24h", "type": "multi", "options": ["Team A", "Team B"]}]`;
 
-        const userPrompt = `TODAY: November 25, 2025, time-bound predictions for Nov 26-27
+        const userPrompt = `TODAY: November 25, 2025 - Generate quick plays for Nov 26-27 events
 
-LIVE MARKET DATA:
-Bitcoin: $${Math.round(qpMarketData.btc.price)} | 24h change: ${qpMarketData.btc.change24h.toFixed(2)}% | Volatility: ${qpMarketData.btc.volatility.toFixed(1)}%
-- Sentiment: ${qpMarketData.btc.sentiment.label} | Daily range expectation: ±${(qpMarketData.btc.volatility * 1.5).toFixed(1)}%
+CRYPTO DATA:
+Bitcoin: $${Math.round(qpMarketData.btc.price)} | 24h: ${qpMarketData.btc.change24h.toFixed(2)}% | Volatility: ${qpMarketData.btc.volatility.toFixed(1)}%
+Ethereum: $${Math.round(qpMarketData.eth.price)} | 24h: ${qpMarketData.eth.change24h.toFixed(2)}% | Volatility: ${qpMarketData.eth.volatility.toFixed(1)}%
 
-Ethereum: $${Math.round(qpMarketData.eth.price)} | 24h change: ${qpMarketData.eth.change24h.toFixed(2)}% | Volatility: ${qpMarketData.eth.volatility.toFixed(1)}%
-- Sentiment: ${qpMarketData.eth.sentiment.label} | Daily range expectation: ±${(qpMarketData.eth.volatility * 1.5).toFixed(1)}%
-
-TASK: Generate 4 SUPER-SMART quick plays for next 24-48 hours that traders will DEFINITELY want to trade on. Be specific with prices and dates.`;
+TASK: Generate 6 SMART quick plays for Nov 26-27:
+- 2-3 crypto/finance quick plays (24h duration) with realistic price targets
+- 2-3 sports/entertainment quick plays (24h-48h) with multi-option outcomes
+- Make them HIGH-ENERGY and TRADABLE
+- Mix binary and multi-option formats`;
 
         const payload = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -1078,30 +1117,57 @@ TASK: Generate 4 SUPER-SMART quick plays for next 24-48 hours that traders will 
         for (const marketData of aiQuickPlays) {
             try {
                 const marketRef = db.collection(`artifacts/${APP_ID}/public/data/quick_play_markets`).doc();
-                
-                // Validate all quick plays are fresh (created now)
                 const now = new Date();
                 const futureDate = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours max
                 
-                await marketRef.set({
-                    id: marketRef.id,
-                    title: marketData.title || "Quick Play Market",
-                    category: marketData.category || "General",
-                    duration: marketData.duration || "24h",
-                    createdByDisplayName: 'PredoraOracle',
-                    createdAt: now,
-                    resolutionDate: futureDate.toISOString().split('T')[0],
-                    isResolved: false,
-                    status: 'active',
-                    yesAmount: 100000,  // Strong liquidity for AMM
-                    noAmount: 100000,
-                    yesPercent: 50,
-                    noPercent: 50,
-                    totalPool: 200000,
-                    isMock: false
-                });
-                
-                console.log(`✅ Created quick play: ${marketData.title} (Created: ${now.toISOString()})`);
+                // Handle both binary and multi-option quick plays
+                if (marketData.type === 'multi' && marketData.options && marketData.options.length > 0) {
+                    // Multi-option quick play
+                    const poolPerOption = 50000;
+                    const optionAmounts = marketData.options.reduce((acc, opt) => {
+                        acc[opt] = poolPerOption;
+                        return acc;
+                    }, {});
+                    
+                    await marketRef.set({
+                        id: marketRef.id,
+                        title: marketData.title || "Quick Play Market",
+                        category: marketData.category || "General",
+                        duration: marketData.duration || "24h",
+                        createdByDisplayName: 'PredoraOracle',
+                        createdAt: now,
+                        resolutionDate: futureDate.toISOString().split('T')[0],
+                        isResolved: false,
+                        status: 'active',
+                        marketType: 'multi',
+                        options: marketData.options,
+                        optionAmounts: optionAmounts,
+                        totalPool: poolPerOption * marketData.options.length,
+                        isMock: false
+                    });
+                    console.log(`✅ Created quick play (MULTI): ${marketData.title} (Options: ${marketData.options.join(', ')})`);
+                } else {
+                    // Binary quick play
+                    await marketRef.set({
+                        id: marketRef.id,
+                        title: marketData.title || "Quick Play Market",
+                        category: marketData.category || "General",
+                        duration: marketData.duration || "24h",
+                        createdByDisplayName: 'PredoraOracle',
+                        createdAt: now,
+                        resolutionDate: futureDate.toISOString().split('T')[0],
+                        isResolved: false,
+                        status: 'active',
+                        yesAmount: 100000,
+                        noAmount: 100000,
+                        yesPercent: 50,
+                        noPercent: 50,
+                        totalPool: 200000,
+                        marketType: 'binary',
+                        isMock: false
+                    });
+                    console.log(`✅ Created quick play (BINARY): ${marketData.title}`);
+                }
             } catch (marketError) {
                 console.error(`⚠️ Failed to create quick play: ${marketError.message}`);
             }
