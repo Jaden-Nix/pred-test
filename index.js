@@ -827,14 +827,20 @@ app.post('/api/social/react', requireAuth, requireFirebase, async (req, res) => 
         const postData = postSnap.data();
         const reactions = postData.reactions || { like: [], heart: [], fire: [], rocket: [] };
         
-        if (!reactions[reaction].includes(userId)) {
+        // Toggle: remove if present, add if not present
+        const index = reactions[reaction].indexOf(userId);
+        if (index > -1) {
+            // User already reacted, so remove the reaction
+            reactions[reaction].splice(index, 1);
+        } else {
+            // User hasn't reacted, so add the reaction
             reactions[reaction].push(userId);
-            await postRef.update({ reactions });
         }
         
-        res.status(200).json({ success: true });
+        await postRef.update({ reactions });
+        res.status(200).json({ success: true, added: index === -1 });
     } catch (error) {
-        console.error('Error adding reaction:', error);
+        console.error('Error toggling reaction:', error);
         res.status(500).json({ error: error.message });
     }
 });
