@@ -44,6 +44,18 @@
         })();
     </script>
 
+    <script>
+        // Suppress Tailwind CDN warning in dev environment
+        if (typeof window !== 'undefined') {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                if (args[0] && args[0].includes && args[0].includes('cdn.tailwindcss.com')) {
+                    return; // Suppress Tailwind CDN warning
+                }
+                originalWarn.apply(console, args);
+            };
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2667,11 +2679,14 @@
 
             <div id="admin-password-screen" class="screen screen-inactive space-y-4">
                 <h1 class="text-2xl font-bold gradient-text">Admin Access</h1>
-                <div class="space-y-2">
-                    <label for="admin-password-input" class="text-sm font-medium text-gray-300">Enter Password</label>
-                    <input type="password" id="admin-password-input" class="ui-input">
-                </div>
-                <button id="admin-login-btn" class="btn btn-primary w-full">Login</button>
+                <form id="admin-password-form" class="space-y-4" onsubmit="handleAdminPasswordSubmit(event)">
+                    <input type="text" name="username" style="display: none;" autocomplete="username">
+                    <div class="space-y-2">
+                        <label for="admin-password-input" class="text-sm font-medium text-gray-300">Enter Password</label>
+                        <input type="password" id="admin-password-input" class="ui-input" required autocomplete="current-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-full">Login</button>
+                </form>
                 <button onclick="showScreen('login-screen')" class="btn btn-secondary w-full">Cancel</button>
             </div>
 
@@ -8276,6 +8291,18 @@ ${historyText}`;
         }
 
         /**
+         * Handle admin password form submission
+         */
+        async function handleAdminPasswordSubmit(event) {
+            event.preventDefault();
+            const pass = document.getElementById('admin-password-input').value;
+            if (await validateAdminPassword(pass)) {
+                showScreen('admin-panel-screen');
+            }
+            document.getElementById('admin-password-input').value = '';
+        }
+
+        /**
          * Wires up all listeners for the Admin Panel.
          */
         function setupAdminFeatures() {
@@ -8311,14 +8338,11 @@ ${historyText}`;
                 console.warn('⚠️ Predora logo element not found');
             }
 
-            // Admin password check - validate via backend
-            document.getElementById('admin-login-btn').addEventListener('click', async () => {
-                const pass = document.getElementById('admin-password-input').value;
-                if (await validateAdminPassword(pass)) {
-                    showScreen('admin-panel-screen');
-                }
-                document.getElementById('admin-password-input').value = '';
-            });
+            // Admin password form submission - validate via backend
+            const adminPasswordForm = document.getElementById('admin-password-form');
+            if (adminPasswordForm) {
+                adminPasswordForm.addEventListener('submit', handleAdminPasswordSubmit);
+            }
 
             document.getElementById('admin-logout-btn').addEventListener('click', () => {
                 adminSecret = null;
