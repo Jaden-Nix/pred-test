@@ -5285,11 +5285,11 @@
         function loadDataForScreen(screenId) {
             // Load data for admin screens with delay to ensure DOM is ready
             if (screenId === 'admin-resolution-screen') {
-                setTimeout(() => renderMarketResolutionScreen(), 100);
+                setTimeout(() => renderMarketResolutionScreen(screenId), 100);
             } else if (screenId === 'admin-quickplay-screen') {
-                setTimeout(() => renderQuickPlayResolutionScreen(), 100);
+                setTimeout(() => renderQuickPlayResolutionScreen(screenId), 100);
             } else if (screenId === 'admin-quickpoll-screen') {
-                setTimeout(() => renderQuickPollScreen(), 100);
+                setTimeout(() => renderQuickPollScreen(screenId), 100);
             }
             switch(screenId) {
                 case 'home-screen':
@@ -8351,33 +8351,33 @@ ${historyText}`;
         /**
          * Renders the Market Resolution Screen with both standard and quick play markets
          */
-        function renderMarketResolutionScreen() {
+        function renderMarketResolutionScreen(screenId) {
             renderResolutionPanel();
-            renderQuickPlayResolutionPanel();
+            renderQuickPlayResolutionPanel(screenId);
         }
 
         /**
          * Renders Quick Play Markets for resolution
          */
-        function renderQuickPlayResolutionScreen() {
-            renderQuickPlayResolutionPanel();
+        function renderQuickPlayResolutionScreen(screenId) {
+            renderQuickPlayResolutionPanel(screenId);
         }
 
         /**
          * Renders Quick Poll Screen
          */
-        function renderQuickPollScreen() {
+        function renderQuickPollScreen(screenId) {
             const { collection, query, onSnapshot } = window.firebase.firestore;
             
-            // Use the correct container based on the current screen
+            // Use the correct container based on the screen that called this
             const pollsList = document.getElementById('polls-resolution-list');
             if (!pollsList) {
-                console.warn('📋 Polls container not found for screen:', currentScreenId);
+                console.warn('📋 Polls container not found for screen:', screenId);
                 console.log('Available poll containers:', Array.from(document.querySelectorAll('[id*="poll"]')).map(el => el.id));
                 return;
             }
             
-            console.log('📋 Rendering quick poll screen on:', currentScreenId);
+            console.log('📋 Rendering quick poll screen on:', screenId);
             
             // Clean up old listener if it exists
             if (quickPollResolutionUnsubscribe) {
@@ -8454,27 +8454,27 @@ ${historyText}`;
         /**
          * Renders the list of active quick play markets for resolution
          */
-        function renderQuickPlayResolutionPanel() {
+        function renderQuickPlayResolutionPanel(screenId) {
             const { collection, query, onSnapshot } = window.firebase.firestore;
             
-            // Use the correct container based on the current screen
+            // Use the correct container based on which screen called this
             let listContainer;
-            if (currentScreenId === 'admin-quickplay-screen') {
+            if (screenId === 'admin-quickplay-screen') {
                 listContainer = document.getElementById('admin-qp-resolution-list');
-            } else if (currentScreenId === 'admin-resolution-screen') {
+            } else if (screenId === 'admin-resolution-screen') {
                 listContainer = document.getElementById('quick-play-resolution-list');
             } else {
-                // Fallback for admin-panel-screen or other screens - check both
+                // Fallback for other screens - try both containers
                 listContainer = document.getElementById('admin-qp-resolution-list') || document.getElementById('quick-play-resolution-list');
             }
             
             if (!listContainer) {
-                console.warn('❌ Quick play resolution container not found for screen:', currentScreenId);
+                console.warn('❌ Quick play resolution container not found for screen:', screenId);
                 console.log('Available resolution containers:', Array.from(document.querySelectorAll('[id*="resolution"]')).map(el => el.id));
                 return;
             }
             
-            console.log('📊 Rendering quick play resolution panel to:', listContainer.id, 'on screen:', currentScreenId);
+            console.log('📊 Rendering quick play resolution panel to:', listContainer.id, 'on screen:', screenId);
             
             // Clean up old listener if it exists
             if (quickPlayResolutionUnsubscribe) {
