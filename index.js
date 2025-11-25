@@ -571,22 +571,30 @@ async function autoResolveMarkets() {
                     const allPledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
                     const allPledges = await allPledgesRef.where('marketId', '==', marketId).get();
                     
-                    const notifiedUsers = new Set(); // Avoid duplicate notifications
+                    const notifiedUsers = new Set();
+                    const batch = db.batch();
                     
                     for (const pledgeSnap of allPledges.docs) {
                         const pledge = pledgeSnap.data();
                         const userIdToNotify = pledge.userId;
                         
+                        // Validate userId exists and is a string
+                        if (!userIdToNotify || typeof userIdToNotify !== 'string') {
+                            console.warn(`⚠️ Invalid userId in pledge:`, userIdToNotify);
+                            continue;
+                        }
+                        
                         // Only send one notification per user even if they staked multiple times
                         if (!notifiedUsers.has(userIdToNotify)) {
                             notifiedUsers.add(userIdToNotify);
                             
-                            // Create notification for user
-                            const notificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${userIdToNotify}/notifications`);
-                            await notificationsRef.add({
+                            // Create notification for user using batch write
+                            const notificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${userIdToNotify}/notifications`).doc();
+                            batch.set(notificationsRef, {
                                 type: 'market_resolved',
                                 marketId: marketId,
                                 marketTitle: market.title,
+                                outcome: outcome,
                                 message: `Market resolved: "${market.title}" - Winner: ${outcome}`,
                                 actionUrl: `screen:market-detail:${marketId}`,
                                 timestamp: new Date(),
@@ -595,7 +603,16 @@ async function autoResolveMarkets() {
                         }
                     }
                     
-                    console.log(`📢 Market resolution notifications sent to ${notifiedUsers.size} users for ${market.title}`);
+                    // Commit batch write
+                    if (notifiedUsers.size > 0) {
+                        await batch.commit();
+                        console.log(`📢 Market resolution notifications committed to ${notifiedUsers.size} users for ${market.title}`);
+                        
+                        // Send email notifications asynchronously (don't block)
+                        sendMarketResolutionEmails(notifiedUsers, market.title, outcome).catch(err => {
+                            console.warn(`⚠️ Email notification async error:`, err.message);
+                        });
+                    }
                 } catch (notifError) {
                     console.error(`⚠️ Failed to send market resolution notifications:`, notifError.message);
                 }
@@ -1162,32 +1179,43 @@ app.post('/api/social/create-post', requireAuth, requireFirebase, async (req, re
         
         // 📢 SEND NOTIFICATIONS to all followers of the post creator
         try {
-            // Get the user's profile to find their followers
             const userProfileRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(userId);
             const userProfileSnap = await userProfileRef.get();
             const followerIds = userProfileSnap.data()?.followers || [];
             
-            // Send notifications to each follower
-            for (const followerId of followerIds) {
-                const followersNotificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${followerId}/notifications`);
-                await followersNotificationsRef.add({
-                    type: 'new_post',
-                    postId: newPost.id,
-                    posterName: displayName,
-                    posterAvatarUrl: avatarUrl,
-                    message: `${displayName} posted: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`,
-                    actionUrl: `screen:social-feed:${newPost.id}`,
-                    timestamp: new Date(),
-                    read: false
-                });
-            }
+            // Validate and filter followerIds
+            const validFollowerIds = Array.isArray(followerIds) 
+                ? followerIds.filter(id => id && typeof id === 'string')
+                : [];
             
-            if (followerIds.length > 0) {
-                console.log(`📢 New post notifications sent to ${followerIds.length} followers of ${displayName}`);
+            if (validFollowerIds.length > 0) {
+                const batch = db.batch();
+                const truncatedContent = content.substring(0, 50) + (content.length > 50 ? '...' : '');
+                
+                for (const followerId of validFollowerIds) {
+                    const notificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${followerId}/notifications`).doc();
+                    batch.set(notificationsRef, {
+                        type: 'new_post',
+                        postId: newPost.id,
+                        posterName: displayName,
+                        posterAvatarUrl: avatarUrl,
+                        message: `${displayName} posted: ${truncatedContent}`,
+                        actionUrl: `screen:social-feed:${newPost.id}`,
+                        timestamp: new Date(),
+                        read: false
+                    });
+                }
+                
+                await batch.commit();
+                console.log(`📢 New post notifications committed to ${validFollowerIds.length} followers of ${displayName}`);
+                
+                // Send email notifications asynchronously
+                sendNewPostEmails(validFollowerIds, displayName, truncatedContent).catch(err => {
+                    console.warn(`⚠️ Email notification async error:`, err.message);
+                });
             }
         } catch (notifError) {
             console.error(`⚠️ Failed to send new post notifications:`, notifError.message);
-            // Don't fail the post creation if notifications fail
         }
         
         res.status(200).json({ success: true, postId: newPost.id });
@@ -1654,6 +1682,163 @@ app.get('/api/admin/disputed-markets', requireAdmin, requireFirebase, async (req
         res.status(200).json({ markets });
     } catch (error) {
         console.error('Error fetching disputed markets:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// =============================================================================
+// NOTIFICATION HELPER FUNCTIONS
+// =============================================================================
+
+// Helper function to send market resolution emails
+async function sendMarketResolutionEmails(userIds, marketTitle, outcome) {
+    try {
+        const sendGridClient = await getUncachableSendGridClient();
+        if (!sendGridClient) {
+            console.warn('⚠️ SendGrid not available, skipping email notifications');
+            return;
+        }
+        
+        for (const userId of userIds) {
+            try {
+                const userRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(userId);
+                const userSnap = await userRef.get();
+                const userData = userSnap.data();
+                
+                if (userData?.email) {
+                    await sendGridClient.client.send({
+                        to: userData.email,
+                        from: sendGridClient.fromEmail,
+                        subject: `Market Resolved: "${marketTitle}"`,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                <h2>Market Resolution Notification</h2>
+                                <p>The market "<strong>${marketTitle}</strong>" has been resolved.</p>
+                                <p><strong>Outcome: ${outcome}</strong></p>
+                                <p>Click the link below to see the details and claim your winnings:</p>
+                                <a href="https://predora.replit.dev?action=market-detail&id=${encodeURIComponent(marketTitle)}" 
+                                   style="background-color: #38BDF8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                                    View Market Details
+                                </a>
+                                <p style="margin-top: 20px; color: #666; font-size: 12px;">This is an automated notification from Predora.</p>
+                            </div>
+                        `
+                    });
+                    console.log(`✉️ Market resolution email sent to ${userData.email}`);
+                }
+            } catch (userError) {
+                console.warn(`⚠️ Failed to send email to user ${userId}:`, userError.message);
+            }
+        }
+    } catch (error) {
+        console.error(`⚠️ Market resolution email batch error:`, error.message);
+    }
+}
+
+// Helper function to send new post notification emails
+async function sendNewPostEmails(followerIds, posterName, postContent) {
+    try {
+        const sendGridClient = await getUncachableSendGridClient();
+        if (!sendGridClient) {
+            console.warn('⚠️ SendGrid not available, skipping email notifications');
+            return;
+        }
+        
+        for (const followerId of followerIds) {
+            try {
+                const followerRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(followerId);
+                const followerSnap = await followerRef.get();
+                const followerData = followerSnap.data();
+                
+                if (followerData?.email) {
+                    await sendGridClient.client.send({
+                        to: followerData.email,
+                        from: sendGridClient.fromEmail,
+                        subject: `${posterName} posted on Predora`,
+                        html: `
+                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                                <h2>${posterName} Posted Something New!</h2>
+                                <p><strong>${posterName}</strong> shared a new post:</p>
+                                <p style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                                    "${postContent}"
+                                </p>
+                                <a href="https://predora.replit.dev?action=feed" 
+                                   style="background-color: #38BDF8; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                                    View Feed
+                                </a>
+                                <p style="margin-top: 20px; color: #666; font-size: 12px;">This is an automated notification from Predora.</p>
+                            </div>
+                        `
+                    });
+                    console.log(`✉️ New post email sent to ${followerData.email}`);
+                }
+            } catch (followerError) {
+                console.warn(`⚠️ Failed to send email to follower ${followerId}:`, followerError.message);
+            }
+        }
+    } catch (error) {
+        console.error(`⚠️ New post email batch error:`, error.message);
+    }
+}
+
+// =============================================================================
+// NOTIFICATION MANAGEMENT ENDPOINTS
+// =============================================================================
+
+app.get('/api/notifications', requireAuth, requireFirebase, async (req, res) => {
+    const userId = req.user.uid;
+    
+    try {
+        const notificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${userId}/notifications`);
+        const notificationsSnap = await notificationsRef.orderBy('timestamp', 'desc').get();
+        
+        const notifications = notificationsSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        
+        res.status(200).json({ notifications });
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/notifications/mark-read', requireAuth, requireFirebase, async (req, res) => {
+    const { notificationIds } = req.body;
+    const userId = req.user.uid;
+    
+    if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+        return res.status(400).json({ error: 'notificationIds array required' });
+    }
+    
+    try {
+        const batch = db.batch();
+        
+        for (const notificationId of notificationIds) {
+            const notifRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${userId}/notifications`).doc(notificationId);
+            batch.update(notifRef, { read: true, readAt: new Date() });
+        }
+        
+        await batch.commit();
+        res.status(200).json({ success: true, marked: notificationIds.length });
+    } catch (error) {
+        console.error('Error marking notifications as read:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/notifications/:id', requireAuth, requireFirebase, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.uid;
+    
+    try {
+        const notifRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${userId}/notifications`).doc(id);
+        await notifRef.delete();
+        
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error deleting notification:', error);
         res.status(500).json({ error: error.message });
     }
 });
