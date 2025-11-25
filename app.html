@@ -7175,6 +7175,9 @@
                         allStandardMarkets[marketIndex].yesPercent = (updatedYesPool / totalPool) * 100;
                         allStandardMarkets[marketIndex].noPercent = (updatedNoPool / totalPool) * 100;
                     }
+                    
+                    // Re-render the market feed to ensure home screen shows updated pools
+                    renderMarketFeed(allStandardMarkets);
                 }
 
                 showLoadingOverlay(false);
