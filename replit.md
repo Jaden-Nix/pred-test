@@ -4,6 +4,12 @@
 Predora is a decentralized prediction market platform with AI-powered market resolution, social features, and a comprehensive admin panel. This project uses Firebase for data storage, OpenAI for swarm-based verification, and Google's Gemini AI for market resolution.
 
 ## Recent Changes (November 25, 2025)
+- **Swarm Agents Integration**: Multi-agent Byzantine fault-tolerant market resolution
+  - 4 parallel AI agents: GPT-4o Research, GPT-4o-mini Skeptic, DuckDuckGo, Gemini
+  - Geometric median consensus for outlier resistance
+  - Multi-model scoring (factual, consistency, timestamp, sentiment)
+  - Three-tier confidence routing: Auto-resolve (90%+), Second-pass (85-90%), Manual (< 85%)
+  - New endpoints: `/api/indexer/resolve-market/:marketId`, `/api/indexer/resolve-batch`, `/api/admin/request-second-swarm`
 - **Complete AI Guardrails System**: Multi-layer content moderation with pre-filters, keyword blocklist, OpenAI API, toxicity detection, and rate limiting
 - **Safety Reports**: Users can report unsafe content; admins can review, approve, or remove flagged content
 - **Admin Safety Dashboard**: New endpoints for viewing pending reports, taking actions, and monitoring safety statistics
@@ -146,11 +152,13 @@ All data is stored in: `artifacts/predora-hackathon/public/data/`
 - [x] Social Feed Security (backend APIs, no direct Firebase writes)
 
 ### 🔨 Partially Implemented (Backend Complete)
-- [ ] Swarm-Verify Oracle (multi-agent Byzantine consensus) - Backend ready, needs OpenAI key
 - [ ] 30-Minute Dispute Window - Logic implemented, needs frontend UI
 - [ ] Frontend Social Feed UI - Needs HTML/CSS/JS integration into app.html
 - [ ] Frontend Admin Panel UI - Needs HTML/CSS/JS integration into app.html
 - [ ] Frontend Safety Dashboard - Safety reporting and admin moderation UI not yet implemented
+
+### ✅ Recently Completed
+- [x] Swarm-Verify Oracle (multi-agent Byzantine consensus) - Full backend with 4 agents, geometric median, multi-model scoring
 
 ## AI Guardrails System
 

@@ -18,6 +18,7 @@ import {
     checkMinuteLimit,
     logSafetyEvent
 } from './ai-guardrails.js';
+import { swarmVerifyResolution, secondPassReview } from './swarm-verify-oracle.js';
 
 // --- Constants ---
 const __filename = fileURLToPath(import.meta.url);
@@ -246,6 +247,235 @@ app.post('/api/gemini', async (req, res) => {
     } catch (error) {
         console.error("Error in /api/gemini:", error);
         res.status(503).json({ error: "AI Service Overloaded. Please try again in a moment." });
+    }
+});
+
+// =============================================================================
+// SWARM AGENTS - MARKET RESOLUTION ENDPOINTS
+// =============================================================================
+
+// Main Resolution Endpoint - Resolve single market using Swarm-Verify
+app.get('/api/indexer/resolve-market/:marketId', requireFirebase, async (req, res) => {
+    try {
+        const { marketId } = req.params;
+        const marketRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc(marketId);
+        const marketSnap = await marketRef.get();
+        
+        if (!marketSnap.exists) {
+            return res.status(404).json({ error: 'Market not found' });
+        }
+
+        if (!openai) {
+            return res.status(503).json({ error: 'OpenAI API not configured. Swarm resolution unavailable.' });
+        }
+
+        const market = marketSnap.data();
+        console.log(`🐝 Swarm-Verify resolving market: ${marketId}`);
+
+        // Run Swarm-Verify
+        const resolution = await swarmVerifyResolution(market, {
+            geminiApiKey: GEMINI_API_KEY,
+            geminiUrl: GEMINI_URL
+        }, openai);
+
+        // Store resolution evidence
+        const evidenceRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc(marketId).collection('resolutionEvidence').doc('swarm-verify-primary');
+        await evidenceRef.set({
+            resolution,
+            timestamp: new Date(),
+            version: 1
+        });
+
+        // Route based on confidence
+        if (resolution.confidence >= 90) {
+            // Path A: Auto-resolve
+            console.log(`✅ AUTO-RESOLVE (${resolution.confidence}% confidence)`);
+            await marketRef.update({
+                isResolved: true,
+                winningOutcome: resolution.outcome,
+                resolutionMethod: 'swarm-verify-auto',
+                resolvedAt: new Date(),
+                status: 'resolved',
+                swarmConfidence: resolution.confidence
+            });
+
+            res.json({
+                status: 'resolved',
+                outcome: resolution.outcome,
+                confidence: resolution.confidence,
+                path: 'auto-resolve',
+                agentVotes: resolution.agentVotes,
+                timestamp: new Date().toISOString()
+            });
+
+        } else if (resolution.confidence >= 85) {
+            // Path A2: Second-pass + manual review
+            console.log(`🔄 SECOND-PASS (${resolution.confidence}% confidence)`);
+            const secondPass = await secondPassReview(market, resolution, openai);
+            
+            const secondPassRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc(marketId).collection('resolutionEvidence').doc('swarm-verify-second-pass');
+            await secondPassRef.set({
+                resolution: secondPass,
+                timestamp: new Date()
+            });
+
+            await marketRef.update({
+                status: 'pending-review',
+                swarmVerifyPassed: true,
+                swarmConfidence: resolution.confidence,
+                swarmOutcome: resolution.outcome,
+                pendingReviewSince: new Date()
+            });
+
+            res.json({
+                status: 'pending-manual',
+                outcome: secondPass.outcome,
+                confidence: secondPass.confidence,
+                path: 'second-pass',
+                agentVotes: resolution.agentVotes,
+                timestamp: new Date().toISOString()
+            });
+
+        } else {
+            // Path B: Full manual review
+            console.log(`👥 MANUAL REVIEW (${resolution.confidence}% confidence - too low)`);
+            await marketRef.update({
+                status: 'pending-review',
+                swarmVerifyPassed: false,
+                swarmConfidence: resolution.confidence,
+                swarmOutcome: resolution.outcome,
+                pendingReviewSince: new Date()
+            });
+
+            res.json({
+                status: 'pending-manual',
+                outcome: resolution.outcome,
+                confidence: resolution.confidence,
+                path: 'manual-review',
+                agentVotes: resolution.agentVotes,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+    } catch (error) {
+        console.error('❌ Swarm resolution failed:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Batch Resolution Endpoint
+app.post('/api/indexer/resolve-batch', requireFirebase, async (req, res) => {
+    try {
+        const { marketIds } = req.body;
+        
+        if (!Array.isArray(marketIds) || marketIds.length === 0) {
+            return res.status(400).json({ error: 'marketIds array required' });
+        }
+
+        if (!openai) {
+            return res.status(503).json({ error: 'OpenAI API not configured' });
+        }
+
+        const results = [];
+        const collectionPath = `artifacts/${APP_ID}/public/data/standard_markets`;
+
+        for (const marketId of marketIds) {
+            try {
+                const market = await db.collection(collectionPath).doc(marketId).get();
+                
+                if (!market.exists) {
+                    results.push({
+                        marketId,
+                        error: 'Market not found',
+                        status: 'failed'
+                    });
+                    continue;
+                }
+
+                const resolution = await swarmVerifyResolution(market.data(), {
+                    geminiApiKey: GEMINI_API_KEY,
+                    geminiUrl: GEMINI_URL
+                }, openai);
+
+                results.push({
+                    marketId,
+                    status: 'success',
+                    outcome: resolution.outcome,
+                    confidence: resolution.confidence,
+                    path: resolution.path
+                });
+
+            } catch (error) {
+                results.push({
+                    marketId,
+                    error: error.message,
+                    status: 'failed'
+                });
+            }
+        }
+
+        res.json({
+            totalRequested: marketIds.length,
+            totalResolved: results.filter(r => r.status === 'success').length,
+            results
+        });
+
+    } catch (error) {
+        console.error('Batch resolution error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Second Swarm Pass (Admin) - Request another swarm resolution for uncertain market
+app.post('/api/admin/request-second-swarm', requireAdmin, requireFirebase, async (req, res) => {
+    try {
+        const { marketId } = req.body;
+
+        if (!marketId) {
+            return res.status(400).json({ error: 'marketId required' });
+        }
+
+        if (!openai) {
+            return res.status(503).json({ error: 'OpenAI API not configured' });
+        }
+
+        const marketRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc(marketId);
+        const marketSnap = await marketRef.get();
+
+        if (!marketSnap.exists) {
+            return res.status(404).json({ error: 'Market not found' });
+        }
+
+        const market = marketSnap.data();
+        console.log(`🔄 Admin requesting second swarm pass for: ${marketId}`);
+
+        const secondResolution = await swarmVerifyResolution(market, {
+            geminiApiKey: GEMINI_API_KEY,
+            geminiUrl: GEMINI_URL
+        }, openai);
+
+        const evidenceRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc(marketId).collection('resolutionEvidence').doc(`swarm-verify-admin-${Date.now()}`);
+        await evidenceRef.set({
+            resolution: secondResolution,
+            timestamp: new Date(),
+            initiatedBy: 'admin'
+        });
+
+        res.json({
+            marketId,
+            status: 'completed',
+            resolution: {
+                outcome: secondResolution.outcome,
+                confidence: secondResolution.confidence,
+                agentVotes: secondResolution.agentVotes,
+                path: secondResolution.path
+            },
+            timestamp: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('Admin second swarm error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 

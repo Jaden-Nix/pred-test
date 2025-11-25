@@ -1,0 +1,835 @@
+# 🐝 Complete Swarm Agents Integration Guide
+**Predora Multi-Agent Byzantine Fault-Tolerant Market Resolution System**
+
+---
+
+## 📋 Table of Contents
+1. [Architecture Overview](#architecture)
+2. [Setup Instructions](#setup)
+3. [Configuration](#configuration)
+4. [All Agent Functions](#agents)
+5. [Consensus Aggregation](#consensus)
+6. [Multi-Model Scoring](#scoring)
+7. [API Endpoints](#endpoints)
+8. [Integration Checklist](#checklist)
+
+---
+
+## <a name="architecture"></a>🏗️ Architecture Overview
+
+The Swarm-Verify Oracle is a **Byzantine Fault-Tolerant** system using multiple AI agents for prediction market resolution.
+
+### Design Principles
+```
+Market Question
+     ↓
+Phase 1: Parallel Agent Research (5-15 seconds)
+     ↓ (GPT-4o, DuckDuckGo, Gemini, etc.)
+Phase 2: Skeptic Adversarial Verification (3-5 seconds)
+     ↓ (GPT-4o-mini challenges the researchers)
+Phase 3: Geometric Median Consensus (1 second)
+     ↓ (Byzantine-resistant aggregation)
+Phase 3.5: Multi-Model Scoring (3-5 seconds)
+     ↓ (Factual, Consistency, Timestamp, Sentiment)
+Phase 4: Tiered Confidence Routing (instant)
+     ↓
+Path A:  >= 90% confidence → AUTO-RESOLVE
+Path A2: 85-90% confidence → SECOND-PASS + Manual Review
+Path B:  < 85% confidence → MANUAL HUMAN REVIEW
+```
+
+### Fault Tolerance
+- **Handles up to 50% faulty agents** (Byzantine resilient)
+- **Geometric median** provides outlier resistance
+- **Requires minimum 2 agents** to proceed
+- **Multi-model scoring** prevents single-model bias
+
+---
+
+## <a name="setup"></a>🔧 Setup Instructions
+
+### Prerequisites
+1. Node.js 18+
+2. Express.js backend
+3. OpenAI API (via Replit AI Integrations - NO extra API keys needed)
+4. Access to free APIs (DuckDuckGo)
+5. Optional: Gemini API for additional agent
+
+### Step 1: Install Dependencies
+```bash
+npm install openai crypto
+```
+
+### Step 2: Set Environment Variables
+```bash
+# Automatically provided by Replit AI Integrations
+AI_INTEGRATIONS_OPENAI_API_KEY=...
+AI_INTEGRATIONS_OPENAI_BASE_URL=...
+
+# Optional: For additional agents
+GEMINI_API_KEY=...
+```
+
+### Step 3: Import Swarm Module
+```javascript
+import { swarmVerifyResolution } from './swarm-verify-oracle.js';
+```
+
+### Step 4: Use in Your Resolution Endpoint
+```javascript
+app.get('/api/indexer/resolve-market/:marketId', async (req, res) => {
+    const market = await getMarket(req.params.marketId);
+    
+    // Use Swarm-Verify first
+    const resolution = await swarmVerifyResolution(market, {
+        geminiApiKey: process.env.GEMINI_API_KEY,
+        geminiUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+    });
+    
+    // Handle based on confidence
+    if (resolution.confidence >= 90) {
+        // AUTO-RESOLVE
+        await autoResolveMarket(market, resolution);
+    } else if (resolution.confidence >= 85) {
+        // SECOND-PASS + Manual Review
+        const secondPass = await secondPassReview(market, resolution);
+        await requestManualReview(market, secondPass);
+    } else {
+        // Manual Human Review
+        await requestManualReview(market, resolution);
+    }
+});
+```
+
+---
+
+## <a name="configuration"></a>⚙️ Configuration
+
+### Confidence Thresholds
+```javascript
+const CONFIG = {
+    // Three-tier system:
+    HIGH_CONFIDENCE_THRESHOLD: 90,     // Auto-resolve immediately
+    MID_CONFIDENCE_THRESHOLD: 85,      // Second-pass + manual review
+    LOW_CONFIDENCE_THRESHOLD: 85,      // Manual human review only
+    
+    // Agent timing
+    AGENT_TIMEOUT_MS: 12000,           // 12 seconds per agent
+    MAX_RETRIES: 2,                    // Retry failed agents
+    PARALLEL_MODE: true,               // Run agents in parallel
+    
+    // Geometric median (Byzantine consensus)
+    GEOMETRIC_MEDIAN_MAX_ITERATIONS: 100,
+    GEOMETRIC_MEDIAN_TOLERANCE: 1e-6,
+    
+    // Second-pass verification
+    SECOND_PASS_ENABLED: true,
+    SECOND_PASS_TEMPERATURE: 0.1,     // Very focused/deterministic
+    
+    // Multi-model scoring weights
+    MULTI_MODEL_SCORING_ENABLED: true,
+    SCORING_WEIGHTS: {
+        factual: 0.45,                 // Fact verification (45%)
+        consistency: 0.25,             // Internal consistency (25%)
+        timestamp: 0.20,               // Temporal validity (20%)
+        sentiment: 0.10                // Bias detection (10%)
+    },
+    USE_BLENDED_SCORE: true
+};
+```
+
+### Tuning Guide
+- **Increase HIGH_CONFIDENCE_THRESHOLD** (95%) for critical markets
+- **Decrease MID_CONFIDENCE_THRESHOLD** (80%) to auto-resolve more
+- **Reduce AGENT_TIMEOUT_MS** (8000ms) for faster resolution
+- **Enable PARALLEL_MODE** for speed (but higher cost)
+
+---
+
+## <a name="agents"></a>🤖 All Agent Functions
+
+### Agent 1: GPT-4o Research Agent
+**Purpose:** Initial factual research using advanced reasoning
+
+```javascript
+/**
+ * Research agent using GPT-4o (high quality, more thorough)
+ * - Uses Replit AI Integrations (NO extra API key needed)
+ * - Temperature: 0.3 (focused but not rigid)
+ * - Returns outcome, confidence, rationale, sources
+ */
+async function gpt4oResearchAgent(market) {
+    const systemPrompt = `You are a factual research agent for prediction market resolution.
+Your task is to determine if the following market outcome is TRUE or FALSE.
+
+Rules:
+1. Use credible reasoning and established facts
+2. If evidence is inconclusive or contradictory, return AMBIGUOUS
+3. Provide confidence score (0-100) based on evidence quality
+4. Be thorough but concise
+
+Output format:
+OUTCOME: YES|NO|AMBIGUOUS
+CONFIDENCE: <0-100>
+RATIONALE: <detailed explanation>
+SOURCES: <any relevant URLs or references>`;
+
+    // Sanitize market data to prevent prompt injection
+    const sanitized = sanitizeMarketData(market);
+    
+    const userPrompt = `Market Title: "${sanitized.title}"
+Description: "${sanitized.description}"
+Resolution Date: ${sanitized.resolutionDate}
+Category: ${sanitized.category}
+
+Determine the outcome with maximum accuracy.`;
+
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.3,
+        max_completion_tokens: 1000,
+    });
+
+    // Parse structured output
+    const content = response.choices[0].message.content;
+    const outcome = extractPattern(content, /OUTCOME:\s*(YES|NO|AMBIGUOUS)/i);
+    const confidence = parseInt(extractPattern(content, /CONFIDENCE:\s*(\d+)/i)) || 65;
+    const rationale = extractPattern(content, /RATIONALE:\s*(.+?)(?=SOURCES:|$)/is);
+    const sources = extractSources(extractPattern(content, /SOURCES:\s*(.+?)$/is));
+
+    return {
+        agent: 'gpt4o-research',
+        outcome,
+        confidence,
+        rationale,
+        sources,
+        rawResponse: content,
+        timestamp: new Date().toISOString()
+    };
+}
+```
+
+**When to Use:** Primary research phase, complex markets
+
+---
+
+### Agent 2: GPT-4o-mini Skeptic Agent
+**Purpose:** Adversarial verification - challenges other agents
+
+```javascript
+/**
+ * Skeptic agent using GPT-4o-mini (paranoid, cost-efficient)
+ * - Critically examines findings from other agents
+ * - Temperature: 0.4 (conservative, defaults to AMBIGUOUS)
+ * - Returns opposing view for consensus validation
+ */
+async function gpt4oMiniSkepticAgent(market, otherAgentResults = []) {
+    const systemPrompt = `You are a PARANOID SKEPTIC agent for market resolution.
+
+Your role:
+1. ASSUME all claims are false until proven with overwhelming evidence
+2. Look for contradictions, biases, and unreliable reasoning
+3. Challenge assumptions and question weak evidence
+4. Only accept outcomes backed by strong logical proof
+5. Default to AMBIGUOUS if ANY doubt exists
+
+Be extremely critical and conservative.`;
+
+    let userPrompt = `Market: "${sanitized.title}"...`;
+    
+    // Include other agents' findings for critique
+    if (otherAgentResults.length > 0) {
+        userPrompt += `\n\nOTHER AGENTS' FINDINGS (verify these critically):`;
+        otherAgentResults.forEach((result, i) => {
+            userPrompt += `\nAgent ${i + 1} (${result.agent}):
+- Outcome: ${result.outcome}
+- Confidence: ${result.confidence}%
+- Rationale: ${result.rationale.slice(0, 300)}`;
+        });
+    }
+
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',  // Cheaper model
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.4,
+        max_completion_tokens: 800,
+    });
+
+    return {
+        agent: 'gpt4o-mini-skeptic',
+        outcome,
+        confidence,
+        rationale,
+        sources: [],
+        timestamp: new Date().toISOString()
+    };
+}
+```
+
+**When to Use:** Always - validates other agents, prevents groupthink
+
+---
+
+### Agent 3: DuckDuckGo Fact-Checker
+**Purpose:** Web search verification (NO API KEY REQUIRED!)
+
+```javascript
+/**
+ * DuckDuckGo agent for fact-checking without API keys
+ * - Free public API (no authentication needed)
+ * - Keyword-based outcome detection
+ * - Fast (~2 seconds), good for time-sensitive markets
+ */
+async function duckDuckGoAgent(market) {
+    const searchQuery = `${market.title} ${market.category}`;
+    
+    const response = await fetch(
+        `https://api.duckduckgo.com/?q=${encodeURIComponent(searchQuery)}&format=json`
+    );
+    const data = await response.json();
+
+    // Analyze search results
+    const abstractText = data.AbstractText || '';
+    const content = abstractText.toLowerCase();
+    
+    // Keyword matching
+    const yesKeywords = ['confirmed', 'verified', 'true', 'yes', 'successful', 'achieved'];
+    const noKeywords = ['false', 'denied', 'failed', 'no', 'rejected', 'unsuccessful'];
+    
+    const yesCount = countKeywords(content, yesKeywords);
+    const noCount = countKeywords(content, noKeywords);
+    
+    let outcome = 'AMBIGUOUS';
+    let confidence = 45;
+    
+    if (yesCount > noCount * 1.5) {
+        outcome = 'YES';
+        confidence = Math.min(65, 45 + yesCount * 4);
+    } else if (noCount > yesCount * 1.5) {
+        outcome = 'NO';
+        confidence = Math.min(65, 45 + noCount * 4);
+    }
+
+    return {
+        agent: 'duckduckgo',
+        outcome,
+        confidence,
+        rationale: `Found ${yesCount} positive and ${noCount} negative indicators.`,
+        sources: [data.AbstractURL].filter(Boolean),
+        timestamp: new Date().toISOString()
+    };
+}
+```
+
+**When to Use:** News/events, general knowledge questions, cost optimization
+
+---
+
+### Agent 4: Gemini Investigator (Optional)
+**Purpose:** Additional research using Google's Gemini (with web search)
+
+```javascript
+/**
+ * Gemini agent with Google Search integration
+ * - Requires Gemini API key (optional, not required)
+ * - Can use real-time web search
+ * - Best for current events
+ */
+async function geminiAgent(market, geminiApiKey, geminiUrl) {
+    const payload = {
+        systemInstruction: { 
+            parts: [{ text: 'You are an investigative agent for prediction markets.' }] 
+        },
+        contents: [{ 
+            parts: [{ text: `Market: "${market.title}"` }] 
+        }],
+        tools: [{ "google_search": {} }]  // Enable web search
+    };
+
+    const response = await fetch(`${geminiUrl}?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    const content = data.candidates[0].content.parts[0].text;
+    
+    // Parse output
+    return {
+        agent: 'gemini',
+        outcome,
+        confidence,
+        rationale,
+        sources,
+        timestamp: new Date().toISOString()
+    };
+}
+```
+
+**When to Use:** Real-time events, requires web search capability
+
+---
+
+## <a name="consensus"></a>🔗 Consensus Aggregation
+
+### Geometric Median (Weiszfeld's Algorithm)
+
+**Why Geometric Median?**
+- ✅ Byzantine fault-tolerant (resistant to 50% faulty agents)
+- ✅ Robust to outliers (vs arithmetic mean)
+- ✅ Converges quickly (100 iterations max)
+- ✅ Mathematically proven resilience
+
+```javascript
+/**
+ * Compute geometric median using Weiszfeld's algorithm
+ * Resistant to outlier confidence scores
+ */
+function computeGeometricMedian(points, maxIterations = 100, tolerance = 1e-6) {
+    if (points.length === 0) return 0;
+    if (points.length === 1) return points[0];
+    
+    // Convert to 2D points for algorithm
+    const points2D = points.map(p => [p, 0]);
+    
+    // Initialize with arithmetic mean
+    let y = [
+        points2D.reduce((sum, p) => sum + p[0], 0) / points2D.length,
+        0
+    ];
+    
+    // Weiszfeld iterations
+    for (let iter = 0; iter < maxIterations; iter++) {
+        // Calculate distances from current estimate
+        const distances = points2D.map(p => 
+            Math.sqrt((p[0] - y[0]) ** 2 + (p[1] - y[1]) ** 2)
+        );
+        
+        // Calculate weights (inverse distance)
+        const weights = distances.map(d => 1 / (d + 1e-10));
+        const weightSum = weights.reduce((sum, w) => sum + w, 0);
+        
+        // Update estimate
+        const y_new = [
+            weights.reduce((sum, w, i) => sum + w * points2D[i][0], 0) / weightSum,
+            0
+        ];
+        
+        // Check convergence
+        const diff = Math.abs(y_new[0] - y[0]);
+        if (diff < tolerance) break;
+        
+        y = y_new;
+    }
+    
+    return Math.max(0, Math.min(100, Math.round(y[0])));
+}
+
+/**
+ * Aggregate all agent results using majority outcome + geometric median
+ */
+function aggregateConsensus(agentResults) {
+    // Group results by outcome
+    const groups = { YES: [], NO: [], AMBIGUOUS: [] };
+    agentResults.forEach(r => groups[r.outcome].push(r));
+    
+    // Find majority outcome
+    const majorityOutcome = Object.keys(groups).reduce((a, b) => 
+        groups[a].length > groups[b].length ? a : b
+    );
+    
+    // Compute geometric median for majority
+    const confidences = groups[majorityOutcome].map(r => r.confidence);
+    const consensusConfidence = computeGeometricMedian(confidences);
+    
+    // Combine data
+    return {
+        outcome: majorityOutcome,
+        confidence: consensusConfidence,
+        rationale: groups[majorityOutcome]
+            .map(r => `[${r.agent}] ${r.rationale.slice(0, 200)}`)
+            .join('\n\n'),
+        sources: [...new Set(agentResults.flatMap(r => r.sources))],
+        agentVotes: {
+            YES: groups.YES.length,
+            NO: groups.NO.length,
+            AMBIGUOUS: groups.AMBIGUOUS.length
+        }
+    };
+}
+```
+
+**Example:**
+```javascript
+// Agents report: [92, 88, 75, 91, 25] confidence
+// Arithmetic mean: 74.2 (outlier 25 pulls down)
+// Geometric median: 88.5 (robust to outlier)
+const consensus = computeGeometricMedian([92, 88, 75, 91, 25]);
+// → 88 (much better!)
+```
+
+---
+
+## <a name="scoring"></a>📊 Multi-Model Scoring System
+
+### Four Scoring Dimensions
+
+#### 1. Factual Scorer (45% weight)
+```javascript
+/**
+ * Verify factual accuracy of the consensus
+ * Checks: Are facts verifiable? Is reasoning sound?
+ */
+async function factualScorer(market, consensus) {
+    const prompt = `Verify factual accuracy of this resolution:
+
+Market: "${market.title}"
+Consensus: ${consensus.outcome} (${consensus.confidence}% confidence)
+Rationale: ${consensus.rationale.slice(0, 300)}
+
+Rate factual accuracy (0-100). Consider:
+- Are facts verifiable?
+- Is reasoning sound?
+- Any factual errors?
+
+Output: SCORE: <0-100>`;
+
+    const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+        max_completion_tokens: 300,
+    });
+
+    const scoreMatch = response.choices[0].message.content.match(/SCORE:\s*(\d+)/i);
+    return Math.max(0, Math.min(100, parseInt(scoreMatch[1])));
+}
+```
+
+#### 2. Consistency Scorer (25% weight)
+```javascript
+/**
+ * Check for internal contradictions in rationale
+ * Looks for outcome-rationale mismatches
+ */
+async function consistencyScorer(market, consensus) {
+    let score = 100;
+    const rationale = consensus.rationale.toLowerCase();
+    
+    // If outcome is YES but rationale has lots of "no" words → inconsistent
+    if (consensus.outcome === 'YES') {
+        const negativeWords = ['no', 'not', 'false', 'failed', 'unsuccessful'];
+        const negCount = negativeWords.reduce((count, word) => 
+            count + (rationale.match(new RegExp(`\\b${word}\\b`, 'g')) || []).length, 0);
+        score -= negCount * 8;
+    }
+    
+    // Agent agreement bonus
+    if (consensus.agentVotes && consensus.agentVotes[consensus.outcome] > 1) {
+        score += 10;  // Multiple agents agree
+    }
+    
+    return Math.max(0, Math.min(100, score));
+}
+```
+
+#### 3. Timestamp Scorer (20% weight)
+```javascript
+/**
+ * Verify temporal accuracy
+ * Checks: Has the event occurred by resolution date?
+ */
+async function timestampScorer(market, consensus) {
+    const now = new Date();
+    const resolutionDate = new Date(market.resolutionDate);
+    
+    let score = 100;
+    
+    // If resolution date is in future, lower confidence
+    if (resolutionDate > now) {
+        const daysUntil = (resolutionDate - now) / (1000 * 60 * 60 * 24);
+        if (daysUntil > 7) score = 30;  // Too far in future
+        else if (daysUntil > 0) score = 70;  // Near future
+    }
+    
+    return score;
+}
+```
+
+#### 4. Sentiment Scorer (10% weight)
+```javascript
+/**
+ * Detect bias/sentiment in rationale
+ * Looks for emotional language that might bias outcome
+ */
+async function sentimentScorer(market, consensus) {
+    const rationale = consensus.rationale.toLowerCase();
+    
+    // Biased language indicators
+    const biasedWords = ['obviously', 'clearly', 'definitely', 'undoubtedly', 'always', 'never'];
+    const biasCount = biasedWords.reduce((count, word) =>
+        count + (rationale.match(new RegExp(`\\b${word}\\b`, 'g')) || []).length, 0);
+    
+    let score = 100 - (biasCount * 15);  // Reduce score per biased word
+    return Math.max(0, score);
+}
+```
+
+### Blended Score Calculation
+```javascript
+/**
+ * Combine all scoring dimensions into final confidence
+ */
+async function runMultiModelScoring(market, consensus) {
+    const scores = {
+        factual: await factualScorer(market, consensus),
+        consistency: await consistencyScorer(market, consensus),
+        timestamp: await timestampScorer(market, consensus),
+        sentiment: await sentimentScorer(market, consensus)
+    };
+
+    // Weighted average
+    const blendedScore = 
+        scores.factual * CONFIG.SCORING_WEIGHTS.factual +
+        scores.consistency * CONFIG.SCORING_WEIGHTS.consistency +
+        scores.timestamp * CONFIG.SCORING_WEIGHTS.timestamp +
+        scores.sentiment * CONFIG.SCORING_WEIGHTS.sentiment;
+
+    return {
+        finalConfidence: Math.round(blendedScore),
+        scores,
+        originalConfidence: consensus.confidence
+    };
+}
+```
+
+---
+
+## <a name="endpoints"></a>🔌 API Endpoints
+
+### Main Resolution Endpoint
+```javascript
+/**
+ * GET /api/indexer/resolve-market/:marketId
+ * Resolve a single market using Swarm-Verify
+ */
+app.get('/api/indexer/resolve-market/:marketId', async (req, res) => {
+    try {
+        const market = await db.collection('markets').doc(req.params.marketId).get();
+        
+        if (!market.exists) {
+            return res.status(404).json({ error: 'Market not found' });
+        }
+
+        // Run Swarm-Verify
+        const resolution = await swarmVerifyResolution(market.data(), {
+            geminiApiKey: process.env.GEMINI_API_KEY,
+            geminiUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+        });
+
+        // Route based on confidence
+        if (resolution.confidence >= 90) {
+            // Path A: Auto-resolve
+            await autoResolveMarket(market.id, resolution);
+            res.json({
+                status: 'resolved',
+                outcome: resolution.outcome,
+                confidence: resolution.confidence,
+                path: 'auto-resolve'
+            });
+        } else if (resolution.confidence >= 85) {
+            // Path A2: Second-pass + manual
+            const secondPass = await secondPassReview(market.data(), resolution);
+            await requestManualReview(market.id, secondPass);
+            res.json({
+                status: 'pending-manual',
+                outcome: secondPass.outcome,
+                confidence: secondPass.confidence,
+                path: 'second-pass'
+            });
+        } else {
+            // Path B: Full manual review
+            await requestManualReview(market.id, resolution);
+            res.json({
+                status: 'pending-manual',
+                outcome: resolution.outcome,
+                confidence: resolution.confidence,
+                path: 'manual-review'
+            });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+```
+
+### Batch Resolution
+```javascript
+/**
+ * POST /api/indexer/resolve-batch
+ * Resolve multiple markets at once
+ */
+app.post('/api/indexer/resolve-batch', async (req, res) => {
+    const { marketIds } = req.body;
+    const results = [];
+
+    for (const marketId of marketIds) {
+        try {
+            const market = await db.collection('markets').doc(marketId).get();
+            const resolution = await swarmVerifyResolution(market.data());
+            results.push({
+                marketId,
+                ...resolution
+            });
+        } catch (error) {
+            results.push({
+                marketId,
+                error: error.message
+            });
+        }
+    }
+
+    res.json({ results });
+});
+```
+
+### Second Swarm Pass (Admin)
+```javascript
+/**
+ * POST /api/admin/request-second-swarm
+ * Request another swarm pass for uncertain market
+ */
+app.post('/api/admin/request-second-swarm', requireAdmin, async (req, res) => {
+    const { marketId } = req.body;
+    const market = await db.collection('markets').doc(marketId).get();
+
+    const secondResolution = await swarmVerifyResolution(market.data(), {
+        geminiApiKey: process.env.GEMINI_API_KEY,
+        geminiUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+    });
+
+    const evidenceRef = db.collection('markets').doc(marketId).collection('resolutionEvidence').doc('swarm-verify-second-run');
+    await evidenceRef.set({
+        resolution: secondResolution,
+        timestamp: new Date(),
+        evidenceHash: generateEvidenceHash(secondResolution)
+    });
+
+    res.json(secondResolution);
+});
+```
+
+---
+
+## <a name="checklist"></a>✅ Integration Checklist
+
+### Prerequisites
+- [ ] Node.js 18+ installed
+- [ ] Express.js backend setup
+- [ ] Firestore/database configured
+- [ ] Replit AI Integrations enabled (OpenAI)
+
+### Installation
+- [ ] Copy `swarm-verify-oracle.js` to `server/` folder
+- [ ] Run `npm install openai crypto`
+- [ ] Import in `server/index.js`
+- [ ] Set `AI_INTEGRATIONS_OPENAI_*` env vars
+
+### Configuration
+- [ ] Review `CONFIG` thresholds for your markets
+- [ ] Adjust timeout based on market speed needs
+- [ ] Enable/disable agents as needed
+- [ ] Configure confidence tiers (90/85/50)
+
+### Testing
+- [ ] Test with known markets
+- [ ] Verify all agents respond
+- [ ] Check geometric median calculation
+- [ ] Test tiered confidence routing
+- [ ] Validate second-pass logic
+- [ ] Check multi-model scoring
+
+### Monitoring
+- [ ] Log agent responses
+- [ ] Track resolution times
+- [ ] Monitor confidence distributions
+- [ ] Audit manual review cases
+- [ ] Check error rates by agent
+
+### Production
+- [ ] Load test with many markets
+- [ ] Monitor API costs (OpenAI usage)
+- [ ] Setup alerts for agent failures
+- [ ] Create fallback resolution paths
+- [ ] Document manual review process
+
+---
+
+## 🎉 You're Done!
+
+Your Swarm-Verify Oracle is now integrated! It provides:
+
+✅ **Multi-Agent Research** - GPT-4o, Skeptic, DuckDuckGo, Gemini  
+✅ **Byzantine Fault Tolerance** - Geometric median consensus  
+✅ **Three-Tier Resolution** - Auto/Second-Pass/Manual  
+✅ **Multi-Model Scoring** - Factual/Consistency/Temporal/Sentiment  
+✅ **Security** - Prompt injection mitigation, evidence hashing  
+✅ **Cost Optimization** - Free agents (DuckDuckGo), reusable confidence  
+
+**Perfect for:** High-stakes prediction markets requiring bulletproof resolution 🐝
+
+---
+
+## 📚 Advanced Topics
+
+### Customizing Agents
+```javascript
+// Add your own agent
+async function customAgent(market) {
+    // Your logic here
+    return {
+        agent: 'my-custom-agent',
+        outcome: 'YES',
+        confidence: 75,
+        rationale: 'Custom reasoning...',
+        sources: [],
+        timestamp: new Date().toISOString()
+    };
+}
+
+// Integrate into swarmVerifyResolution
+agentTasks.push(customAgent(market));
+```
+
+### Enabling Parallel Mode
+```javascript
+// Much faster but higher cost (all agents run simultaneously)
+CONFIG.PARALLEL_MODE = true;  // Default
+// Average: 5-15 seconds per market
+
+// vs Sequential Mode (slower but cheaper)
+CONFIG.PARALLEL_MODE = false;
+// Average: 15-30 seconds per market
+```
+
+### Tweaking Weights
+```javascript
+// Give factual accuracy more importance
+CONFIG.SCORING_WEIGHTS = {
+    factual: 0.60,      // Up from 0.45
+    consistency: 0.20,  // Down from 0.25
+    timestamp: 0.15,
+    sentiment: 0.05
+};
+```
+
+**Happy resolving with AI agents!** 🤖
+
