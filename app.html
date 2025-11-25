@@ -4080,13 +4080,13 @@
                 snapshot.forEach(doc => rankings.push({ ...doc.data(), userId: doc.id }));
 
                 if (!currentUserId) {
-                    userRankPanel.innerHTML = '<div class="text-center p-4 text-gray-400">Sign in to join leaderboard!</div>';
+                    userRankPanel.innerHTML = '<div class="text-center p-4" style="color: var(--text-secondary);">Sign in to join leaderboard!</div>';
                 } else {
                     const userRank = rankings.findIndex(r => r.userId === currentUserId) + 1;
                     if (userRank > 0) {
                         const userData = rankings[userRank - 1];
                         const medal = userRank === 1 ? '🥇' : userRank === 2 ? '🥈' : userRank === 3 ? '🥉' : '';
-                        userRankPanel.innerHTML = `<div class="p-4 text-white"><div class="flex gap-3"><div class="text-2xl font-bold">${medal || '#' + userRank}</div><div><p class="text-sm text-gray-400">Your Rank</p><p class="font-semibold">${userData.displayName || 'User'}</p></div><div class="ml-auto text-right"><p class="text-2xl font-bold text-yellow-400">${userData.xp || 0} XP</p></div></div></div>`;
+                        userRankPanel.innerHTML = `<div class="p-4" style="color: var(--text-primary);"><div class="flex gap-3"><div class="text-2xl font-bold">${medal || '#' + userRank}</div><div><p class="text-sm" style="color: var(--text-secondary);">Your Rank</p><p class="font-semibold" style="color: var(--text-primary);">${userData.displayName || 'User'}</p></div><div class="ml-auto text-right"><p class="text-2xl font-bold" style="color: var(--text-primary);">${userData.xp || 0} XP</p></div></div></div>`;
                     }
                 }
 
@@ -4094,9 +4094,9 @@
                 rankings.forEach((user, index) => {
                     const rank = index + 1;
                     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
-                    html += `<div class="leaderboard-card-clean p-4 flex gap-3"><div class="text-xl font-bold">${medal || rank}</div><div><p class="font-semibold text-white">${user.displayName || 'User'}</p><p class="text-xs text-gray-500">${user.xp || 0} XP</p></div></div>`;
+                    html += `<div class="leaderboard-card-clean p-4 flex gap-3"><div class="text-xl font-bold" style="color: var(--text-primary);">${medal || rank}</div><div><p class="font-semibold" style="color: var(--text-primary);">${user.displayName || 'User'}</p><p class="text-xs" style="color: var(--text-secondary);">${user.xp || 0} XP</p></div></div>`;
                 });
-                rankingList.innerHTML = html || '<p class="text-gray-400 text-center">No leaderboard data</p>';
+                rankingList.innerHTML = html || '<p class="text-center" style="color: var(--text-tertiary);">No leaderboard data</p>';
             } catch (error) {
                 console.error('Leaderboard error:', error);
                 rankingList.innerHTML = '<p class="text-gray-400">Failed to load leaderboard</p>';
@@ -4137,6 +4137,9 @@
                         const stake = doc.data();
                         userStakesCache[stake.marketId] = stake.selectedStance;
                     });
+                    console.log('📊 User stakes updated:', userStakesCache);
+                    // Trigger feed re-render when stakes change to show updated "Skin in game" status
+                    loadSocialFeed();
                 });
             } catch (err) {
                 console.error('Error setting up stakes listener:', err);
