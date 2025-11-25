@@ -10,6 +10,14 @@ import admin from 'firebase-admin';
 import { OpenAI } from 'openai';
 import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
+import { 
+    preFilterContent, 
+    checkBlocklist, 
+    moderateContent,
+    checkRateLimit,
+    checkMinuteLimit,
+    logSafetyEvent
+} from './ai-guardrails.js';
 
 // --- Constants ---
 const __filename = fileURLToPath(import.meta.url);
@@ -21,16 +29,17 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET;
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
 const APP_ID = 'predora-hackathon';
 
-// Initialize OpenAI for Swarm Agents (conditional - only if keys are available)
+// Initialize OpenAI for Swarm Agents & Content Moderation (conditional - only if keys are available)
 let openai = null;
-if (process.env.AI_INTEGRATIONS_OPENAI_API_KEY) {
+const openaiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+if (openaiKey) {
     openai = new OpenAI({
-        apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+        apiKey: openaiKey,
         baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1'
     });
-    console.log("OpenAI initialized successfully for Swarm Agents.");
+    console.log("✅ OpenAI initialized successfully for Swarm Agents & Content Moderation.");
 } else {
-    console.warn("⚠️ OpenAI API key not set. Swarm verification will be disabled. Use Replit AI Integrations to enable.");
+    console.warn("⚠️ OpenAI API key not set. Swarm verification and content moderation will be disabled. Use Replit AI Integrations to enable.");
 }
 
 // SendGrid connector function - gets fresh credentials each time (don't cache)
@@ -1079,50 +1088,38 @@ app.post('/api/social/edit-comment', requireAuth, requireFirebase, async (req, r
 // AI GUARDRAILS ENDPOINTS
 // =============================================================================
 
-app.post('/api/moderate-content', async (req, res) => {
+// Enhanced moderation with full guardrails
+app.post('/api/moderate-content', requireAuth, requireFirebase, async (req, res) => {
     const { content, contentType } = req.body;
+    const userId = req.user.uid;
     
     if (!content) {
         return res.status(400).json({ error: 'Content required' });
     }
     
-    if (!openai) {
-        return res.status(200).json({
-            approved: true,
-            confidence: 0.5,
-            reason: 'Moderation service unavailable (approved with caution)',
-            violations: [],
-            tier: 'YELLOW'
-        });
-    }
-    
     try {
-        const moderation = await openai.moderations.create({
-            model: 'text-moderation-latest',
-            input: content
-        });
-        
-        const result = moderation.results[0];
-        
-        if (result.flagged) {
-            const categories = Object.keys(result.categories).filter(k => result.categories[k]);
-            
-            return res.status(200).json({
-                approved: false,
-                confidence: 1.0,
-                reason: `Content flagged: ${categories.join(', ')}`,
-                violations: categories,
-                tier: 'RED'
+        // Check rate limit
+        const rateLimit = checkRateLimit(userId, req.ip, 'moderate');
+        if (!rateLimit.allowed) {
+            return res.status(429).json({
+                error: 'Rate limit exceeded',
+                retryAfter: rateLimit.retryAfter
             });
         }
         
-        res.status(200).json({
-            approved: true,
-            confidence: 0.95,
-            reason: 'Content approved',
-            violations: [],
-            tier: 'GREEN'
+        // Run full moderation pipeline
+        const result = await moderateContent(content, contentType, openai);
+        
+        // Log the event
+        await logSafetyEvent(db, APP_ID, {
+            userId,
+            action: 'content_moderated',
+            contentType,
+            result,
+            ip: req.ip
         });
+        
+        res.status(200).json(result);
         
     } catch (error) {
         console.error('Error in moderation:', error);
@@ -1133,6 +1130,143 @@ app.post('/api/moderate-content', async (req, res) => {
             violations: [],
             tier: 'YELLOW'
         });
+    }
+});
+
+// Report unsafe content
+app.post('/api/report-content', requireAuth, requireFirebase, async (req, res) => {
+    const { contentId, contentType, reason, details } = req.body;
+    const userId = req.user.uid;
+    
+    try {
+        const reportRef = await db.collection(`artifacts/${APP_ID}/public/data/safety_reports`).add({
+            reporterId: userId,
+            contentId,
+            contentType,
+            reason,
+            details,
+            status: 'pending',
+            createdAt: new Date(),
+            reviewedAt: null,
+            reviewedBy: null,
+            action: null
+        });
+        
+        console.log(`🚨 Safety report: ${reportRef.id} - ${reason}`);
+        
+        res.status(200).json({
+            success: true,
+            reportId: reportRef.id,
+            message: 'Report submitted. Our safety team will review it.'
+        });
+        
+    } catch (error) {
+        console.error('Error reporting content:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get safety reports (Admin)
+app.get('/api/admin/safety-reports', requireAdmin, requireFirebase, async (req, res) => {
+    try {
+        const reportsRef = db.collection(`artifacts/${APP_ID}/public/data/safety_reports`);
+        const snapshot = await reportsRef
+            .where('status', '==', 'pending')
+            .orderBy('createdAt', 'desc')
+            .get();
+        
+        const reports = [];
+        for (const doc of snapshot.docs) {
+            const data = doc.data();
+            reports.push({
+                id: doc.id,
+                ...data
+            });
+        }
+        
+        res.status(200).json({ reports, count: reports.length });
+        
+    } catch (error) {
+        console.error('Error fetching safety reports:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Admin action on report
+app.post('/api/admin/safety-action', requireAdmin, requireFirebase, async (req, res) => {
+    const { reportId, action, reason } = req.body;
+    
+    try {
+        const reportRef = db.collection(`artifacts/${APP_ID}/public/data/safety_reports`).doc(reportId);
+        const reportSnap = await reportRef.get();
+        
+        if (!reportSnap.exists) {
+            return res.status(404).json({ error: 'Report not found' });
+        }
+        
+        const reportData = reportSnap.data();
+        
+        await reportRef.update({
+            status: 'resolved',
+            action,
+            adminReason: reason,
+            reviewedAt: new Date(),
+            reviewedBy: req.user.uid
+        });
+        
+        // Log the admin action
+        await logSafetyEvent(db, APP_ID, {
+            userId: req.user.uid,
+            action: 'safety_action',
+            reportId,
+            decision: action,
+            reason,
+            targetContent: reportData.contentId
+        });
+        
+        console.log(`⚖️ Admin action: ${reportId} - ${action}`);
+        
+        res.status(200).json({ success: true, action });
+        
+    } catch (error) {
+        console.error('Error taking safety action:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Safety statistics (Admin)
+app.get('/api/admin/safety-stats', requireAdmin, requireFirebase, async (req, res) => {
+    try {
+        const reportsRef = db.collection(`artifacts/${APP_ID}/public/data/safety_reports`);
+        const logsRef = db.collection(`artifacts/${APP_ID}/public/data/safety_logs`);
+        
+        const pendingSnapshot = await reportsRef.where('status', '==', 'pending').count().get();
+        const resolvedSnapshot = await reportsRef.where('status', '==', 'resolved').count().get();
+        
+        const logsSnapshot = await logsRef.get();
+        const byReason = {};
+        
+        logsSnapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.action === 'content_moderated' && data.result) {
+                const tier = data.result.tier || 'UNKNOWN';
+                byReason[tier] = (byReason[tier] || 0) + 1;
+            }
+        });
+        
+        const stats = {
+            pending: pendingSnapshot.data().count,
+            resolved: resolvedSnapshot.data().count,
+            moderationStats: byReason,
+            totalReports: pendingSnapshot.data().count + resolvedSnapshot.data().count,
+            timestamp: new Date().toISOString()
+        };
+        
+        res.status(200).json(stats);
+        
+    } catch (error) {
+        console.error('Error fetching safety stats:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -1225,6 +1359,22 @@ app.get('/api/admin/disputed-markets', requireAdmin, requireFirebase, async (req
     }
 });
 
+// =============================================================================
+// HEALTH CHECK
+// =============================================================================
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        features: {
+            guardRails: !!openai,
+            firebase: !!db,
+            sendGrid: !!process.env.REPLIT_CONNECTORS_HOSTNAME
+        }
+    });
+});
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Predora Backend Server is live on port ${PORT}`);
+    console.log(`🛡️ AI Guardrails: ${openai ? '✅ ACTIVE' : '⚠️ DISABLED'}`);
 });

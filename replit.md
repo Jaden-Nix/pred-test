@@ -3,20 +3,20 @@
 ## Overview
 Predora is a decentralized prediction market platform with AI-powered market resolution, social features, and a comprehensive admin panel. This project uses Firebase for data storage, OpenAI for swarm-based verification, and Google's Gemini AI for market resolution.
 
-## Recent Changes (November 24, 2025)
-- **Guest Mode**: App now opens in guest mode by default - users can browse markets and social feed without signing in
-- **Restricted Guest Access**: Guests can only view home and social feed screens; all interactions (create post, react, comment, place stakes) prompt sign-in
-- **Demo Accounts**: Judge/Alice/Bob demo accounts have full unrestricted access like real users
-- **Social Feed API Integration**: Rewritten to use backend APIs (fixed XSS vulnerability, race conditions, security issues)
-- **Removed Logos**: Cleaned up UI - no redundant logos in app header
-- **Fixed Social Feed Bugs**: 10+ bugs fixed including race conditions, wrong avatars, missing error handling
-- **Backend API Endpoints**: Added delete/edit endpoints for posts and comments
-- **Integrated Email/OTP Authentication System**: Added passwordless login with 6-digit OTP codes
-- **Social Feed System**: Implemented post creation, reactions, comments, and social interactions
-- **Admin Panel**: Added administrative controls for market resolution and platform management
-- **Jury System**: Implemented dispute resolution with 5-juror voting system and 30-minute dispute windows
-- **AI Guardrails**: Added content moderation using OpenAI's moderation API
-- **Login Page**: Created standalone login.html with modern UI
+## Recent Changes (November 25, 2025)
+- **Complete AI Guardrails System**: Multi-layer content moderation with pre-filters, keyword blocklist, OpenAI API, toxicity detection, and rate limiting
+- **Safety Reports**: Users can report unsafe content; admins can review, approve, or remove flagged content
+- **Admin Safety Dashboard**: New endpoints for viewing pending reports, taking actions, and monitoring safety statistics
+- **Enhanced Moderation Pipeline**: All content moderated through: format check → keyword blocklist → OpenAI moderation → logging
+- **Rate Limiting**: Built-in token bucket and per-minute rate limiting to prevent spam and abuse
+- **Safety Collections**: Added `safety_reports`, `flagged_content`, and `safety_logs` to Firestore
+- **Previous Updates**:
+  - Guest Mode and restricted access for unauthenticated users
+  - Social Feed API integration with all interactions
+  - Email/OTP authentication system
+  - Admin Panel for market resolution
+  - Jury System with 5-juror voting
+  - All social features (posts, reactions, comments)
 
 ## Project Structure
 ```
@@ -53,6 +53,9 @@ All data is stored in: `artifacts/predora-hackathon/public/data/`
 - `otp_codes` - Email verification OTP codes
 - `market_comments` - Market discussions
 - `stake_logs` - Historical stake data for charts
+- `safety_reports` - User-reported unsafe content
+- `flagged_content` - Content removed by admins
+- `safety_logs` - Audit trail of moderation actions
 
 ## Required Secrets (Replit Secrets)
 
@@ -118,9 +121,14 @@ All data is stored in: `artifacts/predora-hackathon/public/data/`
 - `GET /api/admin/disputed-markets` - Get all disputed markets
 
 ### AI & Content
-- `POST /api/moderate-content` - Moderate user-generated content
+- `POST /api/moderate-content` - Moderate user-generated content (enhanced with full guardrails)
+- `POST /api/report-content` - Report unsafe content
+- `GET /api/admin/safety-reports` - View pending safety reports (admin only)
+- `POST /api/admin/safety-action` - Admin action on report (approve/remove/ban)
+- `GET /api/admin/safety-stats` - Safety statistics and metrics (admin only)
 - `POST /api/gemini` - Proxy for Gemini AI
 - `POST /api/run-jobs` - Trigger cron jobs (requires CRON_SECRET)
+- `GET /api/health` - Health check endpoint
 
 ## Features Integrated
 
@@ -142,6 +150,67 @@ All data is stored in: `artifacts/predora-hackathon/public/data/`
 - [ ] 30-Minute Dispute Window - Logic implemented, needs frontend UI
 - [ ] Frontend Social Feed UI - Needs HTML/CSS/JS integration into app.html
 - [ ] Frontend Admin Panel UI - Needs HTML/CSS/JS integration into app.html
+- [ ] Frontend Safety Dashboard - Safety reporting and admin moderation UI not yet implemented
+
+## AI Guardrails System
+
+### Multi-Layer Content Moderation
+
+The system protects your platform through a 5-layer defense pipeline:
+
+```
+Layer 1: Pre-Filter (Fast regex-based checks)
+   ↓ Length validation, format checks, excessive caps
+Layer 2: Keyword Blocklist (Pattern matching)
+   ↓ Financial manipulation, hate speech, violence, spam
+Layer 3: OpenAI Moderation API (ML-based)
+   ↓ Detects: hate, harassment, violence, sexual, illegal
+Layer 4: Toxicity Detection (Severity scoring)
+   ↓ Measures: toxicity, profanity, threats, insults
+Layer 5: Admin Review (Manual quarantine)
+   ↓ Pending reports, context review, enforcement actions
+```
+
+### Safety Tiers
+
+- **GREEN (Auto-Approve)**: Confidence >95%, safe content
+- **YELLOW (Manual Review)**: Confidence 70-95%, needs admin review
+- **RED (Auto-Reject)**: Confidence <70%, clear violations
+
+### Rate Limiting
+
+- Token bucket system: 100 tokens per user, 1 token per second
+- Per-minute limits: 5 markets/min, 30 comments/min, 60 votes/min
+- Prevents spam, brute force, and abuse
+
+### Usage Example
+
+```javascript
+// Check content before storing
+const result = await fetch('/api/moderate-content', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({
+        content: userContent,
+        contentType: 'market_title'
+    })
+});
+
+// Result includes:
+// { approved, confidence, reason, violations, tier }
+
+// Report unsafe content
+await fetch('/api/report-content', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({
+        contentId: 'abc123',
+        contentType: 'post',
+        reason: 'hate_speech',
+        details: 'Contains offensive language'
+    })
+});
+```
 
 ## How to Set Up
 
