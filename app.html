@@ -4083,7 +4083,7 @@
             }
         };
 
-        window.filterSocialFeedwindow.filterSocialFeed = (filter) => {
+        window.filterSocialFeed = (filter) => {
             socialFeedFilter = filter;
             document.querySelectorAll('[id^="feed-filter-"]').forEach(btn => btn.classList.remove('active'));
             const btn = document.getElementById(`feed-filter-${filter}`);

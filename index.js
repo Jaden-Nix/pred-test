@@ -148,6 +148,11 @@ function requireAdmin(req, res, next) {
 
 // --- ROUTES (must be BEFORE static middleware) ---
 app.get('/', (req, res) => {
+    // Redirect root URL directly to the app in guest mode
+    res.redirect('/app.html');
+});
+
+app.get('/home', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
