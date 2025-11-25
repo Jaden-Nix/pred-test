@@ -1843,17 +1843,33 @@ app.get('/api/admin/safety-stats', requireAdmin, requireFirebase, async (req, re
 app.post('/api/admin/validate-password', (req, res) => {
     const { password } = req.body;
     
+    console.log(`🔐 Admin password validation attempt`);
+    console.log(`   Provided password length: ${password ? password.length : 'null'}`);
+    console.log(`   Stored ADMIN_SECRET exists: ${ADMIN_SECRET ? 'yes' : 'no'}`);
+    console.log(`   Stored ADMIN_SECRET length: ${ADMIN_SECRET ? ADMIN_SECRET.length : 'N/A'}`);
+    
     if (!ADMIN_SECRET) {
+        console.error('❌ ADMIN_SECRET not configured');
         return res.status(503).json({ error: 'Admin system not configured' });
     }
     
-    if (password === ADMIN_SECRET) {
+    // Trim whitespace from both sides
+    const trimmedPassword = (password || '').trim();
+    const trimmedSecret = (ADMIN_SECRET || '').trim();
+    
+    console.log(`   After trim - Provided: "${trimmedPassword}" (${trimmedPassword.length} chars)`);
+    console.log(`   After trim - Secret: "${trimmedSecret.substring(0, 3)}***" (${trimmedSecret.length} chars)`);
+    console.log(`   Match: ${trimmedPassword === trimmedSecret}`);
+    
+    if (trimmedPassword === trimmedSecret) {
+        console.log(`✅ Admin password validated successfully`);
         res.json({ 
             success: true, 
             adminSecret: ADMIN_SECRET,
             message: 'Admin authentication successful' 
         });
     } else {
+        console.error(`❌ Admin password mismatch - rejecting`);
         res.status(401).json({ error: 'Invalid admin password' });
     }
 });
