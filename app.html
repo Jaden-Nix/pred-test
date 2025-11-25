@@ -2522,7 +2522,7 @@
 
         <!-- CREATE POST MODAL -->
         <div id="create-post-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div class="ui-panel w-full max-w-md space-y-4">
+            <div class="ui-panel w-full max-w-md space-y-4 max-h-screen overflow-y-auto">
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold gradient-text">Create Post</h2>
                     <button onclick="closeCreatePost()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
@@ -2531,10 +2531,10 @@
                 <div class="flex justify-between text-xs text-gray-400">
                     <span id="post-char-count">0</span>/500
                 </div>
-                <div id="post-image-preview-container" class="hidden">
+                <div id="post-image-preview-container" class="hidden mb-3 p-2 bg-white/5 rounded-lg border border-white/20">
                     <div class="relative inline-block w-full">
-                        <img id="post-image-preview" src="" class="w-full rounded-lg max-h-48 object-cover">
-                        <button onclick="removePostImage()" class="absolute top-2 right-2 bg-red-500/80 hover:bg-red-600 text-white rounded-full p-1 w-8 h-8 flex items-center justify-center text-lg">✕</button>
+                        <img id="post-image-preview" alt="Preview" style="display: block;" class="w-full rounded-md max-h-64 object-cover border border-sky-400/30">
+                        <button type="button" onclick="removePostImage()" class="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold transition-all">×</button>
                     </div>
                 </div>
                 <div id="attached-market-display" class="hidden bg-sky-400/10 p-3 rounded border border-sky-400/30 text-sm">
@@ -4267,12 +4267,18 @@
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     attachedImage = ev.target.result;
+                    console.log('📷 Image loaded, size:', ev.target.result.length);
                     // Show preview
                     const previewImg = document.getElementById('post-image-preview');
-                    if (previewImg) {
+                    const container = document.getElementById('post-image-preview-container');
+                    console.log('Preview img element:', previewImg);
+                    console.log('Container element:', container);
+                    if (previewImg && container) {
                         previewImg.src = attachedImage;
-                        const container = document.getElementById('post-image-preview-container');
-                        if (container) container.classList.remove('hidden');
+                        container.classList.remove('hidden');
+                        console.log('✅ Preview visible');
+                    } else {
+                        console.log('❌ Preview elements not found');
                     }
                     showToast('Image attached!', 'success');
                 };
