@@ -5,6 +5,13 @@ Predora is a decentralized prediction market platform with AI-powered market res
 
 ## Recent Changes (November 25, 2025)
 
+- **Quick Polls Oracle**: Auto-resolve quick polls when duration expires
+  - Scans all unresolved quick polls
+  - Auto-resolves when poll duration exceeds expiration time
+  - Automatically determines winning option based on vote count
+  - Sends notifications to all poll participants
+  - Integrated into `/api/run-jobs` cron endpoint for automated resolution
+
 - **Pool Liquidity & Market Momentum Display**: Market cards now show AMM pool information and price changes
   - Pool Liquidity (AMM) section displays total liquidity and individual YES/NO pool amounts
   - Color-coded pools (green for YES, red for NO) for quick visual reference

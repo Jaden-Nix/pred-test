@@ -624,6 +624,120 @@ async function autoResolveMarkets() {
     }
 }
 
+// --- ORACLE: Auto-Resolve Quick Polls ---
+async function autoResolveQuickPolls() {
+    console.log("🗳️ ORACLE: Running autoResolveQuickPolls...");
+    
+    if (!db) {
+        console.warn("⚠️ Database not initialized, skipping quick polls resolution");
+        return;
+    }
+
+    try {
+        const collectionPath = `artifacts/${APP_ID}/public/data/quick_polls`;
+        const snapshot = await db.collection(collectionPath).where('isResolved', '==', false).get();
+
+        if (snapshot.empty) {
+            console.log("🗳️ ORACLE: No unresolved quick polls.");
+            return;
+        }
+
+        const now = new Date();
+        const pollsToResolve = [];
+
+        // Filter polls that have exceeded their duration
+        for (const doc of snapshot.docs) {
+            const poll = doc.data();
+            const createdAt = poll.createdAt?.toDate?.() || new Date(poll.createdAt);
+            const durationMinutes = parseInt(poll.duration) || 60;
+            const expirationTime = new Date(createdAt.getTime() + durationMinutes * 60 * 1000);
+
+            if (now >= expirationTime) {
+                pollsToResolve.push({ id: doc.id, ...poll });
+            }
+        }
+
+        console.log(`🗳️ ORACLE: Found ${pollsToResolve.length} polls ready for resolution`);
+
+        // Resolve each poll
+        for (const poll of pollsToResolve) {
+            try {
+                // Find the option with the most votes
+                let winningOption = null;
+                let maxVotes = 0;
+
+                if (poll.options && Array.isArray(poll.options)) {
+                    for (const option of poll.options) {
+                        if ((option.votes || 0) > maxVotes) {
+                            maxVotes = option.votes;
+                            winningOption = option.label;
+                        }
+                    }
+                }
+
+                // Update the poll with resolution
+                const pollRef = db.collection(collectionPath).doc(poll.id);
+                await pollRef.update({
+                    isResolved: true,
+                    winningOption: winningOption || 'No votes',
+                    resolvedAt: new Date(),
+                    finalVoteCount: maxVotes
+                });
+
+                console.log(`✅ ORACLE: Resolved poll "${poll.title}" - Winner: "${winningOption}" (${maxVotes} votes)`);
+
+                // Send notifications to users who voted
+                try {
+                    // Get all votes/pledges for this poll
+                    const pledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
+                    const pollPledges = await pledgesRef.where('pollId', '==', poll.id).get();
+
+                    const notifiedUsers = new Set();
+                    const batch = db.batch();
+
+                    for (const pledgeSnap of pollPledges.docs) {
+                        const pledge = pledgeSnap.data();
+                        const userIdToNotify = pledge.userId;
+
+                        if (!userIdToNotify || typeof userIdToNotify !== 'string') {
+                            continue;
+                        }
+
+                        if (!notifiedUsers.has(userIdToNotify)) {
+                            notifiedUsers.add(userIdToNotify);
+
+                            const notificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${userIdToNotify}/notifications`).doc();
+                            batch.set(notificationsRef, {
+                                type: 'poll_resolved',
+                                pollId: poll.id,
+                                pollTitle: poll.title,
+                                winningOption: winningOption,
+                                message: `Poll resolved: "${poll.title}" - Winner: ${winningOption}`,
+                                actionUrl: `screen:quick-polls`,
+                                timestamp: new Date(),
+                                read: false
+                            });
+                        }
+                    }
+
+                    if (notifiedUsers.size > 0) {
+                        await batch.commit();
+                        console.log(`📢 Poll resolution notifications sent to ${notifiedUsers.size} users for "${poll.title}"`);
+                    }
+                } catch (notifError) {
+                    console.error(`⚠️ Failed to send poll resolution notifications:`, notifError.message);
+                }
+
+            } catch (pollError) {
+                console.error(`🗳️ ORACLE: Failed to resolve poll ${poll.id}:`, pollError.message);
+            }
+        }
+
+    } catch (error) {
+        console.error("🗳️ ORACLE: autoResolveQuickPolls failed:", error.message);
+    }
+}
+
 // (The rest of your Oracle functions: createDailyMarkets, autoGenerateQuickPlays, etc. go here. 
 //  They are safe because they all use 'callGoogleApi', which now has retry logic.)
 
@@ -633,6 +747,7 @@ app.post('/api/run-jobs', async (req, res) => {
 
     try {
         await autoResolveMarkets();
+        await autoResolveQuickPolls();
         // await createDailyMarkets(); // Uncomment if you added this back
         // await autoGenerateQuickPlays(); // Uncomment if you added this back
         res.status(200).json({ success: true });
