@@ -6868,7 +6868,7 @@
                     }
 
                     // --- THIS BLOCK IS NOW CORRECTED ---
-                    if (marketId === MOCK_ETH_MARKET.id) {
+                    if (MOCK_ETH_MARKET && marketId === MOCK_ETH_MARKET.id) {
                         currentMarket = MOCK_ETH_MARKET;
                         // Give the mock market a creation date for the chart
                         currentMarket.createdAt = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
@@ -6971,7 +6971,7 @@
                     // --- END CHART & TVL BLOCK ---
 
                     // --- RACE CONDITION FIX (STILL NEEDED) ---
-                    if (marketId !== MOCK_ETH_MARKET.id) {
+                    if (!MOCK_ETH_MARKET || marketId !== MOCK_ETH_MARKET.id) {
                         const marketRef = doc(db, 'artifacts', APP_ID, 'public', 'data', STANDARD_MARKETS_COLLECTION, marketId);
 
                         if(detailMarketUnsubscribe) detailMarketUnsubscribe();
