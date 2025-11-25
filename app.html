@@ -8361,6 +8361,20 @@ ${historyText}`;
 
             // Quick poll create button
             document.getElementById('admin-publish-poll-btn')?.addEventListener('click', createQuickPoll);
+
+            // Safety dashboard refresh button
+            document.getElementById('refresh-safety-reports-btn')?.addEventListener('click', () => {
+                loadSafetyStats();
+                loadSafetyReports();
+            });
+
+            // Safety screen transition handler
+            document.getElementById('admin-safety-screen')?.addEventListener('transitionend', () => {
+                if (!document.getElementById('admin-safety-screen').classList.contains('screen-inactive')) {
+                    loadSafetyStats();
+                    loadSafetyReports();
+                }
+            });
         }
 
         /**
@@ -8820,7 +8834,7 @@ ${historyText}`;
                 const response = await fetch('/api/admin/safety-stats', {
                     method: 'GET',
                     headers: {
-                        'x-admin-secret': ADMIN_SECRET || ''
+                        'x-admin-secret': adminSecret || ''
                     }
                 });
 
@@ -8876,7 +8890,7 @@ ${historyText}`;
                 const response = await fetch('/api/admin/safety-reports', {
                     method: 'GET',
                     headers: {
-                        'x-admin-secret': ADMIN_SECRET || ''
+                        'x-admin-secret': adminSecret || ''
                     }
                 });
 
@@ -8941,7 +8955,7 @@ ${historyText}`;
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'x-admin-secret': ADMIN_SECRET || ''
+                        'x-admin-secret': adminSecret || ''
                     },
                     body: JSON.stringify({
                         reportId,
