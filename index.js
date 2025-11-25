@@ -879,7 +879,7 @@ app.post('/api/auth/send-otp', requireFirebase, async (req, res) => {
         try {
             const sendGridClient = await getUncachableSendGridClient();
             if (sendGridClient) {
-                await sendGridClient.client.send({
+                const response = await sendGridClient.client.send({
                     to: email,
                     from: sendGridClient.fromEmail,
                     subject: 'Your Predora Login Code',
@@ -894,12 +894,14 @@ app.post('/api/auth/send-otp', requireFirebase, async (req, res) => {
                         </div>
                     `
                 });
-                console.log(`✉️ OTP email sent successfully to ${email}`);
+                console.log(`✉️ OTP email sent successfully to ${email}. Response:`, response);
             } else {
                 console.warn('⚠️ SendGrid not available, OTP not sent via email');
             }
         } catch (emailError) {
-            console.error('❌ Email sending failed:', emailError.message, emailError);
+            console.error('❌ Email sending FAILED:', emailError.message);
+            console.error('Full error:', emailError);
+            console.error('Error response:', emailError.response?.body);
         }
         
         console.log(`✅ OTP request completed for ${email}: ${otp}`);
