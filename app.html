@@ -2703,7 +2703,7 @@
                         <h2 class="text-lg font-semibold text-white">Active Quick Plays</h2>
                         <span id="quickplay-count" class="text-sm text-gray-400">Loading...</span>
                     </div>
-                    <div id="quick-play-resolution-list" class="space-y-4">
+                    <div id="admin-qp-resolution-list" class="space-y-4">
                         <p class="text-gray-400 text-center py-8">Loading quick plays...</p>
                     </div>
                 </div>
@@ -5280,6 +5280,14 @@
          * A router that loads or attaches listeners based on the screen being viewed.
          */
         function loadDataForScreen(screenId) {
+            // Load data for admin screens
+            if (screenId === 'admin-resolution-screen') {
+                renderMarketResolutionScreen();
+            } else if (screenId === 'admin-quickplay-screen') {
+                renderQuickPlayResolutionScreen();
+            } else if (screenId === 'admin-quickpoll-screen') {
+                renderQuickPollScreen();
+            }
             switch(screenId) {
                 case 'home-screen':
                     if (!standardMarketsUnsubscribe) attachStandardMarketsListener();
@@ -8172,6 +8180,41 @@ ${historyText}`;
             });
             document.getElementById('admin-generate-btn').addEventListener('click', adminGenerateQuickPlay);
             document.getElementById('admin-publish-btn').addEventListener('click', adminPublishQuickPlay);
+
+            // Event listeners for new admin screens
+            document.getElementById('admin-resolution-screen')?.addEventListener('transitionend', () => {
+                if (!document.getElementById('admin-resolution-screen').classList.contains('screen-inactive')) {
+                    renderMarketResolutionScreen();
+                }
+            });
+
+            document.getElementById('admin-quickplay-screen')?.addEventListener('transitionend', () => {
+                if (!document.getElementById('admin-quickplay-screen').classList.contains('screen-inactive')) {
+                    renderQuickPlayResolutionScreen();
+                }
+            });
+
+            document.getElementById('admin-quickpoll-screen')?.addEventListener('transitionend', () => {
+                if (!document.getElementById('admin-quickpoll-screen').classList.contains('screen-inactive')) {
+                    renderQuickPollScreen();
+                }
+            });
+
+            // Search listeners
+            document.getElementById('resolution-search-all')?.addEventListener('input', (e) => {
+                filterMarketResolution(e.target.value);
+            });
+
+            document.getElementById('quickplay-search-input')?.addEventListener('input', (e) => {
+                filterQuickPlayResolution(e.target.value);
+            });
+
+            document.getElementById('poll-search-input')?.addEventListener('input', (e) => {
+                filterPollSearch(e.target.value);
+            });
+
+            // Quick poll create button
+            document.getElementById('admin-publish-poll-btn')?.addEventListener('click', createQuickPoll);
         }
 
         /**
@@ -8296,6 +8339,189 @@ ${historyText}`;
             } catch (error) {
                 showLoadingOverlay(false);
                 showToast("AI Quick Play publish failed. Check console.");
+            }
+        }
+
+        /**
+         * Renders the Market Resolution Screen with both standard and quick play markets
+         */
+        function renderMarketResolutionScreen() {
+            renderResolutionPanel();
+            renderQuickPlayResolutionPanel();
+        }
+
+        /**
+         * Renders Quick Play Markets for resolution
+         */
+        function renderQuickPlayResolutionScreen() {
+            renderQuickPlayResolutionPanel();
+        }
+
+        /**
+         * Renders Quick Poll Screen
+         */
+        function renderQuickPollScreen() {
+            const pollsList = document.getElementById('polls-resolution-list');
+            if (pollsList) {
+                pollsList.innerHTML = '<p class="text-gray-400 text-center py-8">No quick polls yet. Create one above!</p>';
+                document.getElementById('polls-count').textContent = '0';
+            }
+        }
+
+        /**
+         * Renders the list of active quick play markets for resolution
+         */
+        function renderQuickPlayResolutionPanel() {
+            const { collection, query, onSnapshot } = window.firebase.firestore;
+            // Check if we're in admin-resolution-screen or admin-quickplay-screen
+            const resolutionScreenContainer = document.getElementById('quick-play-resolution-list');
+            const quickPlayScreenContainer = document.getElementById('admin-qp-resolution-list');
+            const listContainer = resolutionScreenContainer || quickPlayScreenContainer;
+            if (!listContainer) return;
+            
+            listContainer.innerHTML = '<p class="text-gray-400 text-center">Loading quick plays...</p>';
+
+            const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', QUICK_PLAY_MARKETS_COLLECTION));
+
+            onSnapshot(q, (snapshot) => {
+                let html = '';
+                if (snapshot.empty) {
+                    listContainer.innerHTML = '<p class="text-gray-400 text-center">No quick plays to resolve.</p>';
+                    const count = document.getElementById('quickplay-count');
+                    if (count) count.textContent = '0';
+                    return;
+                }
+
+                let quickPlays = [];
+                snapshot.forEach(doc => {
+                    quickPlays.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Sort: unresolved first
+                quickPlays.sort((a, b) => {
+                    if (a.isResolved === b.isResolved) return 0;
+                    return a.isResolved ? 1 : -1;
+                });
+
+                quickPlays.forEach(qp => {
+                    if (!qp.isResolved) {
+                        html += `
+                            <div class="ui-panel p-4 border-l-4 border-sky-500">
+                                <p class="text-white font-semibold mb-3">${qp.title}</p>
+                                <div class="grid grid-cols-2 gap-3 mb-3">
+                                    <div><span class="text-green-400">${qp.yesPercent || 50}%</span> YES</div>
+                                    <div><span class="text-red-400">${qp.noPercent || 50}%</span> NO</div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button onclick="resolveMarket('${qp.id}', 'YES')" class="btn btn-stake-yes flex-1">Resolve YES</button>
+                                    <button onclick="resolveMarket('${qp.id}', 'NO')" class="btn btn-stake-no flex-1">Resolve NO</button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        const outcomeColor = qp.winningOutcome === 'YES' ? 'text-green-400' : 'text-red-400';
+                        html += `
+                            <div class="ui-panel p-4 border-l-4 border-gray-600 opacity-70">
+                                <p class="text-gray-400 font-semibold mb-3">${qp.title}</p>
+                                <p class="text-base font-bold ${outcomeColor}">RESOLVED AS: ${qp.winningOutcome}</p>
+                            </div>
+                        `;
+                    }
+                });
+
+                listContainer.innerHTML = html;
+                const count = document.getElementById('quickplay-count');
+                if (count) count.textContent = quickPlays.filter(q => !q.isResolved).length;
+            });
+        }
+
+        /**
+         * Filter market resolution by search term
+         */
+        function filterMarketResolution(searchTerm) {
+            const markets = document.querySelectorAll('#admin-resolution-screen .ui-panel');
+            markets.forEach(market => {
+                const title = market.querySelector('p')?.textContent.toLowerCase() || '';
+                if (title.includes(searchTerm.toLowerCase())) {
+                    market.style.display = '';
+                } else {
+                    market.style.display = 'none';
+                }
+            });
+        }
+
+        /**
+         * Filter quick play resolution by search term
+         */
+        function filterQuickPlayResolution(searchTerm) {
+            const listContainer = document.getElementById('admin-qp-resolution-list');
+            if (!listContainer) return;
+            const quickPlays = listContainer.querySelectorAll('.ui-panel');
+            quickPlays.forEach(qp => {
+                const title = qp.querySelector('p')?.textContent.toLowerCase() || '';
+                if (title.includes(searchTerm.toLowerCase())) {
+                    qp.style.display = '';
+                } else {
+                    qp.style.display = 'none';
+                }
+            });
+        }
+
+        /**
+         * Filter polls by search term
+         */
+        function filterPollSearch(searchTerm) {
+            const polls = document.querySelectorAll('#admin-quickpoll-screen .ui-panel');
+            polls.forEach(poll => {
+                const title = poll.querySelector('p')?.textContent.toLowerCase() || '';
+                if (title.includes(searchTerm.toLowerCase())) {
+                    poll.style.display = '';
+                } else {
+                    poll.style.display = 'none';
+                }
+            });
+        }
+
+        /**
+         * Create a new quick poll
+         */
+        async function createQuickPoll() {
+            const title = document.getElementById('admin-poll-title')?.value;
+            const duration = document.getElementById('admin-poll-duration')?.value;
+            const optionsText = document.getElementById('admin-poll-options')?.value;
+
+            if (!title || !duration || !optionsText) {
+                showToast('Please fill all fields');
+                return;
+            }
+
+            const options = optionsText.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0);
+            if (options.length < 2) {
+                showToast('Please provide at least 2 options');
+                return;
+            }
+
+            showLoadingOverlay(true, 'Creating poll...');
+            try {
+                const { addDoc, collection, serverTimestamp } = window.firebase.firestore;
+                await addDoc(collection(db, 'artifacts', APP_ID, 'public', 'data', 'quick_polls'), {
+                    title,
+                    duration,
+                    options: options.map((opt, idx) => ({ id: idx, label: opt, votes: 0 })),
+                    isResolved: false,
+                    winningOption: null,
+                    createdAt: serverTimestamp()
+                });
+
+                showLoadingOverlay(false);
+                showToast('Poll created successfully!');
+                document.getElementById('admin-poll-title').value = '';
+                document.getElementById('admin-poll-duration').value = '';
+                document.getElementById('admin-poll-options').value = '';
+                renderQuickPollScreen();
+            } catch (error) {
+                showLoadingOverlay(false);
+                showToast('Failed to create poll: ' + error.message);
             }
         }
 
