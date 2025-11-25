@@ -1424,7 +1424,7 @@
                 <div class="flex justify-between items-center gap-8">
                     <!-- Left: Predora Branding + Guest Sign In Button -->
                     <div class="flex items-center gap-3">
-                        <div class="text-xl font-bold gradient-text">Predora</div>
+                        <div id="predora-logo" class="text-xl font-bold gradient-text cursor-pointer hover:opacity-80 transition-opacity">Predora</div>
                         <button id="guest-signin-btn" onclick="window.location.href='login.html'" style="display: none;" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-full hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/50 active:scale-95 border border-sky-400/30">
                             Sign In
                         </button>
@@ -7711,9 +7711,11 @@ ${historyText}`;
                 }
             };
 
-            // Elements removed - no longer needed
-            // document.getElementById('app-title').addEventListener('click', handleAdminTap);
-            // document.getElementById('mobile-app-title').addEventListener('click', handleAdminTap);
+            // Secret 5-tap gesture on Predora logo
+            const logoElement = document.getElementById('predora-logo');
+            if (logoElement) {
+                logoElement.addEventListener('click', handleAdminTap);
+            }
 
             // Admin password check
             document.getElementById('admin-login-btn').addEventListener('click', () => {
