@@ -10089,6 +10089,7 @@ ${historyText}`;
 
         /**
          * Admin function to wipe all demo data from Firestore (comprehensive).
+         * Recursively deletes subcollections to handle nested data.
          */
         async function clearAllDemoData() {
             if (!confirm("ARE YOU SURE? This will delete ALL demo markets, social posts, pledges, comments, and user profiles. This action cannot be undone!")) {
@@ -10096,7 +10097,35 @@ ${historyText}`;
             }
 
             showLoadingOverlay(true, "🧹 WIPING ALL DATA...");
-            const { getDocs, collection, writeBatch, deleteField } = window.firebase.firestore;
+            const { getDocs, collection, writeBatch, deleteField, collectionGroup, query, where } = window.firebase.firestore;
+
+            // Helper: Recursively delete subcollections
+            async function deleteCollectionRecursive(collRef) {
+                const batch = writeBatch(db);
+                const snapshot = await getDocs(collRef);
+                let deleteCount = 0;
+
+                for (const doc of snapshot.docs) {
+                    // Delete any subcollections first
+                    const subcollections = await doc.ref.listCollections();
+                    for (const subcoll of subcollections) {
+                        await deleteCollectionRecursive(subcoll);
+                    }
+                    // Then delete the document
+                    batch.delete(doc.ref);
+                    deleteCount++;
+                    
+                    if (deleteCount % 100 === 0) {
+                        await batch.commit();
+                        batch = writeBatch(db);
+                    }
+                }
+
+                if (deleteCount % 100 !== 0) {
+                    await batch.commit();
+                }
+                return deleteCount;
+            }
 
             // All collections to wipe
             const collectionsToWipe = [
@@ -10113,30 +10142,23 @@ ${historyText}`;
             ];
 
             try {
-                let operationCount = 0;
+                let totalOperationCount = 0;
 
                 for (const collName of collectionsToWipe) {
-                    const batch = writeBatch(db);
                     const collRef = collection(db, 'artifacts', APP_ID, 'public', 'data', collName);
-                    const snapshot = await getDocs(collRef);
-
-                    if (snapshot.empty) {
+                    const opCount = await deleteCollectionRecursive(collRef);
+                    
+                    if (opCount > 0) {
+                        console.log(`✅ Deleted ${opCount} docs from ${collName} (including subcollections)`);
+                        totalOperationCount += opCount;
+                    } else {
                         console.log(`⏭️ ${collName}: No docs to delete`);
-                        continue;
                     }
-
-                    snapshot.forEach(doc => {
-                        batch.delete(doc.ref);
-                        operationCount++;
-                    });
-
-                    await batch.commit();
-                    console.log(`✅ Deleted ${snapshot.size} docs from ${collName}`);
                 }
 
-                if (operationCount > 0) {
+                if (totalOperationCount > 0) {
                     showLoadingOverlay(false);
-                    showToast(`✅ WIPE COMPLETE: Deleted ${operationCount} documents. Reloading...`, "success");
+                    showToast(`✅ WIPE COMPLETE: Deleted ${totalOperationCount} documents. Reloading...`, "success");
                     // Force a reload to clear the app's state
                     setTimeout(() => {
                         localStorage.clear();
