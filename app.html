@@ -2627,6 +2627,21 @@
                             </div>
                         </div>
                     </button>
+
+                    <!-- Safety & Guardrails -->
+                    <button onclick="showScreen('admin-safety-screen')" class="admin-nav-card text-left">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center border border-red-500/30">
+                                <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m7 7l-9 9M3 3l9 9m0 0l9 9"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">Safety & Guardrails</h3>
+                                <p class="text-sm text-gray-400">Content moderation & reports</p>
+                            </div>
+                        </div>
+                    </button>
                 </div>
 
                 <button id="admin-logout-btn" class="btn btn-secondary w-full">Log Out of Admin</button>
@@ -2850,6 +2865,60 @@
                     </div>
                     <div id="admin-disputed-markets-list" class="space-y-4">
                         <p class="text-gray-400 text-center py-4">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN SAFETY & GUARDRAILS SCREEN -->
+            <div id="admin-safety-screen" class="screen screen-inactive space-y-6">
+                <button onclick="showScreen('admin-panel-screen')" class="flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Admin Panel
+                </button>
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold gradient-text mb-2">🛡️ Safety & Guardrails</h1>
+                    <p class="text-gray-400 text-sm">Content moderation, safety reports & enforcement</p>
+                </div>
+
+                <!-- Safety Statistics -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-value text-green-400" id="safety-stat-green">-</div>
+                        <div class="admin-stat-label">🟢 Safe</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-value text-yellow-400" id="safety-stat-yellow">-</div>
+                        <div class="admin-stat-label">🟡 Pending</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-value text-red-400" id="safety-stat-red">-</div>
+                        <div class="admin-stat-label">🔴 Blocked</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-value text-blue-400" id="safety-stat-reports">-</div>
+                        <div class="admin-stat-label">📋 Reports</div>
+                    </div>
+                </div>
+
+                <!-- Pending Reports Section -->
+                <div class="ui-panel p-4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-semibold text-white">Pending Safety Reports</h2>
+                        <button id="refresh-safety-reports-btn" class="btn btn-secondary btn-sm">Refresh</button>
+                    </div>
+                    <div id="safety-reports-list" class="space-y-4">
+                        <p class="text-gray-400 text-center py-8">Loading reports...</p>
+                    </div>
+                </div>
+
+                <!-- Safety Events Summary -->
+                <div class="ui-panel p-4 space-y-3">
+                    <h2 class="text-lg font-semibold text-white">Content Moderation Events</h2>
+                    <p class="text-sm text-gray-400">Breakdown of moderation results from the last 24 hours</p>
+                    <div id="safety-events-summary" class="space-y-2">
+                        <p class="text-gray-400 text-center py-4">Loading summary...</p>
                     </div>
                 </div>
             </div>
@@ -3659,7 +3728,7 @@
                             await initializeUserProfile();
                             attachDataListeners();
                             // Don't override admin screens that were accessed via URL/tap
-                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen'];
+                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen'];
                             console.log('🔐 Session resume check - isAdminMode:', isAdminMode, 'currentScreenId:', currentScreenId);
                             if (!isAdminMode && !adminScreens.includes(currentScreenId)) {
                                 showScreen('home-screen');
@@ -3688,7 +3757,7 @@
                             await initializeUserProfile();
                             attachDataListeners();
                             // Don't override admin screens that were accessed via URL/tap
-                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen'];
+                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen'];
                             console.log('🔐 Session resume check - isAdminMode:', isAdminMode, 'currentScreenId:', currentScreenId);
                             if (!isAdminMode && !adminScreens.includes(currentScreenId)) {
                                 showScreen('home-screen');
@@ -5391,6 +5460,13 @@
                 case 'admin-quickpoll-screen':
                 case 'admin-jury-screen':
                     // Admin screens don't need data loading
+                    break;
+                case 'admin-safety-screen':
+                    // Load safety statistics and reports
+                    setTimeout(() => {
+                        loadSafetyStats();
+                        loadSafetyReports();
+                    }, 100);
                     break;
             }
         }
@@ -8736,6 +8812,157 @@ ${historyText}`;
          * Renders the list of active standard markets for resolution.
          * [FINAL VERSION - "No Index" fix]
          */
+        /**
+         * Load and display safety statistics and moderation data
+         */
+        async function loadSafetyStats() {
+            try {
+                const response = await fetch('/api/admin/safety-stats', {
+                    method: 'GET',
+                    headers: {
+                        'x-admin-secret': ADMIN_SECRET || ''
+                    }
+                });
+
+                if (!response.ok) {
+                    console.warn('Failed to load safety stats:', response.status);
+                    return;
+                }
+
+                const data = await response.json();
+                
+                // Update stats cards
+                const greenCount = data.moderationStats?.GREEN || 0;
+                const yellowCount = data.pending || 0;
+                const redCount = data.moderationStats?.RED || 0;
+                const reportCount = data.totalReports || 0;
+
+                document.getElementById('safety-stat-green').textContent = greenCount;
+                document.getElementById('safety-stat-yellow').textContent = yellowCount;
+                document.getElementById('safety-stat-red').textContent = redCount;
+                document.getElementById('safety-stat-reports').textContent = reportCount;
+
+                // Update moderation events summary
+                const summaryHtml = Object.entries(data.moderationStats || {})
+                    .map(([tier, count]) => {
+                        const tierColors = {
+                            'GREEN': 'text-green-400',
+                            'YELLOW': 'text-yellow-400',
+                            'RED': 'text-red-400'
+                        };
+                        const tierEmoji = { 'GREEN': '🟢', 'YELLOW': '🟡', 'RED': '🔴' };
+                        return `<div class="flex justify-between items-center p-2 bg-white/5 rounded-lg">
+                            <span class="${tierColors[tier] || 'text-gray-400'}">${tierEmoji[tier]} ${tier}</span>
+                            <span class="font-semibold">${count}</span>
+                        </div>`;
+                    })
+                    .join('');
+
+                const summaryContainer = document.getElementById('safety-events-summary');
+                if (summaryContainer) {
+                    summaryContainer.innerHTML = summaryHtml || '<p class="text-gray-400 text-center py-2">No data available</p>';
+                }
+
+            } catch (error) {
+                console.error('Error loading safety stats:', error);
+            }
+        }
+
+        /**
+         * Load and display pending safety reports
+         */
+        async function loadSafetyReports() {
+            try {
+                const response = await fetch('/api/admin/safety-reports', {
+                    method: 'GET',
+                    headers: {
+                        'x-admin-secret': ADMIN_SECRET || ''
+                    }
+                });
+
+                if (!response.ok) {
+                    console.warn('Failed to load safety reports:', response.status);
+                    return;
+                }
+
+                const data = await response.json();
+                const reports = data.reports || [];
+
+                const reportsContainer = document.getElementById('safety-reports-list');
+                if (!reportsContainer) return;
+
+                if (reports.length === 0) {
+                    reportsContainer.innerHTML = '<p class="text-gray-400 text-center py-8">✅ No pending reports - platform is safe!</p>';
+                    return;
+                }
+
+                const reportsHtml = reports.map(report => {
+                    const createdDate = new Date(report.createdAt?.toDate?.() || report.createdAt).toLocaleString();
+                    const reasonColors = {
+                        'hate_speech': 'text-red-400',
+                        'harassment': 'text-orange-400',
+                        'spam': 'text-yellow-400',
+                        'violence': 'text-red-500',
+                        'illegal': 'text-purple-400'
+                    };
+
+                    return `<div class="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-white">Report ID: ${report.id.substring(0, 8)}</h3>
+                                <p class="${reasonColors[report.reason] || 'text-gray-400'} text-sm font-medium capitalize">${report.reason}</p>
+                            </div>
+                            <span class="text-xs text-gray-500">${createdDate}</span>
+                        </div>
+                        ${report.details ? `<p class="text-gray-300 text-sm">${report.details}</p>` : ''}
+                        <div class="flex gap-2 pt-2">
+                            <button onclick="handleSafetyAction('${report.id}', 'approve')" class="btn btn-secondary btn-sm flex-1">Approve</button>
+                            <button onclick="handleSafetyAction('${report.id}', 'remove')" class="btn btn-secondary btn-sm flex-1" style="background-color: #991b1b;">Remove</button>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                reportsContainer.innerHTML = reportsHtml;
+
+            } catch (error) {
+                console.error('Error loading safety reports:', error);
+            }
+        }
+
+        /**
+         * Handle admin action on a safety report
+         */
+        async function handleSafetyAction(reportId, action) {
+            try {
+                const reason = prompt(`Enter reason for ${action}ing this report:`);
+                if (!reason) return;
+
+                const response = await fetch('/api/admin/safety-action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-secret': ADMIN_SECRET || ''
+                    },
+                    body: JSON.stringify({
+                        reportId,
+                        action,
+                        reason
+                    })
+                });
+
+                if (response.ok) {
+                    showToast(`Report ${action}ed successfully`, 'success');
+                    loadSafetyReports();
+                    loadSafetyStats();
+                } else {
+                    showToast('Failed to process report', 'error');
+                }
+            } catch (error) {
+                console.error('Error handling safety action:', error);
+                showToast('Error processing report', 'error');
+            }
+        }
+
         function renderResolutionPanel() {
             const { collection, query, where, onSnapshot } = window.firebase.firestore;
             
