@@ -63,6 +63,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
 
     <style>
         /* === THEME VARIABLES === */
@@ -1678,8 +1680,8 @@
                 </button>
             </div>
 
-            <!-- Avatar Section -->
-            <div class="space-y-3">
+            <!-- Avatar Section - Initial Upload -->
+            <div id="avatar-upload-section" class="space-y-3">
                 <label class="block text-sm font-medium text-gray-300">Profile Picture</label>
                 <div class="flex flex-col items-center gap-3">
                     <div id="edit-avatar-preview" class="w-24 h-24 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow-lg overflow-hidden flex-shrink-0">
@@ -1695,6 +1697,40 @@
                 </div>
             </div>
 
+            <!-- Image Cropper Section (hidden initially) -->
+            <div id="avatar-crop-section" class="hidden space-y-3">
+                <label class="block text-sm font-medium text-gray-300">Crop Your Photo</label>
+                <div class="bg-black/50 rounded-lg overflow-hidden" style="max-height: 300px;">
+                    <img id="crop-image" src="" style="max-width: 100%; display: block;">
+                </div>
+                
+                <!-- Crop Controls -->
+                <div class="space-y-3 bg-gray-900/50 p-3 rounded-lg">
+                    <!-- Zoom Slider -->
+                    <div>
+                        <label class="text-xs font-medium text-gray-300">Zoom</label>
+                        <input type="range" id="zoom-range" class="w-full" min="1" max="3" step="0.1" value="1" style="cursor: pointer;">
+                    </div>
+                    
+                    <!-- Rotate Buttons -->
+                    <div>
+                        <label class="text-xs font-medium text-gray-300 block mb-2">Rotate</label>
+                        <div class="flex gap-2">
+                            <button onclick="rotateCrop(-90)" class="btn btn-secondary flex-1 py-2 text-xs">↺ Left</button>
+                            <button onclick="rotateCrop(90)" class="btn btn-secondary flex-1 py-2 text-xs">Right ↻</button>
+                            <button onclick="resetCrop()" class="btn btn-secondary flex-1 py-2 text-xs">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Crop Preview Circle -->
+                <div class="flex justify-center">
+                    <div class="w-24 h-24 rounded-full border-2 border-sky-400 flex items-center justify-center overflow-hidden" id="crop-preview-circle" style="background: #0f172a;">
+                        <canvas id="crop-preview-canvas" style="display: none;"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <!-- Username Section -->
             <div class="space-y-3">
                 <label for="edit-username-input" class="block text-sm font-medium text-gray-300">Username</label>
@@ -1705,7 +1741,7 @@
             <!-- Action Buttons -->
             <div class="flex gap-3 pt-4">
                 <button onclick="closeEditProfile()" class="btn btn-secondary flex-1">Cancel</button>
-                <button onclick="saveProfileChanges()" class="btn btn-primary flex-1">Save Changes</button>
+                <button id="save-profile-btn" onclick="saveProfileChanges()" class="btn btn-primary flex-1">Save Changes</button>
             </div>
         </div>
     </div>
@@ -5916,26 +5952,30 @@
             }
 
         /**
-         * Profile Editing Functions
+         * Profile Editing Functions with Image Cropper
          */
         let editingAvatarData = null;
+        let cropper = null;
 
         window.openEditProfile = () => {
             const modal = document.getElementById('edit-profile-modal');
             const usernameInput = document.getElementById('edit-username-input');
             const avatarPreview = document.getElementById('edit-avatar-preview');
+            const uploadSection = document.getElementById('avatar-upload-section');
+            const cropSection = document.getElementById('avatar-crop-section');
             
             if (!modal) return;
 
             // Populate current values
             usernameInput.value = userProfile.displayName || '';
             
+            // Hide crop section, show upload section
+            if (uploadSection) uploadSection.classList.remove('hidden');
+            if (cropSection) cropSection.classList.add('hidden');
+            
             // Update avatar preview
             const avatarUrl = userProfile.avatarUrl || LOGO_URL;
-            if (avatarUrl && avatarUrl.startsWith('http')) {
-                avatarPreview.innerHTML = `<img src="${avatarUrl}" class="w-full h-full object-contain object-center" alt="Preview" style="display: block;">`;
-                editingAvatarData = null;
-            } else if (avatarUrl && avatarUrl.startsWith('data:')) {
+            if (avatarUrl && (avatarUrl.startsWith('http') || avatarUrl.startsWith('data:'))) {
                 avatarPreview.innerHTML = `<img src="${avatarUrl}" class="w-full h-full object-contain object-center" alt="Preview" style="display: block;">`;
                 editingAvatarData = null;
             } else {
@@ -5950,6 +5990,10 @@
         window.closeEditProfile = () => {
             const modal = document.getElementById('edit-profile-modal');
             if (modal) modal.classList.add('hidden');
+            if (cropper) {
+                cropper.destroy();
+                cropper = null;
+            }
             editingAvatarData = null;
         };
 
@@ -5966,13 +6010,85 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 editingAvatarData = e.target.result;
-                const avatarPreview = document.getElementById('edit-avatar-preview');
-                if (avatarPreview) {
-                    avatarPreview.innerHTML = `<img src="${editingAvatarData}" class="w-full h-full object-contain object-center" alt="Preview" style="display: block;">`;
+                
+                // Show crop section, hide upload section
+                const uploadSection = document.getElementById('avatar-upload-section');
+                const cropSection = document.getElementById('avatar-crop-section');
+                if (uploadSection) uploadSection.classList.add('hidden');
+                if (cropSection) cropSection.classList.remove('hidden');
+                
+                // Initialize cropper
+                const cropImage = document.getElementById('crop-image');
+                cropImage.src = editingAvatarData;
+                
+                // Destroy previous cropper if exists
+                if (cropper) {
+                    cropper.destroy();
                 }
-                showToast('Image preview loaded', 'success');
+                
+                // Wait for image to load, then initialize cropper
+                cropImage.onload = () => {
+                    cropper = new Cropper(cropImage, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        autoCropArea: 1,
+                        responsive: true,
+                        restore: true,
+                        guides: true,
+                        center: true,
+                        highlight: true,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: true,
+                        background: false,
+                        modal: true,
+                        zoom: (e) => updateCropPreview()
+                    });
+                    
+                    // Setup zoom slider
+                    const zoomRange = document.getElementById('zoom-range');
+                    zoomRange.oninput = (e) => {
+                        cropper.zoomTo(parseFloat(e.target.value));
+                    };
+                    
+                    updateCropPreview();
+                    showToast('Move and resize the frame to crop', 'info');
+                };
             };
             reader.readAsDataURL(file);
+        };
+
+        window.rotateCrop = (angle) => {
+            if (cropper) {
+                cropper.rotate(angle);
+                updateCropPreview();
+            }
+        };
+
+        window.resetCrop = () => {
+            if (cropper) {
+                cropper.reset();
+                const zoomRange = document.getElementById('zoom-range');
+                zoomRange.value = 1;
+                updateCropPreview();
+            }
+        };
+
+        window.updateCropPreview = () => {
+            if (!cropper) return;
+            
+            const canvas = cropper.getCroppedCanvas({
+                maxWidth: 256,
+                maxHeight: 256,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
+            
+            const previewCircle = document.getElementById('crop-preview-circle');
+            if (previewCircle) {
+                previewCircle.innerHTML = `<img src="${canvas.toDataURL()}" class="w-full h-full object-cover" alt="Preview">`;
+            }
         };
 
         window.saveProfileChanges = async () => {
@@ -5993,10 +6109,28 @@
             showLoadingOverlay(true, 'Saving profile...');
 
             try {
+                let finalAvatarUrl = userProfile.avatarUrl;
+                
+                // If cropper is active, get the cropped image
+                if (cropper) {
+                    const canvas = cropper.getCroppedCanvas({
+                        maxWidth: 256,
+                        maxHeight: 256,
+                        fillColor: '#fff',
+                        imageSmoothingEnabled: true,
+                        imageSmoothingQuality: 'high'
+                    });
+                    finalAvatarUrl = canvas.toDataURL();
+                    cropper.destroy();
+                    cropper = null;
+                } else if (editingAvatarData) {
+                    finalAvatarUrl = editingAvatarData;
+                }
+
                 const updatedProfile = {
                     ...userProfile,
                     displayName: username,
-                    avatarUrl: editingAvatarData || userProfile.avatarUrl
+                    avatarUrl: finalAvatarUrl
                 };
 
                 // Save to Firestore
@@ -6008,9 +6142,7 @@
 
                 // Update local userProfile
                 userProfile.displayName = username;
-                if (editingAvatarData) {
-                    userProfile.avatarUrl = editingAvatarData;
-                }
+                userProfile.avatarUrl = finalAvatarUrl;
 
                 // Update UI
                 updateProfileUI(userProfile);
