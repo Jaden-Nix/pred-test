@@ -1007,7 +1007,7 @@ REQUIREMENTS:
                         options: marketData.options,
                         optionAmounts: optionAmounts,
                         totalPool: poolPerOption * marketData.options.length,
-                        totalStakeVolume: 100,
+                        totalStakeVolume: poolPerOption * marketData.options.length,
                         isMock: false
                     });
                     console.log(`✅ Created multi-option market: ${marketData.title} (Options: ${marketData.options.join(', ')})`);
@@ -1028,7 +1028,7 @@ REQUIREMENTS:
                         yesPercent: 50,
                         noPercent: 50,
                         totalPool: 200000,
-                        totalStakeVolume: 100,
+                        totalStakeVolume: 200000,
                         marketType: 'binary',
                         isMock: false
                     });
@@ -1145,6 +1145,7 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
                         options: marketData.options,
                         optionAmounts: optionAmounts,
                         totalPool: poolPerOption * marketData.options.length,
+                        totalStakeVolume: poolPerOption * marketData.options.length,
                         isMock: false
                     });
                     console.log(`✅ Created quick play (MULTI): ${marketData.title} (Options: ${marketData.options.join(', ')})`);
@@ -1165,6 +1166,7 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
                         yesPercent: 50,
                         noPercent: 50,
                         totalPool: 200000,
+                        totalStakeVolume: 200000,
                         marketType: 'binary',
                         isMock: false
                     });
