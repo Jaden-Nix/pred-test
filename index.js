@@ -886,7 +886,7 @@ app.post('/api/social/delete-post', requireAuth, requireFirebase, async (req, re
             return res.status(404).json({ error: 'Post not found' });
         }
         
-        if (postSnap.data().userId !== userId) {
+        if (postSnap.data().userId?.toLowerCase() !== userId?.toLowerCase()) {
             return res.status(403).json({ error: 'Unauthorized' });
         }
         
@@ -910,7 +910,7 @@ app.post('/api/social/edit-post', requireAuth, requireFirebase, async (req, res)
             return res.status(404).json({ error: 'Post not found' });
         }
         
-        if (postSnap.data().userId !== userId) {
+        if (postSnap.data().userId?.toLowerCase() !== userId?.toLowerCase()) {
             return res.status(403).json({ error: 'Unauthorized' });
         }
         
