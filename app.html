@@ -8208,17 +8208,17 @@ ${historyText}`;
                 }
             });
 
-            // Search listeners
+            // Search listeners with debouncing
             document.getElementById('resolution-search-all')?.addEventListener('input', (e) => {
-                filterMarketResolution(e.target.value);
+                filterMarketResolutionDebounced(e.target.value);
             });
 
             document.getElementById('quickplay-search-input')?.addEventListener('input', (e) => {
-                filterQuickPlayResolution(e.target.value);
+                filterQuickPlayResolutionDebounced(e.target.value);
             });
 
             document.getElementById('poll-search-input')?.addEventListener('input', (e) => {
-                filterPollSearch(e.target.value);
+                filterPollSearchDebounced(e.target.value);
             });
 
             // Quick poll create button
@@ -8546,6 +8546,10 @@ ${historyText}`;
             });
         }
 
+        let resolutionDebounceTimer = null;
+        let quickplayDebounceTimer = null;
+        let pollDebounceTimer = null;
+
         /**
          * Filter market resolution by search term
          */
@@ -8559,6 +8563,16 @@ ${historyText}`;
                     market.style.display = 'none';
                 }
             });
+        }
+
+        /**
+         * Debounced version of filterMarketResolution
+         */
+        function filterMarketResolutionDebounced(searchTerm) {
+            if (resolutionDebounceTimer) clearTimeout(resolutionDebounceTimer);
+            resolutionDebounceTimer = setTimeout(() => {
+                filterMarketResolution(searchTerm);
+            }, 500);
         }
 
         /**
@@ -8579,6 +8593,16 @@ ${historyText}`;
         }
 
         /**
+         * Debounced version of filterQuickPlayResolution
+         */
+        function filterQuickPlayResolutionDebounced(searchTerm) {
+            if (quickplayDebounceTimer) clearTimeout(quickplayDebounceTimer);
+            quickplayDebounceTimer = setTimeout(() => {
+                filterQuickPlayResolution(searchTerm);
+            }, 500);
+        }
+
+        /**
          * Filter polls by search term
          */
         function filterPollSearch(searchTerm) {
@@ -8591,6 +8615,16 @@ ${historyText}`;
                     poll.style.display = 'none';
                 }
             });
+        }
+
+        /**
+         * Debounced version of filterPollSearch
+         */
+        function filterPollSearchDebounced(searchTerm) {
+            if (pollDebounceTimer) clearTimeout(pollDebounceTimer);
+            pollDebounceTimer = setTimeout(() => {
+                filterPollSearch(searchTerm);
+            }, 500);
         }
 
         /**
