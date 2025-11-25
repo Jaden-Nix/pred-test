@@ -1061,6 +1061,25 @@ app.post('/api/moderate-content', async (req, res) => {
 // ADMIN ENDPOINTS
 // =============================================================================
 
+// Admin password validation endpoint
+app.post('/api/admin/validate-password', (req, res) => {
+    const { password } = req.body;
+    
+    if (!ADMIN_SECRET) {
+        return res.status(503).json({ error: 'Admin system not configured' });
+    }
+    
+    if (password === ADMIN_SECRET) {
+        res.json({ 
+            success: true, 
+            adminSecret: ADMIN_SECRET,
+            message: 'Admin authentication successful' 
+        });
+    } else {
+        res.status(401).json({ error: 'Invalid admin password' });
+    }
+});
+
 app.post('/api/admin/resolve-market', requireAdmin, requireFirebase, async (req, res) => {
     
     const { marketId, outcome } = req.body;

@@ -3299,6 +3299,7 @@
         ];
 
         const ADMIN_PASSWORD = "predora-admin";
+        let adminSecret = null; // Store admin secret after validation
 
         // --- GEMINI API CONSTANTS ---
 
@@ -8026,9 +8027,43 @@ ${historyText}`;
         let adminTapTimer = null;
 
         /**
+         * Validate admin password via backend
+         */
+        async function validateAdminPassword(password) {
+            try {
+                const response = await fetch('/api/admin/validate-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                
+                const data = await response.json();
+                if (response.ok && data.adminSecret) {
+                    adminSecret = data.adminSecret;
+                    return true;
+                } else {
+                    showToast("Invalid admin password", 'error');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Admin validation error:', error);
+                showToast('Admin validation failed', 'error');
+                return false;
+            }
+        }
+
+        /**
          * Wires up all listeners for the Admin Panel.
          */
         function setupAdminFeatures() {
+            // Check URL for ?admin=1 or #admin on page load
+            const urlParams = new URLSearchParams(window.location.search);
+            const hashAdmin = window.location.hash === '#admin';
+            if (urlParams.get('admin') === '1' || hashAdmin) {
+                console.log('Admin access via URL detected');
+                showScreen('admin-password-screen');
+            }
+
             // Secret 5-tap gesture on the app title (both desktop and mobile)
             // Note: Logo elements removed from UI, admin access now available via other means
             const handleAdminTap = () => {
@@ -8047,18 +8082,19 @@ ${historyText}`;
                 logoElement.addEventListener('click', handleAdminTap);
             }
 
-            // Admin password check
-            document.getElementById('admin-login-btn').addEventListener('click', () => {
+            // Admin password check - validate via backend
+            document.getElementById('admin-login-btn').addEventListener('click', async () => {
                 const pass = document.getElementById('admin-password-input').value;
-                if (pass === ADMIN_PASSWORD) {
+                if (await validateAdminPassword(pass)) {
                     showScreen('admin-panel-screen');
-                } else {
-                    showToast("Incorrect password.");
                 }
                 document.getElementById('admin-password-input').value = '';
             });
 
-            document.getElementById('admin-logout-btn').addEventListener('click', () => showScreen('home-screen'));
+            document.getElementById('admin-logout-btn').addEventListener('click', () => {
+                adminSecret = null;
+                showScreen('home-screen');
+            });
             document.getElementById('admin-generate-btn').addEventListener('click', adminGenerateQuickPlay);
             document.getElementById('admin-publish-btn').addEventListener('click', adminPublishQuickPlay);
         }
