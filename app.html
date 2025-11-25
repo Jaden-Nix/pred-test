@@ -4094,7 +4094,7 @@
                 rankings.forEach((user, index) => {
                     const rank = index + 1;
                     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
-                    html += `<div class="leaderboard-card-clean p-4 flex gap-3"><div class="text-xl font-bold" style="color: var(--text-primary);">${medal || rank}</div><div><p class="font-semibold" style="color: var(--text-primary);">${user.displayName || 'User'}</p><p class="text-xs" style="color: var(--text-secondary);">${user.xp || 0} XP</p></div></div>`;
+                    html += `<div class="leaderboard-card-clean p-4 flex gap-4 items-center rounded-lg border transition-all hover:shadow-lg" style="background: var(--bg-panel); border-color: var(--border-color); cursor: pointer;" onclick="viewUserProfile('${user.userId}', '${user.displayName}')"><div class="text-2xl font-bold min-w-max" style="color: var(--text-primary);">${medal || '#' + rank}</div><div class="flex-1 min-w-0"><p class="font-semibold truncate" style="color: var(--text-primary);">${user.displayName || 'User'}</p><p class="text-xs" style="color: var(--text-secondary);">${user.xp || 0} XP</p></div></div>`;
                 });
                 rankingList.innerHTML = html || '<p class="text-center" style="color: var(--text-tertiary);">No leaderboard data</p>';
             } catch (error) {
@@ -4117,11 +4117,27 @@
             loadSocialLeaderboard();
         };
 
+        window.navigateToMarket = (marketId) => {
+            if (!marketId) return;
+            console.log('📍 Navigating to market:', marketId);
+            showScreen('market-detail-screen');
+            loadMarketDetail(marketId);
+        };
+
+        window.viewUserProfile = (userId, displayName) => {
+            if (!userId) return;
+            console.log('👤 Viewing profile:', userId, displayName);
+            navigateTo(`profile-screen:${userId}:${displayName}`);
+        };
+
         // Set up listener for user stakes (separate from feed to avoid repeated fetches)
         function attachSocialFeedStakesListener() {
-            if (!currentUserId) return;
+            if (!currentUserId) {
+                console.log('⚠️ No currentUserId, skipping stakes listener');
+                return;
+            }
             
-            const { collection, query, where, onSnapshot } = window.firebase.firestore;
+            const { collection, query, onSnapshot } = window.firebase.firestore;
             
             // Clean up old listener
             if (socialFeedStakesUnsubscribe) {
@@ -4130,19 +4146,32 @@
             }
             
             try {
-                const stakesQ = query(collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION), where('userId', '==', currentUserId));
-                socialFeedStakesUnsubscribe = onSnapshot(stakesQ, (snapshot) => {
+                console.log('🔍 Setting up stakes listener for userId:', currentUserId);
+                // Query all pledges and filter on client side for maximum compatibility
+                const allStakesQ = query(collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION));
+                socialFeedStakesUnsubscribe = onSnapshot(allStakesQ, (snapshot) => {
                     userStakesCache = {};
                     snapshot.forEach(doc => {
                         const stake = doc.data();
-                        userStakesCache[stake.marketId] = stake.selectedStance;
+                        // Filter by userId on client side (handles different formats/casing)
+                        if (stake.userId && stake.userId.toLowerCase() === currentUserId.toLowerCase()) {
+                            userStakesCache[stake.marketId] = stake.selectedStance;
+                            console.log('📍 Stake cached:', {
+                                marketId: stake.marketId,
+                                selectedStance: stake.selectedStance,
+                                stakesUserId: stake.userId,
+                                currentUserId: currentUserId
+                            });
+                        }
                     });
-                    console.log('📊 User stakes updated:', userStakesCache);
+                    console.log('📊 User stakes updated:', userStakesCache, 'Total stakes found:', Object.keys(userStakesCache).length);
                     // Trigger feed re-render when stakes change to show updated "Skin in game" status
                     loadSocialFeed();
+                }, (error) => {
+                    console.error('❌ Stakes listener error:', error);
                 });
             } catch (err) {
-                console.error('Error setting up stakes listener:', err);
+                console.error('❌ Error setting up stakes listener:', err);
             }
         }
 
@@ -4262,7 +4291,7 @@
                                     hasStake: hasStake,
                                     label: hasStake ? '✅ Skin in game' : '❌ No stake'
                                 });
-                                marketHtml = `<div class="bg-sky-400/10 p-3 rounded border border-sky-400/30 text-sm"><p class="text-sky-300 font-medium">${post.attachedMarket.title}</p>${stakeLabel}</div>`;
+                                marketHtml = `<div class="bg-sky-400/10 p-3 rounded border border-sky-400/30 text-sm cursor-pointer hover:bg-sky-400/20 transition-all" onclick="navigateToMarket('${post.attachedMarket.id}')"><p class="text-sky-300 font-medium">${post.attachedMarket.title}</p>${stakeLabel}</div>`;
                             }
                             const getRelativeTime = (timestamp) => {
                                 if (!timestamp) return 'now';
