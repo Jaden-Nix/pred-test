@@ -3311,6 +3311,9 @@
         let detailMarketUnsubscribe = null; // --- RACE CONDITION FIX (NEW) ---
         let socialFeedUnsubscribe = null; // Real-time social feed listener
         let socialFeedStakesUnsubscribe = null; // Real-time stakes listener for feed
+        let quickPlayResolutionUnsubscribe = null; // Admin resolution panel listener
+        let quickPollResolutionUnsubscribe = null; // Admin poll resolution listener
+        let marketResolutionUnsubscribe = null; // Admin market resolution listener
         let userStakesCache = {}; // Cache user stakes to avoid repeated fetches
         let userHistoryData = []; // To store history for AI summary
         let userActiveStakesData = []; // To store active stakes for sharing
@@ -8363,13 +8366,25 @@ ${historyText}`;
         function renderQuickPollScreen() {
             const { collection, query, onSnapshot } = window.firebase.firestore;
             const pollsList = document.getElementById('polls-resolution-list');
-            if (!pollsList) return;
+            if (!pollsList) {
+                console.warn('📋 Polls container not found');
+                return;
+            }
+            
+            console.log('📋 Rendering quick poll screen...');
+            
+            // Clean up old listener if it exists
+            if (quickPollResolutionUnsubscribe) {
+                console.log('📋 Cleaning up old poll listener');
+                quickPollResolutionUnsubscribe();
+            }
             
             pollsList.innerHTML = '<p class="text-gray-400 text-center py-8">Loading polls...</p>';
 
             const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'quick_polls'));
 
-            onSnapshot(q, (snapshot) => {
+            quickPollResolutionUnsubscribe = onSnapshot(q, (snapshot) => {
+                console.log('📋 Polls snapshot received, empty:', snapshot.empty, 'docs:', snapshot.docs.length);
                 let html = '';
                 if (snapshot.empty) {
                     pollsList.innerHTML = '<p class="text-gray-400 text-center py-8">No quick polls yet. Create one above!</p>';
@@ -8381,6 +8396,8 @@ ${historyText}`;
                 snapshot.forEach(doc => {
                     polls.push({ id: doc.id, ...doc.data() });
                 });
+
+                console.log('📋 Polls loaded:', polls.length);
 
                 // Sort: unresolved first
                 polls.sort((a, b) => {
@@ -8423,7 +8440,7 @@ ${historyText}`;
                 pollsList.innerHTML = html;
                 document.getElementById('polls-count').textContent = polls.filter(p => !p.isResolved).length;
             }, (error) => {
-                console.error("Firebase Snapshot Error in renderQuickPollScreen:", error);
+                console.error("📋 Poll listener error:", error);
                 pollsList.innerHTML = `<p class="text-red-400 text-center">Error loading polls: ${error.message}</p>`;
             });
         }
@@ -8437,13 +8454,25 @@ ${historyText}`;
             const resolutionScreenContainer = document.getElementById('quick-play-resolution-list');
             const quickPlayScreenContainer = document.getElementById('admin-qp-resolution-list');
             const listContainer = resolutionScreenContainer || quickPlayScreenContainer;
-            if (!listContainer) return;
+            if (!listContainer) {
+                console.warn('Quick play resolution container not found');
+                return;
+            }
+            
+            console.log('📊 Rendering quick play resolution panel...');
+            
+            // Clean up old listener if it exists
+            if (quickPlayResolutionUnsubscribe) {
+                console.log('📊 Cleaning up old quick play listener');
+                quickPlayResolutionUnsubscribe();
+            }
             
             listContainer.innerHTML = '<p class="text-gray-400 text-center">Loading quick plays...</p>';
 
             const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', QUICK_PLAY_MARKETS_COLLECTION));
 
-            onSnapshot(q, (snapshot) => {
+            quickPlayResolutionUnsubscribe = onSnapshot(q, (snapshot) => {
+                console.log('📊 Quick play snapshot received, empty:', snapshot.empty, 'docs:', snapshot.docs.length);
                 let html = '';
                 if (snapshot.empty) {
                     listContainer.innerHTML = '<p class="text-gray-400 text-center">No quick plays to resolve.</p>';
@@ -8456,6 +8485,8 @@ ${historyText}`;
                 snapshot.forEach(doc => {
                     quickPlays.push({ id: doc.id, ...doc.data() });
                 });
+
+                console.log('📊 Quick plays loaded:', quickPlays.length);
 
                 // Sort: unresolved first
                 quickPlays.sort((a, b) => {
@@ -8492,6 +8523,9 @@ ${historyText}`;
                 listContainer.innerHTML = html;
                 const count = document.getElementById('quickplay-count');
                 if (count) count.textContent = quickPlays.filter(q => !q.isResolved).length;
+            }, (error) => {
+                console.error('📊 Quick play listener error:', error);
+                listContainer.innerHTML = `<p class="text-red-400 text-center">Error loading: ${error.message}</p>`;
             });
         }
 
@@ -8591,6 +8625,13 @@ ${historyText}`;
          */
         function renderResolutionPanel() {
             const { collection, query, where, onSnapshot } = window.firebase.firestore;
+            
+            // Clean up old listener if it exists
+            if (marketResolutionUnsubscribe) {
+                console.log('💰 Cleaning up old market resolution listener');
+                marketResolutionUnsubscribe();
+            }
+            
             dom.resolutionList.innerHTML = '<p class="text-gray-400 text-center">Loading markets...</p>';
 
             // 1. --- THIS IS THE FIX ---
@@ -8600,7 +8641,7 @@ ${historyText}`;
                 collection(db, 'artifacts', APP_ID, 'public', 'data', STANDARD_MARKETS_COLLECTION)
             );
 
-            onSnapshot(q, (snapshot) => {
+            marketResolutionUnsubscribe = onSnapshot(q, (snapshot) => {
                 let html = '';
                 if (snapshot.empty) {
                     dom.resolutionList.innerHTML = '<p class="text-gray-400 text-center">No markets to resolve.</p>';
