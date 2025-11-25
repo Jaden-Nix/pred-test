@@ -11045,6 +11045,12 @@ ${historyText}`;
          * Handles the user typing in the search bar.
          */
         function handleSearch() {
+            // Don't process search if on admin screens
+            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-resolution-screen'];
+            if (adminScreens.includes(currentScreenId)) {
+                return;
+            }
+            
             const query = dom.searchBarInput.value.toLowerCase().trim();
 
             // 1. Get the currently filtered list (not all markets)
