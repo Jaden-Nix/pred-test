@@ -987,7 +987,7 @@ REQUIREMENTS:
                 // Handle both binary and multi-option markets
                 if (marketData.type === 'multi' && marketData.options && marketData.options.length > 0) {
                     // Multi-option market
-                    const poolPerOption = 50000; // $50k per option
+                    const poolPerOption = 5000; // $5k per option
                     const optionAmounts = marketData.options.reduce((acc, opt) => {
                         acc[opt] = poolPerOption;
                         return acc;
@@ -1023,12 +1023,12 @@ REQUIREMENTS:
                         isResolved: false,
                         resolutionDate: resolutionDate.toISOString().split('T')[0],
                         status: 'active',
-                        yesPool: 100000,
-                        noPool: 100000,
+                        yesPool: 10000,
+                        noPool: 10000,
                         yesPercent: 50,
                         noPercent: 50,
-                        totalPool: 200000,
-                        totalStakeVolume: 200000,
+                        totalPool: 20000,
+                        totalStakeVolume: 20000,
                         marketType: 'binary',
                         isMock: false
                     });
@@ -1125,7 +1125,7 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
                 // Handle both binary and multi-option quick plays
                 if (marketData.type === 'multi' && marketData.options && marketData.options.length > 0) {
                     // Multi-option quick play
-                    const poolPerOption = 50000;
+                    const poolPerOption = 5000;
                     const optionAmounts = marketData.options.reduce((acc, opt) => {
                         acc[opt] = poolPerOption;
                         return acc;
@@ -1161,12 +1161,12 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
                         resolutionDate: futureDate.toISOString().split('T')[0],
                         isResolved: false,
                         status: 'active',
-                        yesPool: 100000,
-                        noPool: 100000,
+                        yesPool: 10000,
+                        noPool: 10000,
                         yesPercent: 50,
                         noPercent: 50,
-                        totalPool: 200000,
-                        totalStakeVolume: 200000,
+                        totalPool: 20000,
+                        totalStakeVolume: 20000,
                         marketType: 'binary',
                         isMock: false
                     });
