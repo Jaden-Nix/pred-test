@@ -4592,6 +4592,9 @@
                     // Re-attach listener every time to refresh the "already staked" list
                     attachQuickPlayListener();
                     break;
+                case 'social-feed-screen':
+                    loadSocialFeed();
+                    break;
                 case 'leaderboard-screen':
                     if (!leaderboardUnsubscribe) renderLeaderboard();
                     break;
@@ -4600,9 +4603,6 @@
                     // Load active stakes to populate staking summary
                     if (!activeStakesUnsubscribe) renderActiveStakes();
                     if (!historyStakesUnsubscribe) renderHistoryStakes();
-                    break;
-                case 'pledge-pool-screen': 
-                    renderPledgePool();
                     break;
                 case 'admin-panel-screen':
                     renderResolutionPanel();
