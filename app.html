@@ -1667,8 +1667,8 @@
     </div>
 
     <!-- Edit Profile Modal -->
-    <div id="edit-profile-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="ui-panel max-w-md w-full space-y-6 p-6">
+    <div id="edit-profile-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="ui-panel max-w-md w-full space-y-6 p-6 my-8" style="max-height: 90vh; overflow-y: auto;">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold text-white">Edit Profile</h2>
                 <button onclick="closeEditProfile()" class="p-1 hover:bg-white/10 rounded-lg transition-all">
@@ -1682,7 +1682,7 @@
             <div class="space-y-3">
                 <label class="block text-sm font-medium text-gray-300">Profile Picture</label>
                 <div class="flex flex-col items-center gap-3">
-                    <div id="edit-avatar-preview" class="w-24 h-24 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow-lg overflow-hidden">
+                    <div id="edit-avatar-preview" class="w-24 h-24 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow-lg overflow-hidden flex-shrink-0">
                         P
                     </div>
                     <label class="cursor-pointer">
@@ -5933,7 +5933,10 @@
             // Update avatar preview
             const avatarUrl = userProfile.avatarUrl || LOGO_URL;
             if (avatarUrl && avatarUrl.startsWith('http')) {
-                avatarPreview.innerHTML = `<img src="${avatarUrl}" class="w-full h-full object-cover rounded-full" alt="Preview">`;
+                avatarPreview.innerHTML = `<img src="${avatarUrl}" class="w-full h-full object-contain object-center" alt="Preview" style="display: block;">`;
+                editingAvatarData = null;
+            } else if (avatarUrl && avatarUrl.startsWith('data:')) {
+                avatarPreview.innerHTML = `<img src="${avatarUrl}" class="w-full h-full object-contain object-center" alt="Preview" style="display: block;">`;
                 editingAvatarData = null;
             } else {
                 editingAvatarData = null;
@@ -5965,7 +5968,7 @@
                 editingAvatarData = e.target.result;
                 const avatarPreview = document.getElementById('edit-avatar-preview');
                 if (avatarPreview) {
-                    avatarPreview.innerHTML = `<img src="${editingAvatarData}" class="w-full h-full object-cover rounded-full" alt="Preview">`;
+                    avatarPreview.innerHTML = `<img src="${editingAvatarData}" class="w-full h-full object-contain object-center" alt="Preview" style="display: block;">`;
                 }
                 showToast('Image preview loaded', 'success');
             };
