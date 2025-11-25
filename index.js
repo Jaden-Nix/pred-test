@@ -1057,6 +1057,42 @@ app.post('/api/auth/signup', requireFirebase, async (req, res) => {
     }
 });
 
+// Update user profile (display name, avatar, etc.)
+app.post('/api/user/update-profile', requireFirebase, async (req, res) => {
+    const { userId, displayName, avatarColor } = req.body;
+    
+    if (!userId || !displayName) {
+        return res.status(400).json({ error: 'userId and displayName required' });
+    }
+    
+    if (displayName.length < 2 || displayName.length > 30) {
+        return res.status(400).json({ error: 'Display name must be 2-30 characters' });
+    }
+    
+    try {
+        const userRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(userId);
+        
+        const updateData = {
+            displayName,
+            lastUpdated: new Date()
+        };
+        
+        // If avatarColor is provided, generate avatar URL based on color
+        if (avatarColor) {
+            updateData.avatarColor = avatarColor;
+        }
+        
+        await userRef.update(updateData);
+        
+        console.log(`👤 Profile updated for ${userId}: ${displayName}`);
+        res.status(200).json({ success: true, message: 'Profile updated' });
+        
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/auth/demo-login', async (req, res) => {
     const { userId, userName } = req.body;
     

@@ -2541,6 +2541,53 @@
                 </div>
             </div>
 
+            <!-- Profile Setup Screen for First-Time Email Users -->
+            <div id="profile-setup-screen" class="screen screen-inactive space-y-6 max-w-md mx-auto p-6">
+                <div class="text-center space-y-4">
+                    <h2 class="text-3xl font-bold gradient-text">Complete Your Profile</h2>
+                    <p class="text-gray-400">Let's personalize your experience on Predora!</p>
+                </div>
+
+                <div class="ui-panel p-6 space-y-6">
+                    <!-- Avatar Display -->
+                    <div class="flex justify-center">
+                        <div id="setup-avatar-preview" class="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center text-white font-bold text-4xl shadow-lg">
+                            J
+                        </div>
+                    </div>
+
+                    <!-- Display Name Input -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-300">Display Name</label>
+                        <input type="text" id="setup-display-name" placeholder="Enter your username" class="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/30 text-white placeholder-gray-500">
+                        <p class="text-xs text-gray-500">This is how other users will see you (2-30 characters)</p>
+                    </div>
+
+                    <!-- Avatar Options -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-300">Avatar Color</label>
+                        <div class="grid grid-cols-6 gap-2">
+                            <button onclick="setAvatarColor('from-blue-600 to-cyan-600')" class="w-full aspect-square rounded-lg bg-gradient-to-br from-blue-600 to-cyan-600 hover:ring-2 hover:ring-white/50 transition-all"></button>
+                            <button onclick="setAvatarColor('from-purple-600 to-pink-600')" class="w-full aspect-square rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 hover:ring-2 hover:ring-white/50 transition-all"></button>
+                            <button onclick="setAvatarColor('from-green-600 to-emerald-600')" class="w-full aspect-square rounded-lg bg-gradient-to-br from-green-600 to-emerald-600 hover:ring-2 hover:ring-white/50 transition-all"></button>
+                            <button onclick="setAvatarColor('from-orange-600 to-red-600')" class="w-full aspect-square rounded-lg bg-gradient-to-br from-orange-600 to-red-600 hover:ring-2 hover:ring-white/50 transition-all"></button>
+                            <button onclick="setAvatarColor('from-indigo-600 to-blue-600')" class="w-full aspect-square rounded-lg bg-gradient-to-br from-indigo-600 to-blue-600 hover:ring-2 hover:ring-white/50 transition-all ring-2 ring-white/50"></button>
+                            <button onclick="setAvatarColor('from-yellow-600 to-orange-600')" class="w-full aspect-square rounded-lg bg-gradient-to-br from-yellow-600 to-orange-600 hover:ring-2 hover:ring-white/50 transition-all"></button>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="space-y-3 pt-4">
+                        <button onclick="completeProfileSetup()" class="w-full btn btn-primary text-lg">
+                            Continue to App
+                        </button>
+                        <button onclick="skipProfileSetup()" class="w-full btn btn-secondary text-sm">
+                            Skip for Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div id="profile-screen" class="screen screen-inactive space-y-6">
                 <div class="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
                     <div class="lg:col-span-1 space-y-6">
@@ -3954,11 +4001,25 @@
                             console.log('Email user token on resume:', token ? '✅ Token set' : '❌ No token');
                             await initializeUserProfile();
                             attachDataListeners();
+                            
+                            // Check if this is first login (displayName is still email prefix)
+                            const isFirstLogin = userProfile.displayName === emailUserId.split('@')[0];
+                            console.log('📋 Email user first login check:', isFirstLogin, 'displayName:', userProfile.displayName);
+                            
                             // Don't override admin screens that were accessed via URL/tap
                             const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen'];
                             console.log('🔐 Session resume check - isAdminMode:', isAdminMode, 'currentScreenId:', currentScreenId);
+                            
                             if (!isAdminMode && !adminScreens.includes(currentScreenId)) {
-                                showScreen('home-screen');
+                                // Show profile setup screen for first-time email users
+                                if (isFirstLogin) {
+                                    console.log('👤 Showing profile setup screen');
+                                    document.getElementById('setup-display-name').value = emailUserId.split('@')[0];
+                                    document.getElementById('setup-avatar-preview').textContent = (emailUserId.split('@')[0])[0].toUpperCase();
+                                    showScreen('profile-setup-screen');
+                                } else {
+                                    showScreen('home-screen');
+                                }
                             }
                         })
                         .catch(err => {
@@ -4112,6 +4173,50 @@
         }
         // ---- END OF NEW FUNCTION --
 
+        // Profile Setup Functions
+        let currentAvatarColor = 'from-indigo-600 to-blue-600';
+        let isFirstEmailLogin = false;
+
+        window.setAvatarColor = (color) => {
+            currentAvatarColor = color;
+            document.getElementById('setup-avatar-preview').className = `w-24 h-24 rounded-full bg-gradient-to-br ${color} flex items-center justify-center text-white font-bold text-4xl shadow-lg`;
+        };
+
+        window.completeProfileSetup = async () => {
+            const displayName = document.getElementById('setup-display-name').value.trim();
+            if (!displayName || displayName.length < 2 || displayName.length > 30) {
+                showToast('Display name must be 2-30 characters', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        displayName: displayName,
+                        avatarColor: currentAvatarColor
+                    })
+                });
+
+                if (response.ok) {
+                    userProfile.displayName = displayName;
+                    document.getElementById('profile-display-name').textContent = displayName;
+                    showToast('Profile saved!', 'success');
+                    showScreen('home-screen');
+                } else {
+                    showToast('Failed to save profile', 'error');
+                }
+            } catch (error) {
+                console.error('Profile save error:', error);
+                showToast('Error saving profile', 'error');
+            }
+        };
+
+        window.skipProfileSetup = () => {
+            showScreen('home-screen');
+        };
 
         /**
          * Initializes guest mode - allows browsing but not interactions
