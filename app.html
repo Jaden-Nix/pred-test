@@ -3468,8 +3468,18 @@
                     cakeBalance: 150,
                     createdAt: new Date().toISOString(),
                     streak: 0,
-                    avatarUrl: LOGO_URL // Default to  app's logo
+                    avatarUrl: LOGO_URL, // Default to app's logo
+                    following: [] // List of user IDs that this user follows
                 };
+                
+                // Initialize demo accounts with predefined following lists
+                if (currentUserId?.toLowerCase() === 'alice') {
+                    defaultProfile.following = ['judge', 'bob'];
+                } else if (currentUserId?.toLowerCase() === 'judge') {
+                    defaultProfile.following = ['alice', 'bob'];
+                } else if (currentUserId?.toLowerCase() === 'bob') {
+                    defaultProfile.following = ['alice', 'judge'];
+                }
 
                 let needsPublicUpdate = false;
 
@@ -4106,12 +4116,14 @@
                                 return bTotal - aTotal;
                             });
                         } else if (socialFeedFilter === 'following') {
-                            // TODO: Filter by followed users (requires following system)
-                            // For now, show posts from demo accounts as "trending" follow suggestions
-                            const demoUsers = ['judge', 'alice', 'bob'];
-                            filteredPosts = posts.filter(post => demoUsers.includes(post.userId?.toLowerCase()));
+                            // Filter by users that the current user follows
+                            const followingList = userProfile?.following || [];
+                            filteredPosts = posts.filter(post => {
+                                const postAuthorId = post.userId?.toLowerCase();
+                                return followingList.some(followedId => followedId?.toLowerCase() === postAuthorId);
+                            });
                             if (filteredPosts.length === 0) {
-                                filteredPosts = posts.slice(0, 5); // Show recent posts if no followed users
+                                filteredPosts = []; // Show empty if not following anyone with posts
                             }
                         }
                         // 'all' filter uses all posts as-is
