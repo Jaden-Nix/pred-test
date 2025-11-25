@@ -2875,11 +2875,11 @@
                     <input type="text" name="username" style="display: none;" autocomplete="username">
                     <div class="space-y-2">
                         <label for="admin-password-input" class="text-sm font-medium text-gray-300">Enter Password</label>
-                        <input type="password" id="admin-password-input" class="ui-input" required autocomplete="current-password">
+                        <input type="password" id="admin-password-input" class="ui-input" required autocomplete="current-password" placeholder="predora-admin">
                     </div>
                     <button type="submit" class="btn btn-primary w-full">Login</button>
                 </form>
-                <button onclick="showScreen('login-screen')" class="btn btn-secondary w-full">Cancel</button>
+                <button type="button" onclick="handleAdminCancel()" class="btn btn-secondary w-full">Cancel</button>
             </div>
 
             <!-- ADMIN RESOLUTION SCREEN (Browse + Resolve All Markets) -->
@@ -8963,6 +8963,16 @@ ${historyText}`;
                 showScreen('admin-panel-screen');
             }
             document.getElementById('admin-password-input').value = '';
+        }
+
+        /**
+         * Handle cancel button on admin password screen
+         */
+        function handleAdminCancel() {
+            isAdminMode = false;
+            adminSecret = null;
+            document.getElementById('admin-password-input').value = '';
+            showScreen('home-screen');
         }
 
         /**
