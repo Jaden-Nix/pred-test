@@ -4009,32 +4009,15 @@
             loadSocialLeaderboard();
         };
 
-        window.loadSocialFeed = async () => {
+        window.loadSocialFeed = () => {
             const container = document.getElementById('social-feed-container');
             if (!container) return;
             
             try {
-                const { collection, query, orderBy, onSnapshot, where, limit } = window.firebase.firestore;
-                
-                // Clean up old listener if exists
-                if (socialFeedUnsubscribe) {
-                    socialFeedUnsubscribe();
-                    socialFeedUnsubscribe = null;
-                }
-                
-                // Set up real-time listener for social posts
+                const { collection, query, orderBy, getDocs, limit } = window.firebase.firestore;
                 const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts'), orderBy('timestamp', 'desc'), limit(15));
                 
-                socialFeedUnsubscribe = onSnapshot(q, async (snapshot) => {
-                    let userStakes = {};
-                    if (currentUserId) {
-                        const stakesQ = query(collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION), where('userId', '==', currentUserId));
-                        const stakesSnapshot = await (await import('https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js').then(() => window.firebase.firestore)).getDocs(stakesQ);
-                        stakesSnapshot.forEach(doc => {
-                            const stake = doc.data();
-                            userStakes[stake.marketId] = stake.selectedStance;
-                        });
-                    }
+                getDocs(q).then(snapshot => {
                     
                     if (snapshot.empty) {
                         container.innerHTML = '<p class="text-gray-400 text-center py-8">No posts yet. Be the first to share!</p>';
@@ -4052,8 +4035,7 @@
                     const imageHtml = post.imageUrl ? `<img src="${post.imageUrl}" class="w-full rounded-lg max-h-80 object-cover">` : '';
                     let marketHtml = '';
                     if (post.attachedMarket) {
-                        const hasStake = userStakes[post.attachedMarket.id] || (post.userId === currentUserId && post.attachedMarket.stance);
-                        const stakeLabel = hasStake ? `<span class="text-green-400 font-semibold">Skin in game</span>` : `<span class="text-gray-400">No stake</span>`;
+                        const stakeLabel = `<span class="text-gray-400">No stake</span>`;
                         marketHtml = `<div class="bg-sky-400/10 p-3 rounded border border-sky-400/30 text-sm"><p class="text-sky-300 font-medium">${post.attachedMarket.title}</p>${stakeLabel}</div>`;
                     }
                     const getRelativeTime = (timestamp) => {
@@ -4175,14 +4157,6 @@
             if (isGuestMode) { showToast('Sign in to react to posts', 'info'); return; }
             const btn = event?.target?.closest('button');
             if (btn) { btn.classList.add('reaction-bounce'); setTimeout(() => btn.classList.remove('reaction-bounce'), 600); }
-            
-            // Update UI immediately (optimistic update)
-            const countSpan = btn?.querySelector('span:last-child');
-            if (countSpan) {
-                const currentCount = parseInt(countSpan.innerText) || 0;
-                countSpan.innerText = currentCount + 1;
-            }
-            
             try {
                 const response = await fetch('/api/social/react', {
                     method: 'POST',
@@ -4191,15 +4165,10 @@
                 });
                 
                 if (!response.ok) throw new Error('Reaction failed');
-                // NO RELOAD - just keep the optimistic update
+                setTimeout(() => { loadSocialFeed(); }, 200);
             } catch (error) {
                 console.error('Reaction error:', error);
                 showToast('Failed to react', 'error');
-                // Revert the optimistic update if failed
-                if (countSpan) {
-                    const currentCount = parseInt(countSpan.innerText) || 1;
-                    countSpan.innerText = Math.max(0, currentCount - 1);
-                }
             }
         };
 
@@ -4317,14 +4286,6 @@
             const content = input.value.trim();
             if (!content) return;
             if (btn) btn.disabled = true;
-            
-            // Update comment count immediately (optimistic update)
-            const commentCountEl = document.querySelector(`.comment-count-${postId}`);
-            const prevCount = commentCountEl ? parseInt(commentCountEl.innerText) || 0 : 0;
-            if (commentCountEl) {
-                commentCountEl.innerText = prevCount + 1;
-            }
-            
             try {
                 const response = await fetch('/api/social/comment', {
                     method: 'POST',
@@ -4342,16 +4303,11 @@
                 input.placeholder = 'Add a comment...';
                 delete input.dataset.replyTo;
                 if (btn) btn.disabled = false;
-                showToast('Comment added!', 'success');
-                // NO RELOAD - just keep optimistic update
+                window.toggleComments(postId);
             } catch (e) { 
                 console.error('Comment error:', e);
                 showToast('Failed to add comment', 'error');
                 if (btn) btn.disabled = false;
-                // Revert optimistic update on failure
-                if (commentCountEl) {
-                    commentCountEl.innerText = prevCount;
-                }
             }
         };
         
