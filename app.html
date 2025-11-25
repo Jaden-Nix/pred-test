@@ -4248,6 +4248,8 @@
                     const errData = await response.json();
                     throw new Error(errData.error || `HTTP ${response.status}`);
                 }
+                // Refresh the feed to show updated reaction counts
+                setTimeout(() => loadSocialFeed(), 100);
             } catch (error) {
                 console.error('Reaction error:', error.message || error);
                 showToast('Failed to react', 'error');
@@ -4392,6 +4394,8 @@
                 input.placeholder = 'Add a comment...';
                 delete input.dataset.replyTo;
                 if (btn) btn.disabled = false;
+                // Refresh the feed to show updated comment counts
+                setTimeout(() => loadSocialFeed(), 100);
                 window.toggleComments(postId);
             } catch (e) { 
                 console.error('Comment error:', e.message || e);
