@@ -6972,6 +6972,10 @@
                 const amountInUsd = amount * getMockPrice(selectedAsset);
                 const xpToAward = getRandomXP(10);
                 const txHash = generateFakeTxHash();
+                
+                // Variables to track updated pool values for UI update
+                let updatedYesPool = null;
+                let updatedNoPool = null;
 
                 // --- THIS IS THE FIX ---
                 // We wrap all database reads and writes in a transaction
@@ -7063,6 +7067,10 @@
                                     noPool = newNoPool;
                                 }
                                 const totalPool = yesPool + noPool;
+                                
+                                // Store updated pools for UI update
+                                updatedYesPool = yesPool;
+                                updatedNoPool = noPool;
 
                                 // Update market
                                 transaction.update(marketRef, {
@@ -7142,6 +7150,31 @@
 
                     // Repopulate asset selector with new balances
                     populateAssetSelector();
+                }
+                
+                // Update the UI to display new pool values
+                if (updatedYesPool !== null && updatedNoPool !== null && currentMarketId && !currentMarket.isMock) {
+                    // Update the market object in memory
+                    if (currentMarket) {
+                        currentMarket.yesPool = updatedYesPool;
+                        currentMarket.noPool = updatedNoPool;
+                        const totalPool = updatedYesPool + updatedNoPool;
+                        currentMarket.yesPercent = (updatedYesPool / totalPool) * 100;
+                        currentMarket.noPercent = (updatedNoPool / totalPool) * 100;
+                    }
+                    
+                    // Update the displayed pools on the current market card
+                    updateMarketPoolDisplay(currentMarketId, updatedYesPool, updatedNoPool);
+                    
+                    // Also update the market in the allStandardMarkets array
+                    const marketIndex = allStandardMarkets.findIndex(m => m.id === currentMarketId);
+                    if (marketIndex !== -1) {
+                        allStandardMarkets[marketIndex].yesPool = updatedYesPool;
+                        allStandardMarkets[marketIndex].noPool = updatedNoPool;
+                        const totalPool = updatedYesPool + updatedNoPool;
+                        allStandardMarkets[marketIndex].yesPercent = (updatedYesPool / totalPool) * 100;
+                        allStandardMarkets[marketIndex].noPercent = (updatedNoPool / totalPool) * 100;
+                    }
                 }
 
                 showLoadingOverlay(false);
