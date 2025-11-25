@@ -6162,10 +6162,11 @@
                     avatarUrl: finalAvatarUrl
                 };
 
-                // Save to Firestore
+                // Save to Firestore (use correct path: artifacts/{APP_ID}/public/data/user_profile)
                 if (db && currentUserId) {
                     const { setDoc } = window.firebase.firestore;
-                    await setDoc(doc(db, 'user_profile', currentUserId), updatedProfile, { merge: true });
+                    const profileRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'user_profile', currentUserId);
+                    await setDoc(profileRef, updatedProfile, { merge: true });
                     console.log('✅ Profile updated in Firestore');
                 }
 
