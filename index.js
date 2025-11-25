@@ -158,16 +158,21 @@ function requireAdmin(req, res, next) {
 
 // --- ROUTES (must be BEFORE static middleware) ---
 app.get('/', (req, res) => {
-    // Redirect root URL directly to the app in guest mode
-    res.redirect('/app.html');
+    // Landing page first
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/home', (req, res) => {
+    // For backwards compatibility
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+app.get('/app', (req, res) => {
+    res.sendFile(path.join(__dirname, 'app.html'));
 });
 
 // Handle app.html with any query parameters (admin mode, demo users, etc.)
