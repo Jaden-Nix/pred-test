@@ -6860,20 +6860,30 @@
                 currentMarketId = marketId;
 
                 try {
+                    // Check if database is initialized
+                    if (!db) {
+                        console.error("❌ Firestore database not initialized. User might not be authenticated yet.");
+                        showToast("Database not ready. Please wait and try again.", "error");
+                        return;
+                    }
+
                     // --- THIS BLOCK IS NOW CORRECTED ---
                     if (marketId === MOCK_ETH_MARKET.id) {
                         currentMarket = MOCK_ETH_MARKET;
                         // Give the mock market a creation date for the chart
                         currentMarket.createdAt = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
                     } else {
+                        console.log(`📊 Fetching market: ${marketId} from path: artifacts/${APP_ID}/public/data/${STANDARD_MARKETS_COLLECTION}`);
                         const marketRef = doc(db, 'artifacts', APP_ID, 'public', 'data', STANDARD_MARKETS_COLLECTION, marketId);
                         const docSnap = await getDoc(marketRef);
                         if (!docSnap.exists()) {
+                            console.warn(`⚠️ Market not found in Firestore at path: artifacts/${APP_ID}/public/data/${STANDARD_MARKETS_COLLECTION}/${marketId}`);
                             showToast("Error: Market not found.", "error");
                             return;
                         }
 
                         currentMarket = { id: docSnap.id, ...docSnap.data() };
+                        console.log(`✅ Market loaded successfully: ${currentMarket.title}`);
 
                         // Convert Firestore timestamp to JS Date
                         if (currentMarket.createdAt && currentMarket.createdAt.toDate) {
@@ -7014,8 +7024,11 @@
                     // --- END FIX ---
 
                 } catch (error) {
-                    console.error("Error fetching market detail:", error);
-                    showToast("Error loading market details.", "error");
+                    console.error("❌ Error fetching market detail:", error);
+                    console.error("Error message:", error?.message || 'Unknown error');
+                    console.error("Error code:", error?.code || 'No code');
+                    console.error("Full error:", JSON.stringify(error, null, 2));
+                    showToast(`Error loading market details: ${error?.message || 'Unknown error'}`, "error");
                 }
             }
 
@@ -8429,7 +8442,12 @@
                     });
 
                     // 5. TRANSACTION WRITE 3: Update public leaderboard (set with merge to create if doesn't exist)
-                    transaction.set(publicProfileRef, { xp: increment(xpToAward) }, { merge: true });
+                    const publicProfileSnap = await transaction.get(publicProfileRef);
+                    if (publicProfileSnap.exists()) {
+                        transaction.update(publicProfileRef, { xp: increment(xpToAward) });
+                    } else {
+                        transaction.set(publicProfileRef, { xp: xpToAward });
+                    }
                 });
                 // --- END OF TRANSACTION ---
 
