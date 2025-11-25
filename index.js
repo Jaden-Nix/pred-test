@@ -171,7 +171,8 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'));
 });
 
-app.get('/app.html', (req, res) => {
+// Handle app.html with any query parameters (admin mode, demo users, etc.)
+app.get(/^\/app\.html/, (req, res) => {
     res.sendFile(path.join(__dirname, 'app.html'));
 });
 
