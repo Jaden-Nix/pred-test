@@ -1414,6 +1414,149 @@
         body.light-mode .card-micro .border-white\/10 {
             border-color: rgba(59, 130, 246, 0.2) !important;
         }
+        /* ============================================================
+           ADMIN PANEL STYLES
+           ============================================================ */
+        .admin-nav-card {
+            background: rgba(22, 27, 34, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+        .admin-nav-card:hover {
+            transform: scale(1.05);
+            background: rgba(22, 27, 34, 0.8);
+            border-color: rgba(91, 124, 255, 0.3);
+        }
+        .admin-stat-card {
+            background: rgba(22, 27, 34, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        .admin-stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .admin-stat-label {
+            font-size: 0.875rem;
+            color: #9CA3AF;
+        }
+        .market-resolution-item {
+            background: rgba(22, 27, 34, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+        .market-resolution-item:hover {
+            border-color: rgba(91, 124, 255, 0.3);
+        }
+        .resolve-btn-yes {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .resolve-btn-yes:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+        }
+        .resolve-btn-no {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .resolve-btn-no:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(239, 68, 68, 0.3);
+        }
+        .admin-input {
+            background: rgba(31, 41, 55, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: white;
+            font-size: 0.875rem;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+        .admin-input:focus {
+            outline: none;
+            border-color: #38BDF8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+        }
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .admin-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .admin-loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #38BDF8;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        :root.light-mode .admin-nav-card,
+        body.light-mode .admin-nav-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(203, 213, 245, 0.5);
+        }
+        :root.light-mode .admin-stat-card,
+        body.light-mode .admin-stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(203, 213, 245, 0.5);
+        }
+        :root.light-mode .market-resolution-item,
+        body.light-mode .market-resolution-item {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(203, 213, 245, 0.5);
+        }
+        :root.light-mode .admin-input,
+        body.light-mode .admin-input {
+            background: rgba(243, 244, 246, 1);
+            border: 1px solid rgba(203, 213, 245, 0.5);
+            color: #111827;
+        }
+        :root.light-mode .admin-stat-label,
+        body.light-mode .admin-stat-label {
+            color: #6B7280;
+        }
     </style>
 </head>
 <body class="text-gray-100">
@@ -2357,7 +2500,65 @@
             </div>
 
             <div id="admin-panel-screen" class="screen screen-inactive space-y-6">
-                <h1 class="text-2xl font-bold gradient-text">Admin Panel</h1>
+                <button onclick="goBack()" class="flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back
+                </button>
+                
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold gradient-text mb-2">🛡️ Admin Control Panel</h1>
+                    <p class="text-gray-400 text-sm">Manage markets, AI systems, and platform features</p>
+                </div>
+
+                <!-- Navigation Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Market Resolution -->
+                    <button onclick="showScreen('admin-markets-screen')" class="admin-nav-card text-left">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+                                <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">Market Resolution</h3>
+                                <p class="text-sm text-gray-400">Resolve standard markets</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- Quick Play Resolution -->
+                    <button onclick="showScreen('admin-quickplay-screen')" class="admin-nav-card text-left">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-sky-500/20 flex items-center justify-center border border-sky-500/30">
+                                <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">Quick Play</h3>
+                                <p class="text-sm text-gray-400">Manage Quick Play markets</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <!-- Jury Dashboard -->
+                    <button onclick="showScreen('admin-jury-screen')" class="admin-nav-card text-left">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center border border-yellow-500/30">
+                                <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">Jury System</h3>
+                                <p class="text-sm text-gray-400">Manage disputes</p>
+                            </div>
+                        </div>
+                    </button>
+                </div>
 
                 <div class="ui-panel p-4 space-y-4">
                     <h2 class="text-lg font-semibold text-white">Quick Play Publisher</h2>
@@ -2436,6 +2637,131 @@
                 </div>
                 <button id="admin-login-btn" class="btn btn-primary w-full">Login</button>
                 <button onclick="showScreen('login-screen')" class="btn btn-secondary w-full">Cancel</button>
+            </div>
+
+            <!-- ADMIN MARKET RESOLUTION SCREEN -->
+            <div id="admin-markets-screen" class="screen screen-inactive space-y-6">
+                <button onclick="showScreen('admin-panel-screen')" class="flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Admin Panel
+                </button>
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold gradient-text mb-2">📊 Market Resolution</h1>
+                    <p class="text-gray-400 text-sm">Manually resolve standard prediction markets</p>
+                </div>
+                <div class="ui-panel p-4">
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" id="market-search-input" class="ui-input pl-10" placeholder="Search markets by title...">
+                    </div>
+                </div>
+                <div class="ui-panel p-4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-semibold text-white">Active Markets</h2>
+                        <span id="markets-count" class="text-sm text-gray-400">Loading...</span>
+                    </div>
+                    <div id="resolution-list" class="space-y-4">
+                        <p class="text-gray-400 text-center py-8">Loading markets...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN QUICK PLAY SCREEN -->
+            <div id="admin-quickplay-screen" class="screen screen-inactive space-y-6">
+                <button onclick="showScreen('admin-panel-screen')" class="flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Admin Panel
+                </button>
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold gradient-text mb-2">⚡ Quick Play Management</h1>
+                    <p class="text-gray-400 text-sm">Create and resolve Quick Play markets</p>
+                </div>
+                <div class="ui-panel p-4 space-y-4">
+                    <h2 class="text-lg font-semibold text-white">Create Quick Play</h2>
+                    <p class="text-sm text-gray-400">Use AI to pre-fill, or create manually</p>
+                    <div class="space-y-2">
+                        <label for="admin-ai-prompt" class="text-sm font-medium text-gray-300">AI Prompt (Optional)</label>
+                        <div class="flex space-x-2">
+                            <textarea id="admin-ai-prompt" rows="1" class="ui-input" placeholder="e.g., 'Grammys'"></textarea>
+                            <button id="admin-generate-btn" class="btn btn-secondary w-28 flex-shrink-0">AI Fill</button>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label for="admin-qp-title" class="text-sm font-medium text-gray-300">Title</label>
+                        <textarea id="admin-qp-title" rows="2" class="ui-input"></textarea>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="space-y-2">
+                            <label for="admin-qp-duration" class="text-sm font-medium text-gray-300">Duration</label>
+                            <input id="admin-qp-duration" type="text" class="ui-input" placeholder="e.g., 24h">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="admin-qp-yes" class="text-sm font-medium text-gray-300">YES %</label>
+                            <input id="admin-qp-yes" type="number" class="ui-input" placeholder="50">
+                        </div>
+                        <div class="space-y-2">
+                            <label for="admin-qp-no" class="text-sm font-medium text-gray-300">NO %</label>
+                            <input id="admin-qp-no" type="number" class="ui-input" placeholder="50">
+                        </div>
+                    </div>
+                    <button id="admin-publish-btn" class="btn btn-primary w-full">Publish Quick Play</button>
+                </div>
+                <div class="ui-panel p-4">
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        <input type="text" id="quickplay-search-input" class="ui-input pl-10" placeholder="Search Quick Plays...">
+                    </div>
+                </div>
+                <div class="ui-panel p-4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-semibold text-white">Active Quick Plays</h2>
+                        <span id="quickplay-count" class="text-sm text-gray-400">Loading...</span>
+                    </div>
+                    <div id="quick-play-resolution-list" class="space-y-4">
+                        <p class="text-gray-400 text-center py-8">Loading quick plays...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADMIN JURY SCREEN -->
+            <div id="admin-jury-screen" class="screen screen-inactive space-y-6">
+                <button onclick="showScreen('admin-panel-screen')" class="flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Admin Panel
+                </button>
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold gradient-text mb-2">⚖️ Jury Dashboard</h1>
+                    <p class="text-gray-400 text-sm">Manage disputed markets and jury votes</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-value text-purple-400" id="admin-total-markets">-</div>
+                        <div class="admin-stat-label">Total Markets</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-value text-red-400" id="admin-disputed-markets">-</div>
+                        <div class="admin-stat-label">Disputed</div>
+                    </div>
+                </div>
+                <div class="ui-panel p-4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-semibold text-white">Disputed Markets</h2>
+                        <button id="admin-refresh-btn" class="btn btn-secondary btn-sm">Refresh</button>
+                    </div>
+                    <div id="admin-disputed-markets-list" class="space-y-4">
+                        <p class="text-gray-400 text-center py-4">Loading...</p>
+                    </div>
+                </div>
             </div>
 
             <!-- ADD NEW SCREEN  -->
@@ -3986,6 +4312,10 @@
                 const noNavScreens = [
                     'quick-play-screen', 
                     'admin-password-screen',
+                    'admin-panel-screen',
+                    'admin-markets-screen',
+                    'admin-quickplay-screen',
+                    'admin-jury-screen',
                     'login-screen',
                     'otp-screen'
                 ];
