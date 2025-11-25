@@ -1940,6 +1940,46 @@ app.get('/api/admin/disputed-markets', requireAdmin, requireFirebase, async (req
     }
 });
 
+// Clear all data endpoint
+app.post('/api/admin/clear-all-data', requireAdmin, requireFirebase, async (req, res) => {
+    try {
+        const collections = [
+            'standard_markets', 'quick_play_markets', 'pledges', 'leaderboard',
+            'public_leaderboard', 'user_profile', 'social_posts', 'jury_codes',
+            'jury_votes', 'notifications', 'otp_codes', 'market_comments',
+            'stake_logs', 'safety_reports', 'flagged_content', 'safety_logs'
+        ];
+        
+        let totalDeleted = 0;
+        
+        for (const collectionName of collections) {
+            const collectionRef = db.collection(`artifacts/${APP_ID}/public/data/${collectionName}`);
+            const snapshot = await collectionRef.get();
+            
+            const batch = db.batch();
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            
+            if (snapshot.docs.length > 0) {
+                await batch.commit();
+                totalDeleted += snapshot.docs.length;
+                console.log(`🗑️ Cleared ${snapshot.docs.length} documents from ${collectionName}`);
+            }
+        }
+        
+        console.log(`✅ All data cleared: ${totalDeleted} total documents deleted`);
+        res.status(200).json({ 
+            success: true, 
+            message: 'All data has been cleared',
+            totalDeleted
+        });
+    } catch (error) {
+        console.error('Error clearing data:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // =============================================================================
 // NOTIFICATION HELPER FUNCTIONS
 // =============================================================================
