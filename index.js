@@ -1844,6 +1844,51 @@ app.delete('/api/notifications/:id', requireAuth, requireFirebase, async (req, r
 });
 
 // =============================================================================
+// AI ASSISTANT ENDPOINT
+// =============================================================================
+
+app.post('/api/ai/chat', async (req, res) => {
+    const { messages, systemPrompt } = req.body;
+
+    if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: 'Messages array required' });
+    }
+
+    if (!openai) {
+        return res.status(503).json({ error: 'AI service not available' });
+    }
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: 'gpt-5',
+            messages: [
+                {
+                    role: 'system',
+                    content: systemPrompt || 'You are a helpful AI assistant for Predora, a prediction market platform. Help users understand markets, answer questions about the platform, and provide insights about prediction trading.'
+                },
+                ...messages
+            ],
+            max_completion_tokens: 1024,
+            temperature: 0.7
+        });
+
+        res.status(200).json({
+            success: true,
+            message: response.choices[0].message.content,
+            usage: {
+                promptTokens: response.usage.prompt_tokens,
+                completionTokens: response.usage.completion_tokens,
+                totalTokens: response.usage.total_tokens
+            }
+        });
+
+    } catch (error) {
+        console.error('Error in AI chat:', error);
+        res.status(500).json({ error: 'Failed to process chat message' });
+    }
+});
+
+// =============================================================================
 // HEALTH CHECK
 // =============================================================================
 app.get('/api/health', (req, res) => {
