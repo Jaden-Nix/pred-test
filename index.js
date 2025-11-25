@@ -662,71 +662,126 @@ async function autoResolveQuickPolls() {
         // Resolve each poll
         for (const poll of pollsToResolve) {
             try {
-                // Find the option with the most votes
+                // Determine winner (YES or NO) based on vote count
+                const yesVotes = poll.yesVotes || 0;
+                const noVotes = poll.noVotes || 0;
+                const xpStakedYES = poll.xpStakedYES || 0;
+                const xpStakedNO = poll.xpStakedNO || 0;
                 let winningOption = null;
-                let maxVotes = 0;
 
-                if (poll.options && Array.isArray(poll.options)) {
-                    for (const option of poll.options) {
-                        if ((option.votes || 0) > maxVotes) {
-                            maxVotes = option.votes;
-                            winningOption = option.label;
+                if (yesVotes > noVotes) {
+                    winningOption = 'YES';
+                } else if (noVotes > yesVotes) {
+                    winningOption = 'NO';
+                } else {
+                    // Tie: return all XP to voters (no redistribution)
+                    winningOption = 'TIE';
+                }
+
+                // Distribute XP rewards
+                const voters = poll.voters || {};
+                const batch = db.batch();
+                let winnerCount = 0;
+                let totalWinningsDistributed = 0;
+                
+                if (winningOption !== 'TIE') {
+                    // Calculate pot sizes
+                    const losingXPPot = winningOption === 'YES' ? xpStakedNO : xpStakedYES;
+                    const winningXPPot = winningOption === 'YES' ? xpStakedYES : xpStakedNO;
+                    
+                    // Count winners
+                    for (const userId in voters) {
+                        if (voters[userId].vote === winningOption) {
+                            winnerCount++;
+                        }
+                    }
+
+                    // Distribute winnings to winners
+                    if (winnerCount > 0 && losingXPPot > 0) {
+                        const winningsPerWinner = losingXPPot / winnerCount;
+
+                        for (const userId in voters) {
+                            const voter = voters[userId];
+                            if (voter.vote === winningOption) {
+                                // Winner gets: stake back + share of loser's pot
+                                const totalReward = (voter.xpStaked || 0) + winningsPerWinner;
+                                totalWinningsDistributed += totalReward;
+
+                                // Update user profile XP
+                                const profileRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(userId);
+                                batch.update(profileRef, { xp: admin.firestore.FieldValue.increment(totalReward) });
+
+                                // Update leaderboard XP
+                                const leaderboardRef = db.collection(`artifacts/${APP_ID}/public/data/leaderboard`).doc(userId);
+                                batch.update(leaderboardRef, { xp: admin.firestore.FieldValue.increment(totalReward) });
+
+                                console.log(`💰 ORACLE: User ${userId} won ${Math.round(totalReward)} XP on poll (${voter.xpStaked} stake + ${Math.round(winningsPerWinner)} share)`);
+                            }
+                        }
+                    }
+                } else {
+                    // Tie: return all staked XP to participants
+                    for (const userId in voters) {
+                        const voter = voters[userId];
+                        const xpStaked = voter.xpStaked || 0;
+                        if (xpStaked > 0) {
+                            totalWinningsDistributed += xpStaked;
+                            
+                            const profileRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(userId);
+                            batch.update(profileRef, { xp: admin.firestore.FieldValue.increment(xpStaked) });
+
+                            const leaderboardRef = db.collection(`artifacts/${APP_ID}/public/data/leaderboard`).doc(userId);
+                            batch.update(leaderboardRef, { xp: admin.firestore.FieldValue.increment(xpStaked) });
+
+                            console.log(`🤝 ORACLE: User ${userId} got back ${xpStaked} XP (tie result)`);
                         }
                     }
                 }
 
                 // Update the poll with resolution
                 const pollRef = db.collection(collectionPath).doc(poll.id);
-                await pollRef.update({
+                batch.update(pollRef, {
                     isResolved: true,
-                    winningOption: winningOption || 'No votes',
+                    winningOption: winningOption,
                     resolvedAt: new Date(),
-                    finalVoteCount: maxVotes
+                    yesVotesCount: yesVotes,
+                    noVotesCount: noVotes,
+                    totalXPDistributed: totalWinningsDistributed
                 });
 
-                console.log(`✅ ORACLE: Resolved poll "${poll.title}" - Winner: "${winningOption}" (${maxVotes} votes)`);
+                console.log(`✅ ORACLE: Resolved poll "${poll.question || poll.title}" - Winner: ${winningOption} (YES: ${yesVotes} votes/${xpStakedYES}XP, NO: ${noVotes} votes/${xpStakedNO}XP)`);
 
-                // Send notifications to users who voted
-                try {
-                    // Get all votes/pledges for this poll
-                    const pledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
-                    const pollPledges = await pledgesRef.where('pollId', '==', poll.id).get();
+                // Send notifications to all voters
+                const notifiedUsers = new Set();
+                for (const userId in voters) {
+                    notifiedUsers.add(userId);
+                    const voter = voters[userId];
+                    const isWinner = voter.vote === winningOption;
+                    
+                    const notificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${userId}/notifications`).doc();
+                    const winningsPerWinner = winningOption !== 'TIE' && (winningOption === 'YES' ? xpStakedNO : xpStakedYES) > 0 && winnerCount > 0 
+                        ? ((winningOption === 'YES' ? xpStakedNO : xpStakedYES) / winnerCount) + (voter.xpStaked || 0)
+                        : voter.xpStaked || 0;
 
-                    const notifiedUsers = new Set();
-                    const batch = db.batch();
-
-                    for (const pledgeSnap of pollPledges.docs) {
-                        const pledge = pledgeSnap.data();
-                        const userIdToNotify = pledge.userId;
-
-                        if (!userIdToNotify || typeof userIdToNotify !== 'string') {
-                            continue;
-                        }
-
-                        if (!notifiedUsers.has(userIdToNotify)) {
-                            notifiedUsers.add(userIdToNotify);
-
-                            const notificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${userIdToNotify}/notifications`).doc();
-                            batch.set(notificationsRef, {
-                                type: 'poll_resolved',
-                                pollId: poll.id,
-                                pollTitle: poll.title,
-                                winningOption: winningOption,
-                                message: `Poll resolved: "${poll.title}" - Winner: ${winningOption}`,
-                                actionUrl: `screen:quick-polls`,
-                                timestamp: new Date(),
-                                read: false
-                            });
-                        }
-                    }
-
-                    if (notifiedUsers.size > 0) {
-                        await batch.commit();
-                        console.log(`📢 Poll resolution notifications sent to ${notifiedUsers.size} users for "${poll.title}"`);
-                    }
-                } catch (notifError) {
-                    console.error(`⚠️ Failed to send poll resolution notifications:`, notifError.message);
+                    batch.set(notificationsRef, {
+                        type: 'poll_resolved',
+                        pollId: poll.id,
+                        pollTitle: poll.question || poll.title,
+                        winningOption: winningOption,
+                        userVote: voter.vote,
+                        xpResult: isWinner || winningOption === 'TIE' ? Math.round(winningsPerWinner) : 0,
+                        message: isWinner || winningOption === 'TIE' 
+                            ? `🎉 Poll resolved: "${poll.question || poll.title}" - Your ${voter.vote} was correct! +${Math.round(winningsPerWinner)} XP`
+                            : `📊 Poll resolved: "${poll.question || poll.title}" - ${winningOption} won. Better luck next time!`,
+                        actionUrl: `screen:quick-polls`,
+                        timestamp: new Date(),
+                        read: false
+                    });
                 }
+
+                // Commit all updates
+                await batch.commit();
+                console.log(`📢 ORACLE: Sent notifications to ${notifiedUsers.size} voters | Distributed ${Math.round(totalWinningsDistributed)} total XP`);
 
             } catch (pollError) {
                 console.error(`🗳️ ORACLE: Failed to resolve poll ${poll.id}:`, pollError.message);
