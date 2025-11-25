@@ -810,24 +810,47 @@ async function autoResolveQuickPolls() {
     }
 }
 
+// Fetch current crypto prices from CoinGecko
+async function getCurrentCryptoPrices() {
+    try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true');
+        const data = await response.json();
+        return {
+            btc: data.bitcoin?.usd || 88000,
+            eth: data.ethereum?.usd || 3300,
+            btcMarketCap: data.bitcoin?.usd_market_cap || 1750000000000
+        };
+    } catch (error) {
+        console.warn("⚠️ Failed to fetch current prices, using fallback:", error.message);
+        return { btc: 88000, eth: 3300, btcMarketCap: 1750000000000 };
+    }
+}
+
 // Create daily markets with AI-generated trending questions
 async function createDailyMarkets() {
     console.log("ORACLE: Creating daily markets with AI...");
     
     try {
-        // Use Gemini to generate trending market ideas
+        // Get current market prices
+        const prices = await getCurrentCryptoPrices();
+        console.log(`📊 Current prices - BTC: $${prices.btc}, ETH: $${prices.eth}`);
+        
+        // Use Gemini to generate trending market ideas BASED ON REAL PRICES
         const systemPrompt = `You are a prediction market analyst. Generate 3 hot, trending prediction market questions that people will actually want to trade on. 
 Focus on:
-- Current tech trends and announcements
-- Crypto/DeFi movements
+- Realistic price predictions based on REAL current prices
+- Tech trends and announcements
+- Crypto/DeFi movements around current market levels
 - Upcoming events and releases
 - Industry disruptions
-- Meme stocks or viral trends
+
+IMPORTANT: Use REAL market data, not made-up numbers. All predictions must be reasonable relative to current prices.
 
 Return ONLY a JSON array with objects containing: title (question), category (Crypto/Tech/Finance/Sports/Entertainment), description (1 sentence)
 Example format: [{"title": "Will...", "category": "Crypto", "description": "..."}]`;
 
-        const userPrompt = `Today is November 25, 2025. Generate 3 hot prediction market questions about future events (next 30-45 days) that will attract traders. Make them specific, time-bound, exciting, and use CURRENT 2025 dates. Focus on real events happening in late November-December 2025 or upcoming announcements.`;
+        const userPrompt = `Today is November 25, 2025. Current market prices: Bitcoin at $${Math.round(prices.btc)}, Ethereum at $${Math.round(prices.eth)}.
+Generate 3 hot prediction market questions about future events (next 30-45 days). Make them specific, time-bound, exciting, and use REALISTIC price targets based on current prices. Use dates in December 2025. Focus on REAL events that could happen.`;
 
         const payload = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -895,19 +918,25 @@ async function autoGenerateQuickPlays() {
     console.log("ORACLE: Generating quick play markets with AI...");
     
     try {
+        // Get current market prices
+        const prices = await getCurrentCryptoPrices();
+        
         // Use Gemini to generate trending quick play questions
         const systemPrompt = `You are a quick play market specialist. Generate 4 exciting quick play prediction questions (24-48 hour resolution).
 Focus on:
-- Intraday crypto price movements
-- Stock market daily moves
+- REALISTIC intraday crypto price movements around current levels
+- Stock market daily moves (realistic targets)
 - Sports game predictions
 - Live event outcomes
-- Viral social media moments
+- Real market events happening NOW
+
+IMPORTANT: All price predictions must be based on REAL current prices, not made-up numbers.
 
 Return ONLY a JSON array with objects containing: title (question), category, duration (24h/48h/12h)
 Example: [{"title": "Will...", "category": "Crypto", "duration": "24h"}]`;
 
-        const userPrompt = `Today is November 25, 2025. Generate 4 hot quick play market questions for the NEXT 24-48 HOURS (Nov 26-27, 2025). Make them exciting, resolvable quickly, and use CURRENT 2025 dates. Focus on real market events, crypto moves, or news that could happen this week.`;
+        const userPrompt = `Today is November 25, 2025. Current prices: Bitcoin $${Math.round(prices.btc)}, Ethereum $${Math.round(prices.eth)}.
+Generate 4 hot quick play market questions for November 26-27, 2025 (next 24-48 hours). Make them exciting with REALISTIC price targets based on current market levels. Use REAL dates and REAL market data.`;
 
         const payload = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
