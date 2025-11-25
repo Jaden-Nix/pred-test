@@ -810,8 +810,123 @@ async function autoResolveQuickPolls() {
     }
 }
 
-// (The rest of your Oracle functions: createDailyMarkets, autoGenerateQuickPlays, etc. go here. 
-//  They are safe because they all use 'callGoogleApi', which now has retry logic.)
+// Create daily markets with AI-generated questions
+async function createDailyMarkets() {
+    console.log("ORACLE: Creating daily markets...");
+    
+    const sampleMarkets = [
+        {
+            title: "Will Bitcoin reach $100k by end of year?",
+            category: "Crypto",
+            description: "Bitcoin prediction market"
+        },
+        {
+            title: "Will Ethereum reach $5,000 by end of year?",
+            category: "Crypto",
+            description: "Ethereum prediction market"
+        },
+        {
+            title: "Will the Fed cut rates in the next FOMC meeting?",
+            category: "Finance",
+            description: "Federal Reserve interest rate prediction"
+        },
+        {
+            title: "Will Trump win the 2024 election?",
+            category: "Politics",
+            description: "2024 US Presidential election"
+        },
+        {
+            title: "Will AI companies raise over $50B in funding this year?",
+            category: "Tech",
+            description: "AI funding prediction"
+        }
+    ];
+    
+    try {
+        for (const marketData of sampleMarkets) {
+            const marketRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc();
+            const resolutionDate = new Date();
+            resolutionDate.setDate(resolutionDate.getDate() + 30); // Resolve in 30 days
+            
+            await marketRef.set({
+                id: marketRef.id,
+                title: marketData.title,
+                category: marketData.category,
+                description: marketData.description,
+                createdByDisplayName: 'PredoraOracle',
+                createdAt: new Date(),
+                isResolved: false,
+                resolutionDate: resolutionDate.toISOString().split('T')[0],
+                status: 'active',
+                yesAmount: 50000,
+                noAmount: 50000,
+                yesPercent: 50,
+                noPercent: 50,
+                totalPool: 100000,
+                isMock: false
+            });
+            
+            console.log(`✅ Created market: ${marketData.title}`);
+        }
+    } catch (error) {
+        console.error("ORACLE: Failed to create daily markets:", error.message);
+    }
+}
+
+// Auto-generate quick play markets (24-48 hour markets)
+async function autoGenerateQuickPlays() {
+    console.log("ORACLE: Generating quick play markets...");
+    
+    const quickPlayMarkets = [
+        {
+            title: "Will BTC move +5% in the next 24h?",
+            category: "Crypto",
+            duration: '24h'
+        },
+        {
+            title: "Will the S&P 500 close green today?",
+            category: "Finance",
+            duration: '24h'
+        },
+        {
+            title: "Will there be a major tech announcement today?",
+            category: "Tech",
+            duration: '12h'
+        },
+        {
+            title: "Will a major sports team win their next game?",
+            category: "Sports",
+            duration: '48h'
+        }
+    ];
+    
+    try {
+        for (const marketData of quickPlayMarkets) {
+            const marketRef = db.collection(`artifacts/${APP_ID}/public/data/quick_play_markets`).doc();
+            
+            await marketRef.set({
+                id: marketRef.id,
+                title: marketData.title,
+                category: marketData.category,
+                duration: marketData.duration,
+                createdByDisplayName: 'PredoraOracle',
+                createdAt: new Date(),
+                isResolved: false,
+                status: 'active',
+                yesAmount: 50000,
+                noAmount: 50000,
+                yesPercent: 50,
+                noPercent: 50,
+                totalPool: 100000,
+                isMock: false
+            });
+            
+            console.log(`✅ Created quick play market: ${marketData.title}`);
+        }
+    } catch (error) {
+        console.error("ORACLE: Failed to create quick plays:", error.message);
+    }
+}
 
 app.post('/api/run-jobs', async (req, res) => {
     const { key } = req.body;
@@ -820,8 +935,8 @@ app.post('/api/run-jobs', async (req, res) => {
     try {
         await autoResolveMarkets();
         await autoResolveQuickPolls();
-        // await createDailyMarkets(); // Uncomment if you added this back
-        // await autoGenerateQuickPlays(); // Uncomment if you added this back
+        await createDailyMarkets();
+        await autoGenerateQuickPlays();
         res.status(200).json({ success: true });
     } catch (e) {
         console.error("ORACLE: Job failed", e);
