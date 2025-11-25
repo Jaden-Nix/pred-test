@@ -3739,18 +3739,7 @@
         let toastTimer;
 
         // --- Mock Data ---
-        const MOCK_ETH_MARKET = {
-            id: 'mock-eth-1',
-            title: 'Will ETH reach $5,000 by the end of the year?',
-            insight: 'This is a mock market to demonstrate the app\'s functionality. Staking on this market will use your real mock balance!',
-            yesPercent: 65,
-            noPercent: 35,
-            isNoLoss: true,
-            stakeDuration: '7 days',
-            yieldProtocol: 'aave',
-            createdByDisplayName: 'PredoraBot',
-            isMock: true
-        };
+        const MOCK_ETH_MARKET = null;
 
         // === THEME MANAGEMENT ===
         function toggleThemeWithFlip() {
@@ -5963,7 +5952,7 @@
                     });
 
                     // Add the hardcoded mock market to the top
-                    if (!markets.find(m => m.id === MOCK_ETH_MARKET.id)) {
+                    if (MOCK_ETH_MARKET && !markets.find(m => m.id === MOCK_ETH_MARKET.id)) {
                         markets.unshift(MOCK_ETH_MARKET);
                     }
 
@@ -5990,13 +5979,8 @@
         async function attachQuickPlayListener() {
             const { collection, query, where, onSnapshot, getDocs } = window.firebase.firestore;
 
-            // 1. Hardcoded list of default mock markets
-            const allMockMarkets = [
-                { id: 'mock-qp-1', title: 'Will BTC break $70k in the next 24h?', duration: '24h', yesPercent: 55, noPercent: 45, isMock: true, isResolved: false },
-                { id: 'mock-qp-2', title: 'Will the next tweet from @elonmusk mention DOGE?', duration: '4h', yesPercent: 30, noPercent: 70, isMock: true, isResolved: false },
-                { id: 'mock-qp-3', title: 'Will the Lakers win their next game?', duration: '8h', yesPercent: 60, noPercent: 40, isMock: true, isResolved: false },
-                { id: 'mock-qp-4', title: 'Will it rain in New York tomorrow?', duration: '12h', yesPercent: 20, noPercent: 80, isMock: true, isResolved: false },
-            ];
+            // 1. Hardcoded list of default mock markets (disabled for fresh start)
+            const allMockMarkets = [];
 
             try {
                 // 2. Get a list of ALL pledges (resolved or not) by the current user
