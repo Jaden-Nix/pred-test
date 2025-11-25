@@ -4439,7 +4439,7 @@
                     filteredDocs = snapshot.docs.filter(doc => {
                         const type = doc.data().type;
                         // Support both old and new notification types
-                        return type === 'social' || type === 'new_follower' || type === 'comment_reply';
+                        return type === 'social' || type === 'new_follower' || type === 'comment_reply' || type === 'new_post';
                     });
                 }
 
@@ -4503,6 +4503,12 @@
                     title = 'New Reply';
                     message = notification.message || 'Someone replied to your comment';
                     actionText = 'View Reply';
+                    break;
+                case 'new_post':
+                    icon = '<svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                    title = 'New Post';
+                    message = notification.message || 'Someone you follow posted';
+                    actionText = 'View Post';
                     break;
             }
 

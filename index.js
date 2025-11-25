@@ -566,6 +566,40 @@ async function autoResolveMarkets() {
                     console.error(`ORACLE: Payout failed for ${marketId}:`, payoutError.message);
                 }
                 
+                // 📢 SEND NOTIFICATIONS to all users who staked on this market
+                try {
+                    const allPledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
+                    const allPledges = await allPledgesRef.where('marketId', '==', marketId).get();
+                    
+                    const notifiedUsers = new Set(); // Avoid duplicate notifications
+                    
+                    for (const pledgeSnap of allPledges.docs) {
+                        const pledge = pledgeSnap.data();
+                        const userIdToNotify = pledge.userId;
+                        
+                        // Only send one notification per user even if they staked multiple times
+                        if (!notifiedUsers.has(userIdToNotify)) {
+                            notifiedUsers.add(userIdToNotify);
+                            
+                            // Create notification for user
+                            const notificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${userIdToNotify}/notifications`);
+                            await notificationsRef.add({
+                                type: 'market_resolved',
+                                marketId: marketId,
+                                marketTitle: market.title,
+                                message: `Market resolved: "${market.title}" - Winner: ${outcome}`,
+                                actionUrl: `screen:market-detail:${marketId}`,
+                                timestamp: new Date(),
+                                read: false
+                            });
+                        }
+                    }
+                    
+                    console.log(`📢 Market resolution notifications sent to ${notifiedUsers.size} users for ${market.title}`);
+                } catch (notifError) {
+                    console.error(`⚠️ Failed to send market resolution notifications:`, notifError.message);
+                }
+                
                  await doc.ref.update({ isResolved: true, winningOutcome: outcome, resolvedAt: new Date() });
                  console.log(`ORACLE: Resolved ${market.title} as ${outcome}`);
             }
@@ -1125,6 +1159,36 @@ app.post('/api/social/create-post', requireAuth, requireFirebase, async (req, re
             isFlexPost: false,
             flexData: null
         });
+        
+        // 📢 SEND NOTIFICATIONS to all followers of the post creator
+        try {
+            // Get the user's profile to find their followers
+            const userProfileRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(userId);
+            const userProfileSnap = await userProfileRef.get();
+            const followerIds = userProfileSnap.data()?.followers || [];
+            
+            // Send notifications to each follower
+            for (const followerId of followerIds) {
+                const followersNotificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${followerId}/notifications`);
+                await followersNotificationsRef.add({
+                    type: 'new_post',
+                    postId: newPost.id,
+                    posterName: displayName,
+                    posterAvatarUrl: avatarUrl,
+                    message: `${displayName} posted: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`,
+                    actionUrl: `screen:social-feed:${newPost.id}`,
+                    timestamp: new Date(),
+                    read: false
+                });
+            }
+            
+            if (followerIds.length > 0) {
+                console.log(`📢 New post notifications sent to ${followerIds.length} followers of ${displayName}`);
+            }
+        } catch (notifError) {
+            console.error(`⚠️ Failed to send new post notifications:`, notifError.message);
+            // Don't fail the post creation if notifications fail
+        }
         
         res.status(200).json({ success: true, postId: newPost.id });
     } catch (error) {
