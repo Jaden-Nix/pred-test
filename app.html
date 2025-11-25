@@ -4355,7 +4355,7 @@
             if (!screenId) return;
             
             // Protect admin screens from being redirected away unless explicitly allowed
-            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-jury-screen'];
+            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen'];
             if (adminScreens.includes(currentScreenId) && !adminScreens.includes(screenId) && !forceOverride) {
                 console.log('🔒 Blocked redirect from admin screen. isAdminMode:', isAdminMode);
                 return;
@@ -4381,6 +4381,7 @@
                     'admin-panel-screen',
                     'admin-markets-screen',
                     'admin-quickplay-screen',
+                    'admin-quickpoll-screen',
                     'admin-jury-screen',
                     'login-screen',
                     'otp-screen'
@@ -5328,6 +5329,7 @@
                 case 'admin-password-screen':
                 case 'admin-markets-screen':
                 case 'admin-quickplay-screen':
+                case 'admin-quickpoll-screen':
                 case 'admin-jury-screen':
                     // Admin screens don't need data loading
                     break;
