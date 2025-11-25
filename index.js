@@ -810,118 +810,146 @@ async function autoResolveQuickPolls() {
     }
 }
 
-// Create daily markets with AI-generated questions
+// Create daily markets with AI-generated trending questions
 async function createDailyMarkets() {
-    console.log("ORACLE: Creating daily markets...");
-    
-    const sampleMarkets = [
-        {
-            title: "Will Bitcoin reach $120k by end of 2025?",
-            category: "Crypto",
-            description: "Bitcoin price prediction for year-end 2025"
-        },
-        {
-            title: "Will Ethereum reach $7,000 by end of 2025?",
-            category: "Crypto",
-            description: "Ethereum price prediction for year-end 2025"
-        },
-        {
-            title: "Will AI surpass GPT-4 capabilities in 2025?",
-            category: "Tech",
-            description: "AI advancement prediction for 2025"
-        },
-        {
-            title: "Will tech stocks outperform the market in 2025?",
-            category: "Finance",
-            description: "Tech sector market performance prediction"
-        },
-        {
-            title: "Will a new Gen-Z social platform reach 100M users by EOY 2025?",
-            category: "Tech",
-            description: "Social media adoption prediction"
-        }
-    ];
+    console.log("ORACLE: Creating daily markets with AI...");
     
     try {
-        for (const marketData of sampleMarkets) {
-            const marketRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc();
-            const resolutionDate = new Date();
-            resolutionDate.setDate(resolutionDate.getDate() + 30); // Resolve in 30 days
-            
-            await marketRef.set({
-                id: marketRef.id,
-                title: marketData.title,
-                category: marketData.category,
-                description: marketData.description,
-                createdByDisplayName: 'PredoraOracle',
-                createdAt: new Date(),
-                isResolved: false,
-                resolutionDate: resolutionDate.toISOString().split('T')[0],
-                status: 'active',
-                yesAmount: 50000,
-                noAmount: 50000,
-                yesPercent: 50,
-                noPercent: 50,
-                totalPool: 100000,
-                isMock: false
-            });
-            
-            console.log(`✅ Created market: ${marketData.title}`);
+        // Use Gemini to generate trending market ideas
+        const systemPrompt = `You are a prediction market analyst. Generate 3 hot, trending prediction market questions that people will actually want to trade on. 
+Focus on:
+- Current tech trends and announcements
+- Crypto/DeFi movements
+- Upcoming events and releases
+- Industry disruptions
+- Meme stocks or viral trends
+
+Return ONLY a JSON array with objects containing: title (question), category (Crypto/Tech/Finance/Sports/Entertainment), description (1 sentence)
+Example format: [{"title": "Will...", "category": "Crypto", "description": "..."}]`;
+
+        const userPrompt = `Today is November 25, 2025. Generate 3 hot prediction market questions about future events (next 30-45 days) that will attract traders. Make them specific, time-bound, exciting, and use CURRENT 2025 dates. Focus on real events happening in late November-December 2025 or upcoming announcements.`;
+
+        const payload = {
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ parts: [{ text: userPrompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        };
+
+        const response = await callGoogleApi(payload);
+        let aiMarkets = [];
+
+        try {
+            const jsonText = response.candidates[0].content.parts[0].text;
+            aiMarkets = JSON.parse(jsonText);
+        } catch (parseError) {
+            console.warn("⚠️ Failed to parse AI response, using fallback markets");
+            aiMarkets = [
+                { title: "Will Bitcoin break $100k this week?", category: "Crypto", description: "Bitcoin price breakout" },
+                { title: "Will a major tech layoff happen this week?", category: "Tech", description: "Tech company news" },
+                { title: "Will a new AI model outperform GPT-4?", category: "Tech", description: "AI competition" }
+            ];
+        }
+
+        for (const marketData of aiMarkets) {
+            try {
+                const marketRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc();
+                const resolutionDate = new Date();
+                resolutionDate.setDate(resolutionDate.getDate() + 45); // Resolve in 45 days for standard markets
+
+                await marketRef.set({
+                    id: marketRef.id,
+                    title: marketData.title || "Prediction Market",
+                    category: marketData.category || "General",
+                    description: marketData.description || "",
+                    createdByDisplayName: 'PredoraOracle',
+                    createdAt: new Date(),
+                    isResolved: false,
+                    resolutionDate: resolutionDate.toISOString().split('T')[0],
+                    status: 'active',
+                    yesAmount: 100000,  // Increased liquidity for better AMM
+                    noAmount: 100000,
+                    yesPercent: 50,
+                    noPercent: 50,
+                    totalPool: 200000,
+                    isMock: false
+                });
+
+                console.log(`✅ Created market: ${marketData.title}`);
+            } catch (marketError) {
+                console.error(`⚠️ Failed to create market: ${marketError.message}`);
+            }
         }
     } catch (error) {
         console.error("ORACLE: Failed to create daily markets:", error.message);
     }
 }
 
-// Auto-generate quick play markets (24-48 hour markets)
+// Auto-generate quick play markets (24-48 hour markets) with AI
 async function autoGenerateQuickPlays() {
-    console.log("ORACLE: Generating quick play markets...");
-    
-    const quickPlayMarkets = [
-        {
-            title: "Will BTC move +5% in the next 24h?",
-            category: "Crypto",
-            duration: '24h'
-        },
-        {
-            title: "Will the S&P 500 close green today?",
-            category: "Finance",
-            duration: '24h'
-        },
-        {
-            title: "Will there be a major tech announcement today?",
-            category: "Tech",
-            duration: '12h'
-        },
-        {
-            title: "Will a major sports team win their next game?",
-            category: "Sports",
-            duration: '48h'
-        }
-    ];
+    console.log("ORACLE: Generating quick play markets with AI...");
     
     try {
-        for (const marketData of quickPlayMarkets) {
-            const marketRef = db.collection(`artifacts/${APP_ID}/public/data/quick_play_markets`).doc();
-            
-            await marketRef.set({
-                id: marketRef.id,
-                title: marketData.title,
-                category: marketData.category,
-                duration: marketData.duration,
-                createdByDisplayName: 'PredoraOracle',
-                createdAt: new Date(),
-                isResolved: false,
-                status: 'active',
-                yesAmount: 50000,
-                noAmount: 50000,
-                yesPercent: 50,
-                noPercent: 50,
-                totalPool: 100000,
-                isMock: false
-            });
-            
-            console.log(`✅ Created quick play market: ${marketData.title}`);
+        // Use Gemini to generate trending quick play questions
+        const systemPrompt = `You are a quick play market specialist. Generate 4 exciting quick play prediction questions (24-48 hour resolution).
+Focus on:
+- Intraday crypto price movements
+- Stock market daily moves
+- Sports game predictions
+- Live event outcomes
+- Viral social media moments
+
+Return ONLY a JSON array with objects containing: title (question), category, duration (24h/48h/12h)
+Example: [{"title": "Will...", "category": "Crypto", "duration": "24h"}]`;
+
+        const userPrompt = `Today is November 25, 2025. Generate 4 hot quick play market questions for the NEXT 24-48 HOURS (Nov 26-27, 2025). Make them exciting, resolvable quickly, and use CURRENT 2025 dates. Focus on real market events, crypto moves, or news that could happen this week.`;
+
+        const payload = {
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ parts: [{ text: userPrompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        };
+
+        const response = await callGoogleApi(payload);
+        let aiQuickPlays = [];
+
+        try {
+            const jsonText = response.candidates[0].content.parts[0].text;
+            aiQuickPlays = JSON.parse(jsonText);
+        } catch (parseError) {
+            console.warn("⚠️ Failed to parse AI response, using fallback quick plays");
+            aiQuickPlays = [
+                { title: "Will Bitcoin pump tomorrow?", category: "Crypto", duration: "24h" },
+                { title: "Will the Dow Jones close green?", category: "Finance", duration: "24h" },
+                { title: "Will Elon tweet about crypto?", category: "Tech", duration: "12h" },
+                { title: "Will a major sports upset happen?", category: "Sports", duration: "48h" }
+            ];
+        }
+
+        for (const marketData of aiQuickPlays) {
+            try {
+                const marketRef = db.collection(`artifacts/${APP_ID}/public/data/quick_play_markets`).doc();
+                
+                await marketRef.set({
+                    id: marketRef.id,
+                    title: marketData.title || "Quick Play Market",
+                    category: marketData.category || "General",
+                    duration: marketData.duration || "24h",
+                    createdByDisplayName: 'PredoraOracle',
+                    createdAt: new Date(),
+                    isResolved: false,
+                    status: 'active',
+                    yesAmount: 100000,  // Strong liquidity for AMM
+                    noAmount: 100000,
+                    yesPercent: 50,
+                    noPercent: 50,
+                    totalPool: 200000,
+                    isMock: false
+                });
+                
+                console.log(`✅ Created quick play: ${marketData.title}`);
+            } catch (marketError) {
+                console.error(`⚠️ Failed to create quick play: ${marketError.message}`);
+            }
         }
     } catch (error) {
         console.error("ORACLE: Failed to create quick plays:", error.message);
