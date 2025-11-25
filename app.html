@@ -6908,8 +6908,10 @@
                         // Show binary odds, hide multi-option
                         document.getElementById('binary-odds-display').classList.remove('hidden');
                         document.getElementById('multi-option-display')?.classList.add('hidden');
-                        dom.detailYesPercent.innerText = `${currentMarket.yesPercent.toFixed(1)}%`;
-                        dom.detailNoPercent.innerText = `${currentMarket.noPercent.toFixed(1)}%`;
+                        const yesPercent = currentMarket.yesPercent || 50;
+                        const noPercent = currentMarket.noPercent || 50;
+                        dom.detailYesPercent.innerText = `${(typeof yesPercent === 'number' ? yesPercent : 50).toFixed(1)}%`;
+                        dom.detailNoPercent.innerText = `${(typeof noPercent === 'number' ? noPercent : 50).toFixed(1)}%`;
                     }
 
                     dom.aiExplainPanel.classList.add('hidden'); 
@@ -6999,8 +7001,10 @@
                             if (currentMarket.marketStructure === 'multi-option' && currentMarket.options) {
                                 renderMultiOptionDisplay(currentMarket.options);
                             } else {
-                                dom.detailYesPercent.innerText = `${currentMarket.yesPercent.toFixed(1)}%`;
-                                dom.detailNoPercent.innerText = `${currentMarket.noPercent.toFixed(1)}%`;
+                                const yesPercent = currentMarket.yesPercent || 50;
+                                const noPercent = currentMarket.noPercent || 50;
+                                dom.detailYesPercent.innerText = `${(typeof yesPercent === 'number' ? yesPercent : 50).toFixed(1)}%`;
+                                dom.detailNoPercent.innerText = `${(typeof noPercent === 'number' ? noPercent : 50).toFixed(1)}%`;
                             }
                             dom.marketTvlText.innerText = `$${(currentMarket.totalStakeVolume || 0).toFixed(2)}`;
 
