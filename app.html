@@ -3892,7 +3892,7 @@
                     showScreen('market-detail-screen');
 
                     // Load market detail data
-                    loadMarketDetail(marketId);
+                    viewMarketDetail(marketId);
 
                     // If chat flag is present, open ticker chat after market loads
                     if (shouldOpenChat) {
@@ -4094,9 +4094,22 @@
                 rankings.forEach((user, index) => {
                     const rank = index + 1;
                     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
-                    html += `<div class="leaderboard-card-clean p-4 flex gap-4 items-center rounded-lg border transition-all hover:shadow-lg" style="background: var(--bg-panel); border-color: var(--border-color); cursor: pointer;" onclick="viewUserProfile('${user.userId}', '${user.displayName}')"><div class="text-2xl font-bold min-w-max" style="color: var(--text-primary);">${medal || '#' + rank}</div><div class="flex-1 min-w-0"><p class="font-semibold truncate" style="color: var(--text-primary);">${user.displayName || 'User'}</p><p class="text-xs" style="color: var(--text-secondary);">${user.xp || 0} XP</p></div></div>`;
+                    
+                    // Dynamic background gradient based on rank
+                    let bgStyle = 'background: var(--bg-panel); border-color: var(--border-color);';
+                    if (rank === 1) {
+                        bgStyle = 'background: linear-gradient(135deg, rgba(56, 189, 248, 0.15) 0%, rgba(34, 197, 94, 0.1) 100%); border-color: rgba(56, 189, 248, 0.5); box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);';
+                    } else if (rank === 2) {
+                        bgStyle = 'background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(56, 189, 248, 0.1) 100%); border-color: rgba(168, 85, 247, 0.3); box-shadow: 0 0 15px rgba(168, 85, 247, 0.15);';
+                    } else if (rank === 3) {
+                        bgStyle = 'background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(168, 85, 247, 0.08) 100%); border-color: rgba(249, 115, 22, 0.3); box-shadow: 0 0 12px rgba(249, 115, 22, 0.12);';
+                    }
+                    
+                    const rankBadgeColor = rank === 1 ? '#38BDF8' : rank === 2 ? '#A855F7' : rank === 3 ? '#F97316' : 'var(--text-secondary)';
+                    
+                    html += `<div class="leaderboard-card-clean p-4 flex gap-4 items-center rounded-lg border transition-all hover:scale-105 hover:shadow-xl" style="${bgStyle} cursor: pointer;" onclick="viewUserProfile('${user.userId}', '${user.displayName}')"><div class="text-3xl font-black min-w-max" style="color: ${rankBadgeColor}; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${medal || '#' + rank}</div><div class="flex-1 min-w-0"><p class="font-bold truncate" style="color: var(--text-primary); font-size: 1.05rem;">${user.displayName || 'User'}</p><p class="text-xs font-medium" style="color: ${rankBadgeColor};">${user.xp || 0} XP</p></div></div>`;
                 });
-                rankingList.innerHTML = html || '<p class="text-center" style="color: var(--text-tertiary);">No leaderboard data</p>';
+                rankingList.innerHTML = html || '<p class="text-center" style="color: var(--text-tertiary); padding: 2rem;">No leaderboard data</p>';
             } catch (error) {
                 console.error('Leaderboard error:', error);
                 rankingList.innerHTML = '<p class="text-gray-400">Failed to load leaderboard</p>';
@@ -4121,7 +4134,7 @@
             if (!marketId) return;
             console.log('📍 Navigating to market:', marketId);
             showScreen('market-detail-screen');
-            loadMarketDetail(marketId);
+            viewMarketDetail(marketId);
         };
 
         window.viewUserProfile = (userId, displayName) => {
