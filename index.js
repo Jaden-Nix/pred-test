@@ -8,6 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
 import { OpenAI } from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
 import { 
@@ -41,6 +42,15 @@ if (openaiKey) {
     console.log("✅ OpenAI initialized successfully for Swarm Agents & Content Moderation.");
 } else {
     console.warn("⚠️ OpenAI API key not set. Swarm verification and content moderation will be disabled. Use Replit AI Integrations to enable.");
+}
+
+// Initialize Gemini for AI Assistant Chat (free tier)
+let geminiClient = null;
+if (GEMINI_API_KEY) {
+    geminiClient = new GoogleGenerativeAI(GEMINI_API_KEY);
+    console.log("✅ Gemini AI initialized successfully for AI Assistant.");
+} else {
+    console.warn("⚠️ Gemini API key not set. AI Assistant will be disabled.");
 }
 
 // SendGrid connector function - gets fresh credentials each time (don't cache)
@@ -1854,38 +1864,50 @@ app.post('/api/ai/chat', async (req, res) => {
         return res.status(400).json({ error: 'Messages array required' });
     }
 
-    if (!openai) {
+    if (!geminiClient) {
         return res.status(503).json({ error: 'AI service not available' });
     }
 
     try {
-        const response = await openai.chat.completions.create({
-            model: 'gpt-5',
-            messages: [
-                {
-                    role: 'system',
-                    content: systemPrompt || 'You are a helpful AI assistant for Predora, a prediction market platform. Help users understand markets, answer questions about the platform, and provide insights about prediction trading.'
-                },
-                ...messages
-            ],
-            max_completion_tokens: 1024,
-            temperature: 0.7
+        const model = geminiClient.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        
+        // Build conversation history
+        const systemMessage = systemPrompt || 'You are a helpful AI assistant for Predora, a prediction market platform. Help users understand markets, answer questions about the platform, and provide insights about prediction trading.';
+        
+        // Format messages for Gemini API
+        const conversationHistory = messages.map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'model',
+            parts: [{ text: msg.content }]
+        }));
+        
+        const chat = model.startChat({
+            history: conversationHistory.slice(0, -1), // All but the last message
+            generationConfig: {
+                maxOutputTokens: 1024,
+                temperature: 0.7,
+            },
+            systemInstruction: systemMessage
         });
+        
+        // Get the last user message
+        const lastUserMessage = conversationHistory[conversationHistory.length - 1];
+        const result = await chat.sendMessage(lastUserMessage.parts[0].text);
+        const aiMessage = result.response.text();
 
         res.status(200).json({
             success: true,
-            message: response.choices[0].message.content,
+            message: aiMessage,
             usage: {
-                promptTokens: response.usage.prompt_tokens,
-                completionTokens: response.usage.completion_tokens,
-                totalTokens: response.usage.total_tokens
+                promptTokens: 0,
+                completionTokens: 0,
+                totalTokens: 0
             }
         });
 
     } catch (error) {
         console.error('Error in AI chat:', error);
-        const errorMessage = error.status === 401 
-            ? 'AI service authentication failed. Please check your OpenAI API key.' 
+        const errorMessage = error.message?.includes('API_KEY_INVALID') || error.message?.includes('API key')
+            ? 'AI service authentication failed. Please check your Gemini API key.' 
             : 'Failed to process chat message. Please try again.';
         res.status(error.status || 500).json({ error: errorMessage });
     }
