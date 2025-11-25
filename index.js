@@ -275,8 +275,8 @@ app.get('/api/indexer/resolve-market/:marketId', requireFirebase, async (req, re
             return res.status(404).json({ error: 'Market not found' });
         }
 
-        if (!openai) {
-            return res.status(503).json({ error: 'OpenAI API not configured. Swarm resolution unavailable.' });
+        if (!geminiClient) {
+            return res.status(503).json({ error: 'Gemini API not configured. Swarm resolution unavailable.' });
         }
 
         const market = marketSnap.data();
@@ -286,7 +286,7 @@ app.get('/api/indexer/resolve-market/:marketId', requireFirebase, async (req, re
         const resolution = await swarmVerifyResolution(market, {
             geminiApiKey: GEMINI_API_KEY,
             geminiUrl: GEMINI_URL
-        }, openai);
+        }, geminiClient);
 
         // Store resolution evidence
         const evidenceRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc(marketId).collection('resolutionEvidence').doc('swarm-verify-primary');
@@ -321,7 +321,7 @@ app.get('/api/indexer/resolve-market/:marketId', requireFirebase, async (req, re
         } else if (resolution.confidence >= 85) {
             // Path A2: Second-pass + manual review
             console.log(`🔄 SECOND-PASS (${resolution.confidence}% confidence)`);
-            const secondPass = await secondPassReview(market, resolution, openai);
+            const secondPass = await secondPassReview(market, resolution, geminiClient);
             
             const secondPassRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc(marketId).collection('resolutionEvidence').doc('swarm-verify-second-pass');
             await secondPassRef.set({
@@ -382,8 +382,8 @@ app.post('/api/indexer/resolve-batch', requireFirebase, async (req, res) => {
             return res.status(400).json({ error: 'marketIds array required' });
         }
 
-        if (!openai) {
-            return res.status(503).json({ error: 'OpenAI API not configured' });
+        if (!geminiClient) {
+            return res.status(503).json({ error: 'Gemini API not configured' });
         }
 
         const results = [];
@@ -405,7 +405,7 @@ app.post('/api/indexer/resolve-batch', requireFirebase, async (req, res) => {
                 const resolution = await swarmVerifyResolution(market.data(), {
                     geminiApiKey: GEMINI_API_KEY,
                     geminiUrl: GEMINI_URL
-                }, openai);
+                }, geminiClient);
 
                 results.push({
                     marketId,
@@ -445,8 +445,8 @@ app.post('/api/admin/request-second-swarm', requireAdmin, requireFirebase, async
             return res.status(400).json({ error: 'marketId required' });
         }
 
-        if (!openai) {
-            return res.status(503).json({ error: 'OpenAI API not configured' });
+        if (!geminiClient) {
+            return res.status(503).json({ error: 'Gemini API not configured' });
         }
 
         const marketRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc(marketId);
@@ -462,7 +462,7 @@ app.post('/api/admin/request-second-swarm', requireAdmin, requireFirebase, async
         const secondResolution = await swarmVerifyResolution(market, {
             geminiApiKey: GEMINI_API_KEY,
             geminiUrl: GEMINI_URL
-        }, openai);
+        }, geminiClient);
 
         const evidenceRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc(marketId).collection('resolutionEvidence').doc(`swarm-verify-admin-${Date.now()}`);
         await evidenceRef.set({

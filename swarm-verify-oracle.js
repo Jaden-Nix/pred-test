@@ -66,10 +66,29 @@ function withTimeout(promise, ms) {
     ]);
 }
 
+// Helper: Call Gemini API with GoogleGenerativeAI client
+async function callGemini(geminiClient, prompt, systemPrompt = '') {
+    try {
+        if (!geminiClient) throw new Error('Gemini client not available');
+        const model = geminiClient.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            systemInstruction: systemPrompt,
+            generationConfig: {
+                maxOutputTokens: 1024,
+                temperature: 0.3,
+            }
+        });
+        return result.response.text();
+    } catch (error) {
+        throw new Error(`Gemini API call failed: ${error.message}`);
+    }
+}
+
 // --- AGENTS ---
 
-// Agent 1: GPT-4o Research Agent
-async function gpt4oResearchAgent(market, openai) {
+// Agent 1: Gemini Research Agent
+async function gpt4oResearchAgent(market, geminiClient) {
     try {
         const sanitized = sanitizeMarketData(market);
         const systemPrompt = `You are a factual research agent for prediction market resolution.
@@ -94,17 +113,7 @@ Category: ${sanitized.category}
 
 Determine the outcome with maximum accuracy.`;
 
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4o',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-            ],
-            temperature: 0.3,
-            max_completion_tokens: 1000,
-        });
-
-        const content = response.choices[0].message.content;
+        const content = await callGemini(geminiClient, userPrompt, systemPrompt);
         const outcome = extractPattern(content, /OUTCOME:\s*(YES|NO|AMBIGUOUS)/i, 'AMBIGUOUS').toUpperCase();
         const confidence = parseInt(extractPattern(content, /CONFIDENCE:\s*(\d+)/i)) || 65;
         const rationale = extractPattern(content, /RATIONALE:\s*(.+?)(?=SOURCES:|$)/is, '');
@@ -120,9 +129,9 @@ Determine the outcome with maximum accuracy.`;
             timestamp: new Date().toISOString()
         };
     } catch (error) {
-        console.warn('GPT-4o Research Agent failed:', error.message);
+        console.warn('Gemini Research Agent failed:', error.message);
         return {
-            agent: 'gpt4o-research',
+            agent: 'gemini-research',
             outcome: 'AMBIGUOUS',
             confidence: 40,
             rationale: 'Agent failed to process market',
@@ -133,8 +142,8 @@ Determine the outcome with maximum accuracy.`;
     }
 }
 
-// Agent 2: GPT-4o-mini Skeptic Agent
-async function gpt4oMiniSkepticAgent(market, openai, otherAgentResults = []) {
+// Agent 2: Gemini Skeptic Agent
+async function gpt4oMiniSkepticAgent(market, geminiClient, otherAgentResults = []) {
     try {
         const sanitized = sanitizeMarketData(market);
         const systemPrompt = `You are a PARANOID SKEPTIC agent for market resolution.
@@ -164,17 +173,7 @@ Critically evaluate this market.`;
             });
         }
 
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-            ],
-            temperature: 0.4,
-            max_completion_tokens: 800,
-        });
-
-        const content = response.choices[0].message.content;
+        const content = await callGemini(geminiClient, userPrompt, systemPrompt);
         const outcome = extractPattern(content, /OUTCOME:\s*(YES|NO|AMBIGUOUS)/i, 'AMBIGUOUS').toUpperCase();
         const confidence = parseInt(extractPattern(content, /CONFIDENCE:\s*(\d+)/i)) || 50;
         const rationale = extractPattern(content, /RATIONALE:\s*(.+?)(?=SOURCES:|$)/is, '');
@@ -188,9 +187,9 @@ Critically evaluate this market.`;
             timestamp: new Date().toISOString()
         };
     } catch (error) {
-        console.warn('GPT-4o-mini Skeptic Agent failed:', error.message);
+        console.warn('Gemini Skeptic Agent failed:', error.message);
         return {
-            agent: 'gpt4o-mini-skeptic',
+            agent: 'gemini-skeptic',
             outcome: 'AMBIGUOUS',
             confidence: 45,
             rationale: 'Agent failed to process market',
@@ -385,7 +384,7 @@ function aggregateConsensus(agentResults) {
 
 // --- MULTI-MODEL SCORING ---
 
-async function factualScorer(market, consensus, openai) {
+async function factualScorer(market, consensus, geminiClient) {
     try {
         const prompt = `Verify factual accuracy of this resolution:
 
@@ -400,14 +399,8 @@ Rate factual accuracy (0-100). Consider:
 
 Output: SCORE: <0-100>`;
 
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.1,
-            max_completion_tokens: 300,
-        });
-
-        const scoreMatch = response.choices[0].message.content.match(/SCORE:\s*(\d+)/i);
+        const content = await callGemini(geminiClient, prompt, 'You are a factual accuracy reviewer. Provide an accuracy score.');
+        const scoreMatch = content.match(/SCORE:\s*(\d+)/i);
         return Math.max(0, Math.min(100, parseInt(scoreMatch?.[1] || 75)));
     } catch (error) {
         console.warn('Factual Scorer failed:', error.message);
@@ -464,10 +457,10 @@ async function sentimentScorer(market, consensus) {
     return Math.max(0, score);
 }
 
-async function runMultiModelScoring(market, consensus, openai) {
+async function runMultiModelScoring(market, consensus, geminiClient) {
     try {
         const scores = {
-            factual: await factualScorer(market, consensus, openai),
+            factual: await factualScorer(market, consensus, geminiClient),
             consistency: await consistencyScorer(market, consensus),
             timestamp: await timestampScorer(market, consensus),
             sentiment: await sentimentScorer(market, consensus)
@@ -496,25 +489,21 @@ async function runMultiModelScoring(market, consensus, openai) {
 
 // --- MAIN SWARM RESOLUTION ---
 
-export async function swarmVerifyResolution(market, options = {}, openai = null) {
+export async function swarmVerifyResolution(market, options = {}, geminiClient = null) {
     try {
         console.log(`🐝 Swarm-Verify starting for market: "${market.title}"`);
 
-        if (!openai) {
-            throw new Error('OpenAI instance not provided');
+        if (!geminiClient) {
+            throw new Error('Gemini instance not provided');
         }
-
-        const geminiApiKey = options.geminiApiKey;
-        const geminiUrl = options.geminiUrl || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
         // Phase 1: Run agents in parallel
         console.log('📊 Phase 1: Parallel Agent Research');
         
         const agentTasks = [
-            withTimeout(gpt4oResearchAgent(market, openai), CONFIG.AGENT_TIMEOUT_MS),
-            withTimeout(gpt4oMiniSkepticAgent(market, openai), CONFIG.AGENT_TIMEOUT_MS),
-            withTimeout(duckDuckGoAgent(market), CONFIG.AGENT_TIMEOUT_MS),
-            withTimeout(geminiAgent(market, geminiApiKey, geminiUrl), CONFIG.AGENT_TIMEOUT_MS)
+            withTimeout(gpt4oResearchAgent(market, geminiClient), CONFIG.AGENT_TIMEOUT_MS),
+            withTimeout(gpt4oMiniSkepticAgent(market, geminiClient), CONFIG.AGENT_TIMEOUT_MS),
+            withTimeout(duckDuckGoAgent(market), CONFIG.AGENT_TIMEOUT_MS)
         ];
 
         const agentResults = await Promise.all(agentTasks.map(p => p.catch(e => ({
@@ -531,12 +520,12 @@ export async function swarmVerifyResolution(market, options = {}, openai = null)
 
         // Phase 2: Skeptic verification
         console.log('🔍 Phase 2: Skeptic Adversarial Verification');
-        const nonSkepticResults = agentResults.filter(r => r.agent !== 'gpt4o-mini-skeptic');
+        const nonSkepticResults = agentResults.filter(r => r.agent !== 'gemini-skeptic');
         const skepticResult = await withTimeout(
-            gpt4oMiniSkepticAgent(market, openai, nonSkepticResults),
+            gpt4oMiniSkepticAgent(market, geminiClient, nonSkepticResults),
             CONFIG.AGENT_TIMEOUT_MS
         ).catch(e => ({
-            agent: 'gpt4o-mini-skeptic',
+            agent: 'gemini-skeptic',
             outcome: 'AMBIGUOUS',
             confidence: 45,
             rationale: 'Skeptic agent failed',
@@ -554,9 +543,9 @@ export async function swarmVerifyResolution(market, options = {}, openai = null)
         let finalConfidence = consensusResult.confidence;
         let scoringDetails = {};
 
-        if (CONFIG.MULTI_MODEL_SCORING_ENABLED && openai) {
+        if (CONFIG.MULTI_MODEL_SCORING_ENABLED && geminiClient) {
             try {
-                const scoring = await runMultiModelScoring(market, consensusResult, openai);
+                const scoring = await runMultiModelScoring(market, consensusResult, geminiClient);
                 finalConfidence = scoring.finalConfidence;
                 scoringDetails = scoring.scores;
                 console.log(`✅ Multi-Model Score: ${finalConfidence}%`);
@@ -594,9 +583,9 @@ export async function swarmVerifyResolution(market, options = {}, openai = null)
 }
 
 // --- HELPER: Second Pass Review ---
-export async function secondPassReview(market, firstResolution, openai = null) {
+export async function secondPassReview(market, firstResolution, geminiClient = null) {
     try {
-        if (!openai) throw new Error('OpenAI instance required for second pass');
+        if (!geminiClient) throw new Error('Gemini instance required for second pass');
 
         console.log(`🔄 Second Pass Review for: "${market.title}"`);
         
@@ -623,17 +612,7 @@ Description: "${sanitized.description}"
 
 Perform independent verification of the first pass outcome.`;
 
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-            ],
-            temperature: CONFIG.SECOND_PASS_TEMPERATURE,
-            max_completion_tokens: 800,
-        });
-
-        const content = response.choices[0].message.content;
+        const content = await callGemini(geminiClient, userPrompt, systemPrompt);
         const outcome = extractPattern(content, /OUTCOME:\s*(YES|NO|AMBIGUOUS)/i, firstResolution.outcome).toUpperCase();
         const confidence = parseInt(extractPattern(content, /CONFIDENCE:\s*(\d+)/i)) || firstResolution.confidence;
 
