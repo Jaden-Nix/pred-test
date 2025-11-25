@@ -2515,7 +2515,7 @@
                 <!-- Navigation Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Market Resolution -->
-                    <button onclick="showScreen('admin-markets-screen')" class="admin-nav-card text-left">
+                    <button onclick="showScreen('admin-resolution-screen')" class="admin-nav-card text-left">
                         <div class="flex items-center gap-4">
                             <div class="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
                                 <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2524,7 +2524,7 @@
                             </div>
                             <div>
                                 <h3 class="text-lg font-semibold text-white">Market Resolution</h3>
-                                <p class="text-sm text-gray-400">Resolve standard markets</p>
+                                <p class="text-sm text-gray-400">Resolve & browse all markets</p>
                             </div>
                         </div>
                     </button>
@@ -2593,21 +2593,6 @@
                     <button id="admin-publish-btn" class="btn btn-primary w-full">Publish Quick Play</button>
                 </div>
 
-                <div class="ui-panel p-4 space-y-4">
-                    <h2 class="text-lg font-semibold text-white">Resolve Active Markets</h2>
-                    <p class="text-sm text-gray-400 mb-4">Select the outcome to finalize the market and pay winners.</p>
-                    <div id="resolution-list" class="space-y-4">
-                        <p class="text-gray-400 text-center">Loading markets...</p>
-                    </div>
-                </div>
-
-                <div class="ui-panel p-4 space-y-4">
-                    <h2 class="text-lg font-semibold text-white">Resolve Active Quick Plays</h2>
-                    <p class="text-sm text-gray-400 mb-4">Finalize Quick Play markets and pay winners.</p>
-                    <div id="quick-play-resolution-list" class="space-y-4">
-                        <p class="text-gray-400 text-center">Loading quick plays...</p>
-                    </div>
-                </div>
                 <button id="admin-logout-btn" class="btn btn-secondary w-full">Log Out of Admin</button>
 
                 <div class="ui-panel p-4 space-y-3">
@@ -2639,8 +2624,8 @@
                 <button onclick="showScreen('login-screen')" class="btn btn-secondary w-full">Cancel</button>
             </div>
 
-            <!-- ADMIN MARKET RESOLUTION SCREEN -->
-            <div id="admin-markets-screen" class="screen screen-inactive space-y-6">
+            <!-- ADMIN RESOLUTION SCREEN (Browse + Resolve All Markets) -->
+            <div id="admin-resolution-screen" class="screen screen-inactive space-y-6">
                 <button onclick="showScreen('admin-panel-screen')" class="flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300">
                     <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
@@ -2649,23 +2634,34 @@
                 </button>
                 <div class="text-center">
                     <h1 class="text-3xl font-bold gradient-text mb-2">📊 Market Resolution</h1>
-                    <p class="text-gray-400 text-sm">Manually resolve standard prediction markets</p>
+                    <p class="text-gray-400 text-sm">Browse and resolve all prediction markets</p>
                 </div>
+
+                <!-- Search Bar -->
                 <div class="ui-panel p-4">
                     <div class="relative">
                         <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
-                        <input type="text" id="market-search-input" class="ui-input pl-10" placeholder="Search markets by title...">
+                        <input type="text" id="resolution-search-all" class="ui-input pl-10" placeholder="Search markets to resolve...">
                     </div>
                 </div>
+
+                <!-- Standard Markets Resolution -->
                 <div class="ui-panel p-4 space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-lg font-semibold text-white">Active Markets</h2>
-                        <span id="markets-count" class="text-sm text-gray-400">Loading...</span>
-                    </div>
+                    <h2 class="text-lg font-semibold text-white">Standard Markets</h2>
+                    <p class="text-sm text-gray-400 mb-4">Resolve standard prediction markets and pay winners.</p>
                     <div id="resolution-list" class="space-y-4">
                         <p class="text-gray-400 text-center py-8">Loading markets...</p>
+                    </div>
+                </div>
+
+                <!-- Quick Play Markets Resolution -->
+                <div class="ui-panel p-4 space-y-4">
+                    <h2 class="text-lg font-semibold text-white">Quick Play Markets</h2>
+                    <p class="text-sm text-gray-400 mb-4">Resolve Quick Play markets and pay winners.</p>
+                    <div id="quick-play-resolution-list" class="space-y-4">
+                        <p class="text-gray-400 text-center py-8">Loading quick plays...</p>
                     </div>
                 </div>
             </div>
