@@ -2844,17 +2844,20 @@
         };
         
         // Helper function to get auth token
-        const getAuthToken = async () => {
+        const getAuthToken = async (user = null) => {
             try {
                 const { getAuth } = window.firebase.auth;
                 const currentAuth = getAuth();
-                const user = currentAuth.currentUser;
-                if (user) {
-                    authToken = await user.getIdToken();
+                const firebaseUser = user || currentAuth.currentUser;
+                if (firebaseUser) {
+                    authToken = await firebaseUser.getIdToken(true); // Force refresh
+                    console.log('✅ Auth token retrieved, length:', authToken?.length);
                     return authToken;
+                } else {
+                    console.warn('⚠️ No Firebase user found for token retrieval');
                 }
             } catch (e) {
-                console.error('Error getting auth token:', e);
+                console.error('❌ Error getting auth token:', e.message);
             }
             return null;
         };
@@ -3142,26 +3145,40 @@
                     currentUserId = demoUserId;
                     userProfile.displayName = demoDisplayName;
 
-                    initializeUserProfile().then(() => {
-                        attachDataListeners();
-                        showScreen('home-screen');
-                    }).catch(err => {
-                        console.error("Failed to init profile on resume:", err);
-                        showScreen('login-screen');
-                    });
+                    // Re-authenticate with Firebase to get a valid token
+                    const { signInAnonymously } = window.firebase.auth;
+                    signInAnonymously(auth)
+                        .then(async (userCredential) => {
+                            const token = await getAuthToken(userCredential.user);
+                            console.log('Token on resume:', token ? '✅ Token set' : '❌ No token');
+                            await initializeUserProfile();
+                            attachDataListeners();
+                            showScreen('home-screen');
+                        })
+                        .catch(err => {
+                            console.error("Failed to auth/init on resume:", err);
+                            showScreen('login-screen');
+                        });
                 } else if (emailUserId) {
                     // User logged in via email OTP
                     console.log(`Resuming session for email user: ${emailUserId}`);
                     currentUserId = emailUserId;
                     userProfile.displayName = emailUserName || emailUserId.split('@')[0]; // Use stored name, fallback to email prefix
 
-                    initializeUserProfile().then(() => {
-                        attachDataListeners();
-                        showScreen('home-screen');
-                    }).catch(err => {
-                        console.error("Failed to init email profile on resume:", err);
-                        showScreen('login-screen');
-                    });
+                    // Re-authenticate with Firebase to get a valid token
+                    const { signInAnonymously } = window.firebase.auth;
+                    signInAnonymously(auth)
+                        .then(async (userCredential) => {
+                            const token = await getAuthToken(userCredential.user);
+                            console.log('Email user token on resume:', token ? '✅ Token set' : '❌ No token');
+                            await initializeUserProfile();
+                            attachDataListeners();
+                            showScreen('home-screen');
+                        })
+                        .catch(err => {
+                            console.error("Failed to auth/init email user on resume:", err);
+                            showScreen('login-screen');
+                        });
                 } else {
                     // No session, initialize guest mode
                     console.log("No user session found, initializing guest mode.");
@@ -3381,10 +3398,11 @@
             signInAnonymously(auth)
                 .then(async (userCredential) => {
                     console.log("Firebase Auth UID (Anonymous):", userCredential.user.uid);
-                    // Get the auth token for API calls
-                    await getAuthToken();
+                    // Get the auth token for API calls - pass the user directly
+                    const token = await getAuthToken(userCredential.user);
+                    console.log('Token after login:', token ? '✅ Token set' : '❌ No token');
                     // initializeUserProfile will now handle all navigation
-                    return initializeUserProfile(); 
+                    await initializeUserProfile(); 
                 })
                 .catch(err => {
                     console.error("Firebase auth for demo failed:", err);
@@ -4211,15 +4229,27 @@
             const btn = event?.target?.closest('button');
             if (btn) { btn.classList.add('reaction-bounce'); setTimeout(() => btn.classList.remove('reaction-bounce'), 600); }
             try {
+                // Ensure we have a fresh token
+                await getAuthToken();
+                if (!authToken) { 
+                    console.error('❌ No auth token available for reaction'); 
+                    showToast('Authentication failed', 'error'); 
+                    return; 
+                }
+                console.log('📤 Sending reaction with token prefix:', authToken?.substring(0, 10));
+                
                 const response = await fetch('/api/social/react', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                     body: JSON.stringify({ postId, reaction: reactionType })
                 });
                 
-                if (!response.ok) throw new Error('Reaction failed');
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || `HTTP ${response.status}`);
+                }
             } catch (error) {
-                console.error('Reaction error:', error);
+                console.error('Reaction error:', error.message || error);
                 showToast('Failed to react', 'error');
             }
         };
@@ -4339,6 +4369,10 @@
             if (!content) return;
             if (btn) btn.disabled = true;
             try {
+                // Ensure we have a fresh token
+                await getAuthToken();
+                if (!authToken) { showToast('Authentication failed', 'error'); if (btn) btn.disabled = false; return; }
+                
                 const response = await fetch('/api/social/comment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
@@ -4350,14 +4384,17 @@
                     })
                 });
                 
-                if (!response.ok) throw new Error('Comment failed');
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || `HTTP ${response.status}`);
+                }
                 input.value = '';
                 input.placeholder = 'Add a comment...';
                 delete input.dataset.replyTo;
                 if (btn) btn.disabled = false;
                 window.toggleComments(postId);
             } catch (e) { 
-                console.error('Comment error:', e);
+                console.error('Comment error:', e.message || e);
                 showToast('Failed to add comment', 'error');
                 if (btn) btn.disabled = false;
             }
