@@ -56,28 +56,40 @@ async function getUncachableSendGridClient() {
       return null;
     }
 
-    const connectionSettings = await fetch(
-      'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
-      {
-        headers: {
-          'Accept': 'application/json',
-          'X_REPLIT_TOKEN': xReplitToken
-        }
+    const url = 'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid';
+    const fetchRes = await fetch(url, {
+      headers: {
+        'Accept': 'application/json',
+        'X_REPLIT_TOKEN': xReplitToken
       }
-    ).then(res => res.json()).then(data => data.items?.[0]);
+    });
 
-    if (!connectionSettings || (!connectionSettings.settings.api_key || !connectionSettings.settings.from_email)) {
-      console.warn("⚠️ SendGrid not connected properly");
+    if (!fetchRes.ok) {
+      console.warn(`⚠️ SendGrid connector API returned status ${fetchRes.status}`);
+      return null;
+    }
+
+    const data = await fetchRes.json();
+    const connectionSettings = data.items?.[0];
+
+    if (!connectionSettings) {
+      console.warn("⚠️ SendGrid connection not found in items");
+      return null;
+    }
+
+    if (!connectionSettings.settings?.api_key || !connectionSettings.settings?.from_email) {
+      console.warn("⚠️ SendGrid credentials missing (api_key or from_email not set)");
       return null;
     }
 
     const apiKey = connectionSettings.settings.api_key;
     const fromEmail = connectionSettings.settings.from_email;
     sgMail.setApiKey(apiKey);
+    console.log("✅ SendGrid client initialized successfully");
     
     return { client: sgMail, fromEmail };
   } catch (error) {
-    console.warn("⚠️ SendGrid initialization error:", error.message);
+    console.error("⚠️ SendGrid initialization error:", error.message, error.stack);
     return null;
   }
 }
