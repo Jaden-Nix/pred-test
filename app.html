@@ -4380,6 +4380,7 @@
                     'admin-password-screen',
                     'admin-panel-screen',
                     'admin-markets-screen',
+                    'admin-resolution-screen',
                     'admin-quickplay-screen',
                     'admin-quickpoll-screen',
                     'admin-jury-screen',
@@ -8192,19 +8193,19 @@ ${historyText}`;
             // Event listeners for new admin screens
             document.getElementById('admin-resolution-screen')?.addEventListener('transitionend', () => {
                 if (!document.getElementById('admin-resolution-screen').classList.contains('screen-inactive')) {
-                    renderMarketResolutionScreen();
+                    renderMarketResolutionScreen('admin-resolution-screen');
                 }
             });
 
             document.getElementById('admin-quickplay-screen')?.addEventListener('transitionend', () => {
                 if (!document.getElementById('admin-quickplay-screen').classList.contains('screen-inactive')) {
-                    renderQuickPlayResolutionScreen();
+                    renderQuickPlayResolutionScreen('admin-quickplay-screen');
                 }
             });
 
             document.getElementById('admin-quickpoll-screen')?.addEventListener('transitionend', () => {
                 if (!document.getElementById('admin-quickpoll-screen').classList.contains('screen-inactive')) {
-                    renderQuickPollScreen();
+                    renderQuickPollScreen('admin-quickpoll-screen');
                 }
             });
 
