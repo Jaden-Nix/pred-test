@@ -4158,7 +4158,12 @@
                             const reactHeart = (post.reactions?.heart || []).length;
                             const reactFire = (post.reactions?.fire || []).length;
                             const reactRocket = (post.reactions?.rocket || []).length;
-                            const isAuthor = post.userId?.toLowerCase() === currentUserId?.toLowerCase();
+                            // Check if author: by userId first, then fallback to displayName match
+                            let isAuthor = post.userId?.toLowerCase() === currentUserId?.toLowerCase();
+                            if (!isAuthor && !post.userId && userProfile?.displayName) {
+                                // Older posts might not have userId, check by displayName
+                                isAuthor = post.displayName === userProfile.displayName;
+                            }
                             const menuHtml = isAuthor ? `<div class="relative z-50"><button data-post-menu-toggle data-post-id="${post.postId}" class="text-gray-400 hover:text-white p-1 text-lg">⋮</button><div id="post-menu-${post.postId}" class="hidden fixed top-10 right-4 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-50 min-w-40"><button data-post-edit data-post-id="${post.postId}" data-user-id="${post.userId}" data-content="${post.content.replace(/"/g, '&quot;')}" data-display-name="${post.displayName}" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-t-lg">✏️ Edit</button><button data-post-delete data-post-id="${post.postId}" data-user-id="${post.userId}" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400 rounded-b-lg">🗑️ Delete</button></div></div>` : '';
                             const imageHtml = post.imageUrl ? `<img data-lightbox-image class="w-full rounded-lg max-h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity" src="${post.imageUrl.replace(/"/g, '&quot;')}">` : '';
                             let marketHtml = '';
@@ -4402,23 +4407,25 @@
             }
             if (!confirm('Delete this post?')) return;
             try {
-                console.log('📤 Sending delete request for postId:', postId);
+                console.log('📤 Sending delete request - postId:', postId, 'Token:', authToken?.substring(0, 20) + '...');
                 const response = await fetch('/api/social/delete-post', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                     body: JSON.stringify({ postId })
                 });
                 
-                console.log('Response status:', response.status);
+                console.log('Response status:', response.status, 'statusText:', response.statusText);
+                const responseData = await response.json();
+                console.log('Response data:', responseData);
+                
                 if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.error || 'Delete failed');
+                    throw new Error(responseData.error || `HTTP ${response.status}: Delete failed`);
                 }
                 showToast('Post deleted', 'success');
                 loadSocialFeed();
             } catch (error) {
-                console.error('❌ Delete error:', error.message);
-                showToast('Failed to delete post', 'error');
+                console.error('❌ Delete error:', error.message || error);
+                showToast(`Failed to delete: ${error.message}`, 'error');
             }
         };
         window.editPost = async (postId, authorId, currentContent, displayName) => {

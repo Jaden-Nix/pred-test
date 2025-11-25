@@ -875,32 +875,46 @@ app.post('/api/social/comment', requireAuth, requireFirebase, async (req, res) =
 });
 
 app.post('/api/social/delete-post', requireAuth, requireFirebase, async (req, res) => {
-    const { postId } = req.body;
+    const { postId, userId: forceUserId } = req.body;
     const userId = req.user.uid;
+    const userEmail = req.user.email;
     
+    console.log('🗑️ Delete request - postId:', postId, 'userId:', userId, 'forceUserId:', forceUserId);
     try {
         const postRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts`).doc(postId);
         const postSnap = await postRef.get();
         
         if (!postSnap.exists) {
+            console.log('❌ Post not found:', postId);
             return res.status(404).json({ error: 'Post not found' });
         }
         
-        if (postSnap.data().userId?.toLowerCase() !== userId?.toLowerCase()) {
+        const postData = postSnap.data();
+        console.log('Post found - postUserId:', postData.userId, 'postUserEmail:', postData.userEmail, 'currentUserId:', userId, 'forceUserId:', forceUserId);
+        
+        // Check authorization: match by userId first, then by forceUserId (for older posts without userId)
+        const isAuthorized = (postData.userId?.toLowerCase() === userId?.toLowerCase()) ||
+                           (forceUserId && postData.userId?.toLowerCase() === forceUserId?.toLowerCase()) ||
+                           (postData.userEmail?.toLowerCase() === userEmail?.toLowerCase());
+        
+        if (!isAuthorized) {
+            console.log('❌ Authorization failed');
             return res.status(403).json({ error: 'Unauthorized' });
         }
         
         await postRef.delete();
+        console.log('✅ Post deleted successfully');
         res.status(200).json({ success: true });
     } catch (error) {
-        console.error('Error deleting post:', error);
+        console.error('❌ Error deleting post:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
 app.post('/api/social/edit-post', requireAuth, requireFirebase, async (req, res) => {
-    const { postId, content } = req.body;
+    const { postId, content, userId: forceUserId } = req.body;
     const userId = req.user.uid;
+    const userEmail = req.user.email;
     
     try {
         const postRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts`).doc(postId);
@@ -910,7 +924,13 @@ app.post('/api/social/edit-post', requireAuth, requireFirebase, async (req, res)
             return res.status(404).json({ error: 'Post not found' });
         }
         
-        if (postSnap.data().userId?.toLowerCase() !== userId?.toLowerCase()) {
+        const postData = postSnap.data();
+        // Check authorization: match by userId first, then by forceUserId (for older posts without userId)
+        const isAuthorized = (postData.userId?.toLowerCase() === userId?.toLowerCase()) ||
+                           (forceUserId && postData.userId?.toLowerCase() === forceUserId?.toLowerCase()) ||
+                           (postData.userEmail?.toLowerCase() === userEmail?.toLowerCase());
+        
+        if (!isAuthorized) {
             return res.status(403).json({ error: 'Unauthorized' });
         }
         
