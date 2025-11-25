@@ -3489,6 +3489,14 @@
             const { getFirestore, setLogLevel } = window.firebase.firestore;
 
             try {
+                // CHECK FOR ADMIN MODE IMMEDIATELY (before Firebase init)
+                const adminUrlParams = new URLSearchParams(window.location.search);
+                const hashAdmin = window.location.hash === '#admin';
+                console.log('🔍 URL admin param:', adminUrlParams.get('admin'), 'Hash admin:', hashAdmin);
+                if (adminUrlParams.get('admin') === '1' || hashAdmin) {
+                    console.log('⚡ Admin mode detected at startup');
+                    isAdminMode = true;
+                }
 
                 const firebaseConfig = {
                     apiKey: "AIzaSyCr36OARwTBJduV9PJI6FfhDKRVwxarBBM",
@@ -3558,7 +3566,9 @@
                             await initializeUserProfile();
                             attachDataListeners();
                             // Don't override admin screens that were accessed via URL/tap
-                            if (!isAdminMode) {
+                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-jury-screen'];
+                            console.log('🔐 Session resume check - isAdminMode:', isAdminMode, 'currentScreenId:', currentScreenId);
+                            if (!isAdminMode && !adminScreens.includes(currentScreenId)) {
                                 showScreen('home-screen');
                             }
                         })
@@ -3581,7 +3591,9 @@
                             await initializeUserProfile();
                             attachDataListeners();
                             // Don't override admin screens that were accessed via URL/tap
-                            if (!isAdminMode) {
+                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-jury-screen'];
+                            console.log('🔐 Session resume check - isAdminMode:', isAdminMode, 'currentScreenId:', currentScreenId);
+                            if (!isAdminMode && !adminScreens.includes(currentScreenId)) {
                                 showScreen('home-screen');
                             }
                         })
@@ -4300,8 +4312,15 @@
         /**
          * Main navigation function. Hides all screens and shows the one with the matching ID.
          */
-        window.showScreen = (screenId) => {
+        window.showScreen = (screenId, forceOverride = false) => {
             if (!screenId) return;
+            
+            // Protect admin screens from being redirected away unless explicitly allowed
+            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-jury-screen'];
+            if (adminScreens.includes(currentScreenId) && !adminScreens.includes(screenId) && !forceOverride) {
+                console.log('🔒 Blocked redirect from admin screen. isAdminMode:', isAdminMode);
+                return;
+            }
             
             // Guest mode restriction: allow viewing but not interacting
             if (isGuestMode && !isDemoAccount) {
