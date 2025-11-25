@@ -855,6 +855,12 @@ Example format: [{"title": "Will...", "category": "Crypto", "description": "..."
                 const marketRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc();
                 const resolutionDate = new Date();
                 resolutionDate.setDate(resolutionDate.getDate() + 45); // Resolve in 45 days for standard markets
+                
+                // Validate resolution date is in the future
+                if (resolutionDate < new Date()) {
+                    console.warn(`⚠️ Skipping market with past date: ${resolutionDate}`);
+                    continue;
+                }
 
                 await marketRef.set({
                     id: marketRef.id,
@@ -874,7 +880,7 @@ Example format: [{"title": "Will...", "category": "Crypto", "description": "..."
                     isMock: false
                 });
 
-                console.log(`✅ Created market: ${marketData.title}`);
+                console.log(`✅ Created market: ${marketData.title} (Resolves: ${resolutionDate.toISOString().split('T')[0]})`);
             } catch (marketError) {
                 console.error(`⚠️ Failed to create market: ${marketError.message}`);
             }
@@ -929,13 +935,18 @@ Example: [{"title": "Will...", "category": "Crypto", "duration": "24h"}]`;
             try {
                 const marketRef = db.collection(`artifacts/${APP_ID}/public/data/quick_play_markets`).doc();
                 
+                // Validate all quick plays are fresh (created now)
+                const now = new Date();
+                const futureDate = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours max
+                
                 await marketRef.set({
                     id: marketRef.id,
                     title: marketData.title || "Quick Play Market",
                     category: marketData.category || "General",
                     duration: marketData.duration || "24h",
                     createdByDisplayName: 'PredoraOracle',
-                    createdAt: new Date(),
+                    createdAt: now,
+                    resolutionDate: futureDate.toISOString().split('T')[0],
                     isResolved: false,
                     status: 'active',
                     yesAmount: 100000,  // Strong liquidity for AMM
@@ -946,7 +957,7 @@ Example: [{"title": "Will...", "category": "Crypto", "duration": "24h"}]`;
                     isMock: false
                 });
                 
-                console.log(`✅ Created quick play: ${marketData.title}`);
+                console.log(`✅ Created quick play: ${marketData.title} (Created: ${now.toISOString()})`);
             } catch (marketError) {
                 console.error(`⚠️ Failed to create quick play: ${marketError.message}`);
             }
