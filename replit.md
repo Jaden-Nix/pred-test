@@ -4,25 +4,30 @@
 Predora is a decentralized prediction market platform with AI-powered market resolution, social features, and a comprehensive admin panel. This project uses Firebase for data storage, OpenAI for swarm-based verification, and Google's Gemini AI for market resolution.
 
 ## Recent Changes (November 25, 2025)
-- **Swarm Agents Integration**: Multi-agent Byzantine fault-tolerant market resolution
-  - 4 parallel AI agents: GPT-4o Research, GPT-4o-mini Skeptic, DuckDuckGo, Gemini
-  - Geometric median consensus for outlier resistance
-  - Multi-model scoring (factual, consistency, timestamp, sentiment)
-  - Three-tier confidence routing: Auto-resolve (90%+), Second-pass (85-90%), Manual (< 85%)
-  - New endpoints: `/api/indexer/resolve-market/:marketId`, `/api/indexer/resolve-batch`, `/api/admin/request-second-swarm`
-- **Complete AI Guardrails System**: Multi-layer content moderation with pre-filters, keyword blocklist, OpenAI API, toxicity detection, and rate limiting
-- **Safety Reports**: Users can report unsafe content; admins can review, approve, or remove flagged content
-- **Admin Safety Dashboard**: New endpoints for viewing pending reports, taking actions, and monitoring safety statistics
-- **Enhanced Moderation Pipeline**: All content moderated through: format check → keyword blocklist → OpenAI moderation → logging
-- **Rate Limiting**: Built-in token bucket and per-minute rate limiting to prevent spam and abuse
-- **Safety Collections**: Added `safety_reports`, `flagged_content`, and `safety_logs` to Firestore
+- **Beautiful Home Logo**: Exclusive home page logo with gradient effects and floating animation
+  - Moved logo from top nav to home screen only
+  - Modern gradient design (sky-blue to indigo)
+  - Smooth floating animation with hover acceleration
+  - 5-tap admin access gesture on logo
+  
+- **Profile Editing Feature**: Complete username and profile picture editing
+  - Edit button (pencil icon) in profile panel header
+  - Hover effect on avatar showing camera icon
+  - Beautiful modal with image upload preview
+  - Real-time profile picture validation (max 5MB)
+  - Username validation (3-30 chars, letters/numbers/underscores only)
+  - Saves changes to Firestore with automatic UI updates
+  - Avatar stored as base64 data URL
+
 - **Previous Updates**:
-  - Guest Mode and restricted access for unauthenticated users
-  - Social Feed API integration with all interactions
-  - Email/OTP authentication system
-  - Admin Panel for market resolution
-  - Jury System with 5-juror voting
-  - All social features (posts, reactions, comments)
+  - Swarm Agents Integration (4 AI agents with Byzantine consensus)
+  - Complete AI Guardrails System (multi-layer content moderation)
+  - Safety Reports & Admin Dashboard
+  - Enhanced Moderation Pipeline with rate limiting
+  - Guest Mode and restricted access
+  - Social Feed API integration
+  - Email/OTP authentication
+  - Admin Panel & Jury System
 
 ## Project Structure
 ```
@@ -157,7 +162,9 @@ All data is stored in: `artifacts/predora-hackathon/public/data/`
 - [ ] Frontend Admin Panel UI - Needs HTML/CSS/JS integration into app.html
 - [ ] Frontend Safety Dashboard - Safety reporting and admin moderation UI not yet implemented
 
-### ✅ Recently Completed
+### ✅ Recently Completed (November 25, 2025)
+- [x] Profile Editing (username & profile picture) - Full UI with validation and Firestore persistence
+- [x] Beautiful Home Logo - Gradient design with floating animation
 - [x] Swarm-Verify Oracle (multi-agent Byzantine consensus) - Full backend with 4 agents, geometric median, multi-model scoring
 
 ## AI Guardrails System

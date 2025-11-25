@@ -1666,6 +1666,50 @@
         </div>
     </div>
 
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="ui-panel max-w-md w-full space-y-6 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-white">Edit Profile</h2>
+                <button onclick="closeEditProfile()" class="p-1 hover:bg-white/10 rounded-lg transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Avatar Section -->
+            <div class="space-y-3">
+                <label class="block text-sm font-medium text-gray-300">Profile Picture</label>
+                <div class="flex flex-col items-center gap-3">
+                    <div id="edit-avatar-preview" class="w-24 h-24 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-3xl shadow-lg overflow-hidden">
+                        P
+                    </div>
+                    <label class="cursor-pointer">
+                        <div class="px-4 py-2 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg hover:from-sky-400 hover:to-indigo-500 transition-all text-white text-sm font-semibold">
+                            Upload Image
+                        </div>
+                        <input type="file" id="avatar-upload-input" class="hidden" accept="image/*" onchange="handleAvatarUpload(event)">
+                    </label>
+                    <p class="text-xs text-gray-400">PNG, JPG, or GIF (Max 5MB)</p>
+                </div>
+            </div>
+
+            <!-- Username Section -->
+            <div class="space-y-3">
+                <label for="edit-username-input" class="block text-sm font-medium text-gray-300">Username</label>
+                <input id="edit-username-input" type="text" class="ui-input w-full" placeholder="Enter your username" maxlength="30">
+                <p class="text-xs text-gray-400">3-30 characters, letters and numbers only</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3 pt-4">
+                <button onclick="closeEditProfile()" class="btn btn-secondary flex-1">Cancel</button>
+                <button onclick="saveProfileChanges()" class="btn btn-primary flex-1">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <div class="min-h-screen relative pt-0">
 
             <main class="max-w-md md:max-w-xl lg:max-w-7xl mx-auto relative p-4">
@@ -2438,8 +2482,8 @@
                 <div class="lg:grid lg:grid-cols-3 lg:gap-6 space-y-6 lg:space-y-0">
                     <div class="lg:col-span-1 space-y-6">
                         <div id="profile-panel" class="ui-panel flex flex-col items-center lg:p-6 relative">
-                            <!-- Theme Toggle at Top -->
-                            <button onclick="toggleThemeWithFlip()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-all duration-200">
+                            <!-- Theme Toggle at Top Left -->
+                            <button onclick="toggleThemeWithFlip()" class="absolute top-4 left-4 p-2 rounded-full hover:bg-white/10 transition-all duration-200">
                                 <svg id="profile-theme-icon-sun" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
                                 </svg>
@@ -2448,8 +2492,22 @@
                                 </svg>
                             </button>
 
-                            <div class="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-4xl lg:text-5xl shadow-lg mb-4">
-                                P
+                            <!-- Edit Profile Button at Top Right -->
+                            <button onclick="openEditProfile()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-all duration-200" title="Edit profile">
+                                <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+
+                            <div id="profile-avatar-container" class="relative group">
+                                <div class="w-20 h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-4xl lg:text-5xl shadow-lg mb-4 overflow-hidden">
+                                    P
+                                </div>
+                                <div class="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center cursor-pointer" onclick="openEditProfile()">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 1120.437 5.67L19.5 7.039A2 2 0 0018.07 8H17a2 2 0 00-2 2v2a2 2 0 002 2h1.07a2 2 0 001.664.89l.812 1.22A2 2 0 005.27 20H5a2 2 0 01-2-2v-9z"></path>
+                                    </svg>
+                                </div>
                             </div>
                             <h1 id="profile-display-name" class="text-2xl lg:text-3xl font-bold text-white">...</h1>
                             <p id="profile-wallet-address" class="text-sm lg:text-base text-gray-400 mt-2">Connecting wallet...</p>
@@ -5856,6 +5914,114 @@
                     updateStreakMultiplier(profile.streak || 0);
                 }
             }
+
+        /**
+         * Profile Editing Functions
+         */
+        let editingAvatarData = null;
+
+        window.openEditProfile = () => {
+            const modal = document.getElementById('edit-profile-modal');
+            const usernameInput = document.getElementById('edit-username-input');
+            const avatarPreview = document.getElementById('edit-avatar-preview');
+            
+            if (!modal) return;
+
+            // Populate current values
+            usernameInput.value = userProfile.displayName || '';
+            
+            // Update avatar preview
+            const avatarUrl = userProfile.avatarUrl || LOGO_URL;
+            if (avatarUrl && avatarUrl.startsWith('http')) {
+                avatarPreview.innerHTML = `<img src="${avatarUrl}" class="w-full h-full object-cover rounded-full" alt="Preview">`;
+                editingAvatarData = null;
+            } else {
+                editingAvatarData = null;
+                avatarPreview.innerHTML = `<span class="text-3xl">${userProfile.displayName?.[0]?.toUpperCase() || 'P'}</span>`;
+            }
+
+            modal.classList.remove('hidden');
+            usernameInput.focus();
+        };
+
+        window.closeEditProfile = () => {
+            const modal = document.getElementById('edit-profile-modal');
+            if (modal) modal.classList.add('hidden');
+            editingAvatarData = null;
+        };
+
+        window.handleAvatarUpload = (event) => {
+            const file = event.target.files?.[0];
+            if (!file) return;
+
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Image must be less than 5MB', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                editingAvatarData = e.target.result;
+                const avatarPreview = document.getElementById('edit-avatar-preview');
+                if (avatarPreview) {
+                    avatarPreview.innerHTML = `<img src="${editingAvatarData}" class="w-full h-full object-cover rounded-full" alt="Preview">`;
+                }
+                showToast('Image preview loaded', 'success');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.saveProfileChanges = async () => {
+            const usernameInput = document.getElementById('edit-username-input');
+            const username = usernameInput.value.trim();
+
+            // Validate username
+            if (username.length < 3 || username.length > 30) {
+                showToast('Username must be 3-30 characters', 'error');
+                return;
+            }
+
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                showToast('Username can only contain letters, numbers, and underscores', 'error');
+                return;
+            }
+
+            showLoadingOverlay(true, 'Saving profile...');
+
+            try {
+                const updatedProfile = {
+                    ...userProfile,
+                    displayName: username,
+                    avatarUrl: editingAvatarData || userProfile.avatarUrl
+                };
+
+                // Save to Firestore
+                if (db && currentUserId) {
+                    const { setDoc } = window.firebase.firestore;
+                    await setDoc(doc(db, 'user_profile', currentUserId), updatedProfile, { merge: true });
+                    console.log('✅ Profile updated in Firestore');
+                }
+
+                // Update local userProfile
+                userProfile.displayName = username;
+                if (editingAvatarData) {
+                    userProfile.avatarUrl = editingAvatarData;
+                }
+
+                // Update UI
+                updateProfileUI(userProfile);
+
+                showToast('Profile updated successfully!', 'success');
+                closeEditProfile();
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                showToast('Failed to update profile', 'error');
+            } finally {
+                showLoadingOverlay(false);
+                editingAvatarData = null;
+            }
+        };
 
         /**
          * Guest mode handlers for restricted features
