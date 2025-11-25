@@ -1842,9 +1842,10 @@ app.delete('/api/notifications/:id', requireAuth, requireFirebase, async (req, r
 });
 
 // =============================================================================
-// AI ASSISTANT ENDPOINT
+// AI ASSISTANT ENDPOINT - DISABLED (Not shipping in this version)
 // =============================================================================
-
+// To re-enable: Uncomment the code below
+/*
 app.post('/api/ai/chat', async (req, res) => {
     const { messages, systemPrompt } = req.body;
 
@@ -1932,6 +1933,7 @@ Always be helpful, accurate about platform features, and encourage users to expl
         res.status(error.status || 500).json({ error: errorMessage });
     }
 });
+*/
 
 // =============================================================================
 // HEALTH CHECK
