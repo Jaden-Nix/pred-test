@@ -1634,10 +1634,11 @@
                             <svg class="w-5 h-5 inline-block mr-2 -mt-0.5 group-hover:text-rose-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             <span class="hidden sm:inline">Create</span>
                         </button>
-                        <button data-screen="ai-assistant-screen" class="top-nav-btn group px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 border border-transparent hover:border-cyan-400/30">
+                        <!-- AI Assistant Button - DISABLED (Not shipping) -->
+                        <!-- <button data-screen="ai-assistant-screen" class="top-nav-btn group px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 border border-transparent hover:border-cyan-400/30">
                             <svg class="w-5 h-5 inline-block mr-2 -mt-0.5 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             <span class="hidden sm:inline">AI</span>
-                        </button>
+                        </button> -->
                     </div>
 
                     <!-- Right Side: Live Counter + Notifications + Theme + Profile -->
@@ -3097,8 +3098,8 @@
             </div>
             <!-- END OF NEW SCREEN -->
 
-            <!-- AI Assistant Screen -->
-            <div id="ai-assistant-screen" class="screen screen-inactive space-y-6">
+            <!-- AI Assistant Screen - DISABLED (Not shipping) -->
+            <!-- <div id="ai-assistant-screen" class="screen screen-inactive space-y-6">
                 <h1 class="text-2xl font-bold gradient-text">AI Assistant</h1>
                 
                 <div class="ui-panel rounded-lg p-4 space-y-3">
@@ -3128,7 +3129,7 @@
                         </button>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <div id="public-profile-screen" class="screen screen-inactive space-y-6">
                 <button onclick="goBack()" class="flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300">
@@ -3207,10 +3208,10 @@
             </button>
         </nav>
 
-        <!-- AI Chat Floating Button (Mobile) -->
-        <button onclick="showScreen('ai-assistant-screen')" id="ai-chat-fab" class="fixed bottom-24 left-6 w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center z-50 pointer-events-auto md:hidden hover:scale-110 active:scale-95" title="AI Assistant">
+        <!-- AI Chat Floating Button (Mobile) - DISABLED (Not shipping) -->
+        <!-- <button onclick="showScreen('ai-assistant-screen')" id="ai-chat-fab" class="fixed bottom-24 left-6 w-14 h-14 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center z-50 pointer-events-auto md:hidden hover:scale-110 active:scale-95" title="AI Assistant">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        </button>
+        </button> -->
 
         <!-- Toast Notification Container -->
         <div id="toast-container" class="fixed top-20 right-4 z-[999] space-y-2 max-w-sm">
@@ -4700,7 +4701,7 @@
             
             // Guest mode restriction: allow viewing but not interacting
             if (isGuestMode && !isDemoAccount) {
-                const allowedScreens = ['home-screen', 'social-feed-screen', 'quick-play-screen', 'market-detail-screen', 'jury-voting-screen', 'ai-assistant-screen'];
+                const allowedScreens = ['home-screen', 'social-feed-screen', 'quick-play-screen', 'market-detail-screen', 'jury-voting-screen'];
                 if (!allowedScreens.includes(screenId)) {
                     showToast('Sign in to access this. Guest mode is read-only.', 'info');
                     return;
