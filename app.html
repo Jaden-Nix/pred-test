@@ -8361,11 +8361,71 @@ ${historyText}`;
          * Renders Quick Poll Screen
          */
         function renderQuickPollScreen() {
+            const { collection, query, onSnapshot } = window.firebase.firestore;
             const pollsList = document.getElementById('polls-resolution-list');
-            if (pollsList) {
-                pollsList.innerHTML = '<p class="text-gray-400 text-center py-8">No quick polls yet. Create one above!</p>';
-                document.getElementById('polls-count').textContent = '0';
-            }
+            if (!pollsList) return;
+            
+            pollsList.innerHTML = '<p class="text-gray-400 text-center py-8">Loading polls...</p>';
+
+            const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'quick_polls'));
+
+            onSnapshot(q, (snapshot) => {
+                let html = '';
+                if (snapshot.empty) {
+                    pollsList.innerHTML = '<p class="text-gray-400 text-center py-8">No quick polls yet. Create one above!</p>';
+                    document.getElementById('polls-count').textContent = '0';
+                    return;
+                }
+
+                let polls = [];
+                snapshot.forEach(doc => {
+                    polls.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Sort: unresolved first
+                polls.sort((a, b) => {
+                    if (a.isResolved === b.isResolved) return 0;
+                    return a.isResolved ? 1 : -1;
+                });
+
+                polls.forEach(poll => {
+                    const yesVotes = poll.yesVotes || 0;
+                    const noVotes = poll.noVotes || 0;
+                    const total = yesVotes + noVotes;
+                    const yesPercent = total > 0 ? (yesVotes / total * 100).toFixed(0) : 50;
+                    const noPercent = total > 0 ? (noVotes / total * 100).toFixed(0) : 50;
+
+                    if (!poll.isResolved) {
+                        html += `
+                            <div class="ui-panel p-4 border-l-4 border-purple-500">
+                                <p class="text-white font-semibold mb-3">${poll.question}</p>
+                                <div class="grid grid-cols-2 gap-3 mb-3">
+                                    <div><span class="text-green-400">${yesPercent}%</span> YES (${yesVotes} votes)</div>
+                                    <div><span class="text-red-400">${noPercent}%</span> NO (${noVotes} votes)</div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button onclick="resolvePoll('${poll.id}', 'YES')" class="btn btn-stake-yes flex-1">Resolve YES</button>
+                                    <button onclick="resolvePoll('${poll.id}', 'NO')" class="btn btn-stake-no flex-1">Resolve NO</button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        const outcomeColor = poll.winningOutcome === 'YES' ? 'text-green-400' : 'text-red-400';
+                        html += `
+                            <div class="ui-panel p-4 border-l-4 border-gray-600 opacity-70">
+                                <p class="text-gray-400 font-semibold mb-3">${poll.question}</p>
+                                <p class="text-base font-bold ${outcomeColor}">RESOLVED AS: ${poll.winningOutcome}</p>
+                            </div>
+                        `;
+                    }
+                });
+
+                pollsList.innerHTML = html;
+                document.getElementById('polls-count').textContent = polls.filter(p => !p.isResolved).length;
+            }, (error) => {
+                console.error("Firebase Snapshot Error in renderQuickPollScreen:", error);
+                pollsList.innerHTML = `<p class="text-red-400 text-center">Error loading polls: ${error.message}</p>`;
+            });
         }
 
         /**
@@ -8871,6 +8931,35 @@ ${historyText}`;
                 console.error("Market resolution failed:", error);
                 showLoadingOverlay(false);
                 showToast("Market resolution failed. Check console."); 
+            }
+        };
+
+        /**
+         * Resolves a quick poll
+         */
+        window.resolvePoll = async (pollId, winningOutcome) => {
+            showLoadingOverlay(true, `Resolving poll as ${winningOutcome}...`);
+            const { doc, updateDoc, collection, increment } = window.firebase.firestore;
+
+            try {
+                const pollRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'quick_polls', pollId);
+                
+                await updateDoc(pollRef, {
+                    isResolved: true,
+                    winningOutcome: winningOutcome,
+                    resolvedAt: new Date().toISOString()
+                });
+
+                showLoadingOverlay(false);
+                showToast(`✅ Poll Resolved as ${winningOutcome}!`);
+
+                // Refresh the polls list
+                renderQuickPollScreen();
+
+            } catch (error) {
+                console.error("Poll resolution failed:", error);
+                showLoadingOverlay(false);
+                showToast("Poll resolution failed. Check console."); 
             }
         };
 
