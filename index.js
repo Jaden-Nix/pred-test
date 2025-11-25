@@ -1884,7 +1884,10 @@ app.post('/api/ai/chat', async (req, res) => {
 
     } catch (error) {
         console.error('Error in AI chat:', error);
-        res.status(500).json({ error: 'Failed to process chat message' });
+        const errorMessage = error.status === 401 
+            ? 'AI service authentication failed. Please check your OpenAI API key.' 
+            : 'Failed to process chat message. Please try again.';
+        res.status(error.status || 500).json({ error: errorMessage });
     }
 });
 
