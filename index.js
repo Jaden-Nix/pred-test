@@ -849,20 +849,24 @@ app.post('/api/auth/send-otp', requireFirebase, async (req, res) => {
     const { email } = req.body;
     
     if (!email) {
+        console.warn('⚠️ Send OTP request missing email');
         return res.status(400).json({ error: 'Email required' });
     }
     
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
+        console.warn(`⚠️ Invalid email format: ${email}`);
         return res.status(400).json({ error: 'Invalid email format' });
     }
     
     try {
+        console.log(`📧 Processing send OTP request for: ${email}`);
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         
         const otpRef = db.collection(`artifacts/${APP_ID}/public/data/otp_codes`).doc(email);
         
+        console.log(`💾 Saving OTP to database: ${email} -> ${otp}`);
         await otpRef.set({
             otp,
             email,
@@ -870,6 +874,7 @@ app.post('/api/auth/send-otp', requireFirebase, async (req, res) => {
             expiresAt: new Date(Date.now() + 10 * 60 * 1000),
             used: false
         });
+        console.log(`✅ OTP saved to database`);
         
         try {
             const sendGridClient = await getUncachableSendGridClient();
@@ -894,14 +899,14 @@ app.post('/api/auth/send-otp', requireFirebase, async (req, res) => {
                 console.warn('⚠️ SendGrid not available, OTP not sent via email');
             }
         } catch (emailError) {
-            console.warn('Email sending failed:', emailError.message);
+            console.error('❌ Email sending failed:', emailError.message, emailError);
         }
         
-        console.log(`✉️ OTP sent to ${email}: ${otp}`);
+        console.log(`✅ OTP request completed for ${email}: ${otp}`);
         res.status(200).json({ success: true, message: 'OTP sent to email', expiresIn: 600 });
         
     } catch (error) {
-        console.error('Error sending OTP:', error);
+        console.error('❌ Error sending OTP:', error.message, error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -918,20 +923,30 @@ app.post('/api/auth/verify-otp', requireFirebase, async (req, res) => {
         const otpSnap = await otpRef.get();
         
         if (!otpSnap.exists) {
+            console.warn(`⚠️ No OTP record found for email: ${email}`);
             return res.status(404).json({ error: 'No code found for this email' });
         }
         
         const otpData = otpSnap.data();
         
         if (otpData.used) {
+            console.warn(`⚠️ OTP already used for email: ${email}`);
             return res.status(400).json({ error: 'Code already used' });
         }
         
         if (new Date() > new Date(otpData.expiresAt)) {
+            console.warn(`⚠️ OTP expired for email: ${email}`);
             return res.status(400).json({ error: 'Code expired' });
         }
         
-        if (otpData.otp !== otp) {
+        // Normalize both strings for comparison (trim whitespace)
+        const storedOtp = String(otpData.otp).trim();
+        const providedOtp = String(otp).trim();
+        
+        console.log(`🔐 OTP Verification Attempt - Email: ${email}, Stored: ${storedOtp}, Provided: ${providedOtp}, Match: ${storedOtp === providedOtp}`);
+        
+        if (storedOtp !== providedOtp) {
+            console.warn(`❌ OTP mismatch for ${email}: stored="${storedOtp}" vs provided="${providedOtp}"`);
             return res.status(401).json({ error: 'Invalid code' });
         }
         
