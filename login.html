@@ -724,12 +724,12 @@
         </p>
 
         <div class="otp-container">
-            <input type="text" maxlength="1" class="otp-input" id="otp-1" oninput="handleOTPInput(event, 1)">
-            <input type="text" maxlength="1" class="otp-input" id="otp-2" oninput="handleOTPInput(event, 2)">
-            <input type="text" maxlength="1" class="otp-input" id="otp-3" oninput="handleOTPInput(event, 3)">
-            <input type="text" maxlength="1" class="otp-input" id="otp-4" oninput="handleOTPInput(event, 4)">
-            <input type="text" maxlength="1" class="otp-input" id="otp-5" oninput="handleOTPInput(event, 5)">
-            <input type="text" maxlength="1" class="otp-input" id="otp-6" oninput="handleOTPInput(event, 6)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-1" oninput="handleOTPInput(event, 1)" onpaste="handleOTPPaste(event)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-2" oninput="handleOTPInput(event, 2)" onpaste="handleOTPPaste(event)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-3" oninput="handleOTPInput(event, 3)" onpaste="handleOTPPaste(event)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-4" oninput="handleOTPInput(event, 4)" onpaste="handleOTPPaste(event)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-5" oninput="handleOTPInput(event, 5)" onpaste="handleOTPPaste(event)">
+            <input type="text" maxlength="1" class="otp-input" id="otp-6" oninput="handleOTPInput(event, 6)" onpaste="handleOTPPaste(event)">
         </div>
 
         <button onclick="verifyOTP()" id="verify-btn" class="btn-primary" style="margin-top: 1.5rem;">
@@ -974,11 +974,51 @@
         }
 
         function handleOTPInput(e, idx) {
-            if (e.target.value && idx < 6) {
+            const value = e.target.value;
+            
+            // Only allow digits
+            if (value && !/^\d+$/.test(value)) {
+                e.target.value = '';
+                return;
+            }
+            
+            // Move to next field if current field is filled
+            if (value && idx < 6) {
                 document.getElementById(`otp-${idx + 1}`).focus();
             }
+            
+            // Check if all 6 digits are filled
             const otp = [1,2,3,4,5,6].map(i => document.getElementById(`otp-${i}`).value).join('');
             if (otp.length === 6) verifyOTP();
+        }
+        
+        function handleOTPPaste(e) {
+            e.preventDefault();
+            
+            // Get pasted text
+            const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+            
+            // Extract only digits
+            const digits = pastedText.replace(/\D/g, '').substring(0, 6);
+            
+            if (digits.length > 0) {
+                // Fill in the OTP fields with pasted digits
+                for (let i = 0; i < 6; i++) {
+                    const field = document.getElementById(`otp-${i + 1}`);
+                    field.value = digits[i] || '';
+                }
+                
+                // If all 6 digits are pasted, verify automatically
+                if (digits.length === 6) {
+                    setTimeout(() => verifyOTP(), 100);
+                } else {
+                    // Focus on the next empty field
+                    const nextEmpty = digits.length + 1;
+                    if (nextEmpty <= 6) {
+                        document.getElementById(`otp-${nextEmpty}`).focus();
+                    }
+                }
+            }
         }
 
         function clearOTPFields() {
