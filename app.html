@@ -3556,7 +3556,11 @@
                             console.log('Token on resume:', token ? '✅ Token set' : '❌ No token');
                             await initializeUserProfile();
                             attachDataListeners();
-                            showScreen('home-screen');
+                            // Don't override admin screens that were accessed via URL/tap
+                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-jury-screen'];
+                            if (!adminScreens.includes(currentScreenId)) {
+                                showScreen('home-screen');
+                            }
                         })
                         .catch(err => {
                             console.error("Failed to auth/init on resume:", err);
@@ -3576,7 +3580,11 @@
                             console.log('Email user token on resume:', token ? '✅ Token set' : '❌ No token');
                             await initializeUserProfile();
                             attachDataListeners();
-                            showScreen('home-screen');
+                            // Don't override admin screens that were accessed via URL/tap
+                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-jury-screen'];
+                            if (!adminScreens.includes(currentScreenId)) {
+                                showScreen('home-screen');
+                            }
                         })
                         .catch(err => {
                             console.error("Failed to auth/init email user on resume:", err);
@@ -5248,6 +5256,12 @@
                 case 'admin-panel-screen':
                     renderResolutionPanel();
                     renderQuickPlayResolutionPanel();
+                    break;
+                case 'admin-password-screen':
+                case 'admin-markets-screen':
+                case 'admin-quickplay-screen':
+                case 'admin-jury-screen':
+                    // Admin screens don't need data loading
                     break;
             }
         }
