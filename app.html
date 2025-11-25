@@ -268,6 +268,18 @@
             animation: pulse-live 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
+        /* --- HOME LOGO ANIMATION --- */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        #predora-home-logo:hover {
+            animation: float 3s ease-in-out infinite;
+        }
+        #predora-home-logo {
+            animation: float 4s ease-in-out infinite;
+        }
+
         /* --- AI SPINNER --- */
         @keyframes spin {
             to { transform: rotate(360deg); }
@@ -1577,9 +1589,8 @@
     <nav id="top-nav" class="hidden md:block sticky top-0 z-50 shadow-lg shadow-black/20">
             <div class="max-w-7xl mx-auto px-6 py-4">
                 <div class="flex justify-between items-center gap-8">
-                    <!-- Left: Predora Branding + Guest Sign In Button -->
+                    <!-- Left: Guest Sign In Button (Logo only shows on home) -->
                     <div class="flex items-center gap-3">
-                        <div id="predora-logo" class="text-xl font-bold gradient-text cursor-pointer hover:opacity-80 transition-opacity">Predora</div>
                         <button id="guest-signin-btn" onclick="window.location.href='login.html'" style="display: none;" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-full hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 hover:shadow-lg hover:shadow-sky-500/50 active:scale-95 border border-sky-400/30">
                             Sign In
                         </button>
@@ -1643,7 +1654,7 @@
     <!-- Mobile Header (hidden on desktop) -->
     <div id="mobile-header" class="md:hidden fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-sky-500/20 px-4 py-3">
         <div class="flex items-center justify-between gap-2">
-            <div class="text-lg font-bold gradient-text">Predora</div>
+            <div id="mobile-logo" style="display: none;" class="text-lg font-bold gradient-text">Predora</div>
             <div class="flex items-center gap-2">
                 <button id="mobile-signin-btn" onclick="window.location.href='login.html'" style="display: none;" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50">
                     Sign In
@@ -1690,6 +1701,19 @@
 
 
                 <div id="home-screen" class="screen screen-inactive space-y-6">
+
+                <!-- Beautiful Home Logo -->
+                <div class="text-center pt-2 pb-4">
+                    <div id="predora-home-logo" class="inline-flex items-center justify-center mb-2 cursor-pointer hover:scale-105 transition-transform duration-300">
+                        <div class="relative">
+                            <div class="absolute inset-0 bg-gradient-to-r from-sky-400 via-indigo-500 to-purple-600 rounded-2xl blur-xl opacity-40"></div>
+                            <div class="relative bg-gradient-to-br from-sky-500 to-indigo-700 rounded-2xl px-6 py-4 shadow-lg">
+                                <h1 class="text-4xl lg:text-5xl font-bold text-white drop-shadow-lg" style="text-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);">Predora</h1>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-sm lg:text-base text-gray-400 mt-2">Prediction Markets Powered by AI</p>
+                </div>
 
                 <div id="quick-play-panel-home" onclick="handleGuestQuickPlayClick()" class="ui-panel glowing-card flex items-center justify-between p-4 lg:p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02]">
                     <div>
@@ -8329,8 +8353,8 @@ ${historyText}`;
                 }
             };
 
-            // Secret 5-tap gesture on Predora logo
-            const logoElement = document.getElementById('predora-logo');
+            // Secret 5-tap gesture on Predora logo (home screen only)
+            const logoElement = document.getElementById('predora-home-logo');
             if (logoElement) {
                 console.log('✅ Predora logo found, adding tap handler');
                 logoElement.addEventListener('click', handleAdminTap);
