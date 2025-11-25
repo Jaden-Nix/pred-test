@@ -8323,11 +8323,11 @@
                 return;
             }
 
-            // NEW: Minimum liquidity validation (must be at least $1,000 USD)
+            // NEW: Minimum liquidity validation (must be at least $100 USD)
             // NOTE: This is client-side validation only (appropriate for demo/hackathon)
             // Production apps should enforce this via Firestore security rules or backend validation
-            if (liquidityAmountInUsd < 1000) {
-                showToast("⚠️ Minimum liquidity is $1,000 USD. Higher liquidity creates more stable odds!", "warning");
+            if (liquidityAmountInUsd < 100) {
+                showToast("⚠️ Minimum liquidity is $100 USD. Higher liquidity creates more stable odds!", "warning");
                 return;
             }
 
