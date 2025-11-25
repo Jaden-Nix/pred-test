@@ -8384,13 +8384,16 @@
                         throw new Error("User profile not found.");
                     }
 
-                    // 2. BALANCE CHECK:
+                    // 2. TRANSACTION READ: Get public profile (all reads before writes!)
+                    const publicProfileSnap = await transaction.get(publicProfileRef);
+
+                    // 3. BALANCE CHECK:
                     const currentAssetBalance = profileSnap.data()[balanceFieldToUpdate] || 0;
                     if (liquidityAmount > currentAssetBalance) {
                         throw new Error(`Insufficient ${liquidityAsset} balance. You need ${liquidityAmount}.`);
                     }
 
-                    // 3. TRANSACTION WRITE 1: Create the new market
+                    // 4. TRANSACTION WRITE 1: Create the new market
                     const newMarketRef = doc(marketCollectionRef); // Create ref for the new doc
                     const protocolApy = getProtocolApy(yieldProtocolFinal);
 
@@ -8442,15 +8445,14 @@
 
                     transaction.set(newMarketRef, marketData);
 
-                    // 4. TRANSACTION WRITE 2: Deduct liquidity AND award XP
+                    // 5. TRANSACTION WRITE 2: Deduct liquidity AND award XP
                     const xpToAward = getRandomXP(50);
                     transaction.update(profileRef, {
                         [balanceFieldToUpdate]: increment(-liquidityAmount),
                         xp: increment(xpToAward)
                     });
 
-                    // 5. TRANSACTION WRITE 3: Update public leaderboard (set with merge to create if doesn't exist)
-                    const publicProfileSnap = await transaction.get(publicProfileRef);
+                    // 6. TRANSACTION WRITE 3: Update public leaderboard
                     if (publicProfileSnap.exists()) {
                         transaction.update(publicProfileRef, { xp: increment(xpToAward) });
                     } else {
