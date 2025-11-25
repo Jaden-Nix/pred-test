@@ -3240,6 +3240,7 @@
         let authToken = null;
         let isGuestMode = false;
         let isDemoAccount = false;
+        let isAdminMode = false;
         let userProfile = { 
             xp: 0, displayName: '', walletAddress: '', isApproved: false, 
             balance: 100, bnbBalance: 0.2, cakeBalance: 150 
@@ -3557,8 +3558,7 @@
                             await initializeUserProfile();
                             attachDataListeners();
                             // Don't override admin screens that were accessed via URL/tap
-                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-jury-screen'];
-                            if (!adminScreens.includes(currentScreenId)) {
+                            if (!isAdminMode) {
                                 showScreen('home-screen');
                             }
                         })
@@ -3581,8 +3581,7 @@
                             await initializeUserProfile();
                             attachDataListeners();
                             // Don't override admin screens that were accessed via URL/tap
-                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-markets-screen', 'admin-quickplay-screen', 'admin-jury-screen'];
-                            if (!adminScreens.includes(currentScreenId)) {
+                            if (!isAdminMode) {
                                 showScreen('home-screen');
                             }
                         })
@@ -8075,17 +8074,20 @@ ${historyText}`;
             const hashAdmin = window.location.hash === '#admin';
             if (urlParams.get('admin') === '1' || hashAdmin) {
                 console.log('Admin access via URL detected');
+                isAdminMode = true;
                 showScreen('admin-password-screen');
             }
 
             // Secret 5-tap gesture on the app title (both desktop and mobile)
-            // Note: Logo elements removed from UI, admin access now available via other means
             const handleAdminTap = () => {
                 adminTapCount++;
+                console.log('Admin tap detected:', adminTapCount);
                 clearTimeout(adminTapTimer);
                 adminTapTimer = setTimeout(() => { adminTapCount = 0; }, 2000);
                 if (adminTapCount >= 5) {
+                    console.log('✅ 5-tap admin gesture activated!');
                     adminTapCount = 0;
+                    isAdminMode = true;
                     showScreen('admin-password-screen');
                 }
             };
@@ -8093,7 +8095,10 @@ ${historyText}`;
             // Secret 5-tap gesture on Predora logo
             const logoElement = document.getElementById('predora-logo');
             if (logoElement) {
+                console.log('✅ Predora logo found, adding tap handler');
                 logoElement.addEventListener('click', handleAdminTap);
+            } else {
+                console.warn('⚠️ Predora logo element not found');
             }
 
             // Admin password check - validate via backend
@@ -8107,6 +8112,7 @@ ${historyText}`;
 
             document.getElementById('admin-logout-btn').addEventListener('click', () => {
                 adminSecret = null;
+                isAdminMode = false;
                 showScreen('home-screen');
             });
             document.getElementById('admin-generate-btn').addEventListener('click', adminGenerateQuickPlay);
