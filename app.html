@@ -4482,7 +4482,7 @@
             if (!screenId) return;
             
             // Protect admin screens from being redirected away unless explicitly allowed
-            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen'];
+            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen'];
             if (adminScreens.includes(currentScreenId) && !adminScreens.includes(screenId) && !forceOverride) {
                 console.log('🔒 Blocked redirect from admin screen. isAdminMode:', isAdminMode);
                 return;
@@ -4510,6 +4510,7 @@
                     'admin-quickplay-screen',
                     'admin-quickpoll-screen',
                     'admin-jury-screen',
+                    'admin-safety-screen',
                     'login-screen',
                     'otp-screen'
                 ];
