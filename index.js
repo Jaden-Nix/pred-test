@@ -1857,10 +1857,10 @@ app.post('/api/ai/chat', async (req, res) => {
     }
 
     try {
-        const model = geminiClient.getGenerativeModel({ model: 'gemini-2.0-flash' });
-        
-        // Build conversation history
-        const systemMessage = systemPrompt || 'You are a helpful AI assistant for Predora, a prediction market platform. Help users understand markets, answer questions about the platform, and provide insights about prediction trading.';
+        const model = geminiClient.getGenerativeModel({ 
+            model: 'gemini-2.0-flash',
+            systemInstruction: systemPrompt || 'You are a helpful AI assistant for Predora, a prediction market platform. Help users understand markets, answer questions about the platform, and provide insights about prediction trading.'
+        });
         
         // Format messages for Gemini API
         const conversationHistory = messages.map(msg => ({
@@ -1873,8 +1873,7 @@ app.post('/api/ai/chat', async (req, res) => {
             generationConfig: {
                 maxOutputTokens: 1024,
                 temperature: 0.7,
-            },
-            systemInstruction: systemMessage
+            }
         });
         
         // Get the last user message
