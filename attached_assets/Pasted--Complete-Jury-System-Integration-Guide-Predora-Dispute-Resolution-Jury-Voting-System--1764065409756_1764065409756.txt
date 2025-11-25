@@ -1,0 +1,1152 @@
+# ⚖️ Complete Jury System Integration Guide
+**Predora Dispute Resolution & Jury Voting System**
+
+---
+
+## 📋 Table of Contents
+1. [System Architecture](#architecture)
+2. [Setup Instructions](#setup)
+3. [Jury Selection & Notifications](#selection)
+4. [Voting & Resolution](#voting)
+5. [Admin Dashboard](#admin)
+6. [API Endpoints](#endpoints)
+7. [Frontend Components](#frontend)
+8. [Integration Checklist](#checklist)
+
+---
+
+## <a name="architecture"></a>⚖️ System Architecture
+
+### Dispute Flow (30-Minute Window)
+
+```
+Market Resolved by Swarm-Verify (≥90% confidence)
+     ↓
+30-MINUTE DISPUTE WINDOW OPENS
+     ↓
+User Clicks "Dispute" Button
+     ↓
+Market Status: "disputed"
+     ↓
+Top 5 Leaderboard Users Selected as Jurors
+     ↓
+Each Juror Gets: 8-Char Code + Email Notification
+     ↓
+Juror Opens Link: /app.html?jury=CODE8CHAR
+     ↓
+Juror Votes: YES or NO
+     ↓
+Admin Views Results in Jury Dashboard
+     ↓
+Path A: Jury Vote Clear → Auto-resolve with jury outcome
+Path B: Jury Vote Split → Admin manual override
+Path C: No Votes Received → 24-hour expiry, auto-resolve original
+```
+
+### Why Jury System?
+
+✅ **Decentralized Resolution** - Multiple humans verify AI oracle  
+✅ **Fault Tolerance** - Resistant to single-point failures  
+✅ **Transparency** - All votes public on admin dashboard  
+✅ **Fairness** - Top performers selected, incentivized participation  
+✅ **Speed** - 24-hour expiry prevents indefinite disputes  
+
+### Firestore Collections
+
+```
+artifacts/{APP_ID}/public/data/
+├── jury_codes/
+│   └── {CODE8CHAR}/
+│       ├── code: "A1B2C3D4"
+│       ├── userId: "user123"
+│       ├── marketId: "market456"
+│       ├── marketTitle: "Will BTC hit 100k?"
+│       ├── createdAt: "2025-01-15T10:00:00Z"
+│       ├── expiresAt: "2025-01-16T10:00:00Z"  (24 hours)
+│       ├── used: false
+│       └── usedAt: null
+│
+├── jury_votes/
+│   └── {marketId}_{userId}/
+│       ├── marketId: "market456"
+│       ├── userId: "user123"
+│       ├── userName: "Alice"
+│       ├── vote: "YES"  or "NO"
+│       ├── timestamp: "2025-01-15T11:30:00Z"
+│       └── votingPower: 1
+│
+├── notifications/
+│   └── {notificationId}/
+│       ├── userId: "user123"
+│       ├── type: "jury_invite"
+│       ├── marketId: "market456"
+│       ├── marketTitle: "Will BTC hit 100k?"
+│       ├── juryCode: "A1B2C3D4"
+│       ├── juryLink: "http://localhost:5000/app.html?jury=A1B2C3D4"
+│       ├── message: "You've been selected as a juror..."
+│       ├── createdAt: "2025-01-15T10:00:00Z"
+│       ├── read: false
+│       └── expiresAt: "2025-01-16T10:00:00Z"
+│
+└── standard_markets/
+    └── {marketId}/
+        ├── status: "disputed"  (or "active", "resolved")
+        ├── isResolved: true
+        ├── winningOutcome: "YES"
+        ├── resolutionMethod: "jury_resolved"
+        ├── disputedAt: "2025-01-15T10:30:00Z"
+        ├── disputeWindowEndsAt: "2025-01-15T11:00:00Z"  (30 min)
+        └── ...market fields...
+```
+
+---
+
+## <a name="setup"></a>🔧 Setup Instructions
+
+### Prerequisites
+1. Node.js 18+
+2. Express.js backend
+3. Firebase Admin SDK
+4. Firestore database
+5. Email notifications enabled (optional)
+
+### Step 1: Install Dependencies
+```bash
+npm install firebase-admin
+```
+
+### Step 2: Enable Firestore Collections
+Collections are auto-created on first write. No setup needed!
+
+### Step 3: Import Jury Functions
+```javascript
+// server/index.js
+import { 
+    generateJuryCode, 
+    disputeMarket, 
+    verifyJuryCode,
+    submitJuryVote,
+    checkDisputeResolution
+} from './jury-system.js';
+```
+
+### Step 4: Configure Admin Secret (Optional but Recommended)
+```bash
+# .env
+ADMIN_SECRET=your-secure-admin-password
+```
+
+### Step 5: Test Jury Flow
+1. Create a market
+2. Resolve it with Swarm-Verify (>90% confidence)
+3. Click "Dispute" within 30 minutes
+4. Check Firestore: `jury_codes` collection should have 5 codes
+5. Use first code in URL: `/app.html?jury=A1B2C3D4`
+6. Vote YES/NO
+7. Check admin dashboard for results
+
+---
+
+## <a name="selection"></a>👥 Jury Selection & Notifications
+
+### Juror Selection Algorithm
+
+```javascript
+/**
+ * Select top 5 users by XP from leaderboard
+ * Ensures most active/trusted users judge disputes
+ */
+async function selectJurors(marketId) {
+    const leaderboardRef = db.collection(`artifacts/${APP_ID}/public/data/leaderboard`);
+    
+    // Get top 10 by XP (extra buffer for randomization)
+    const snapshot = await leaderboardRef
+        .orderBy('xp', 'desc')
+        .limit(10)
+        .get();
+    
+    if (snapshot.empty) {
+        throw new Error('No leaderboard users found');
+    }
+    
+    // Shuffle to add randomness (prevent predictability)
+    const shuffled = snapshot.docs
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 5);  // Take top 5 after shuffle
+    
+    return shuffled;
+}
+```
+
+### 8-Character Code Generation
+
+```javascript
+/**
+ * Generate unique 8-char jury code
+ * Format: 6 alphanumeric + 2 random
+ * Example: A1B2C3D4
+ */
+function generateJuryCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+```
+
+### Juror Notification
+
+```javascript
+/**
+ * Send jury invitation to selected jurors
+ * Stored in Firestore notifications collection
+ * Auto-expires after 24 hours
+ */
+async function notifyJurors(selected, marketId, marketTitle) {
+    const expiryTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    
+    for (const doc of selected) {
+        const jurorData = doc.data();
+        const code = generateJuryCode();
+        
+        // Store jury code
+        await db.collection(`artifacts/${APP_ID}/public/data/jury_codes`)
+            .doc(code)
+            .set({
+                code,
+                userId: doc.id,
+                marketId,
+                marketTitle,
+                createdAt: new Date().toISOString(),
+                expiresAt: expiryTime.toISOString(),
+                used: false,
+                usedAt: null
+            });
+        
+        // Send notification
+        const juryLink = `${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/app.html?jury=${code}`;
+        
+        await db.collection(`artifacts/${APP_ID}/public/data/notifications`)
+            .add({
+                userId: doc.id,
+                type: 'jury_invite',
+                marketId,
+                marketTitle,
+                juryCode: code,
+                juryLink,
+                message: `You've been selected as a juror for: "${marketTitle}". Vote here: ${juryLink}`,
+                createdAt: new Date().toISOString(),
+                read: false,
+                expiresAt: expiryTime.toISOString()
+            });
+        
+        console.log(`✉️ Jury invite sent to ${jurorData.displayName || 'Anonymous'}`);
+    }
+}
+```
+
+---
+
+## <a name="voting"></a>🗳️ Voting & Resolution
+
+### Verify Jury Code
+
+```javascript
+/**
+ * POST /api/verify-jury-code
+ * Verify code is valid before allowing vote
+ */
+app.post('/api/verify-jury-code', async (req, res) => {
+    const { code, authToken } = req.body;
+    
+    try {
+        // Get user ID from Firebase token
+        const decodedToken = await admin.auth().verifyIdToken(authToken);
+        const userId = decodedToken.uid;
+        
+        // Fetch code from Firestore
+        const codeRef = db.collection(`artifacts/${APP_ID}/public/data/jury_codes`)
+            .doc(code);
+        const codeSnap = await codeRef.get();
+        
+        if (!codeSnap.exists) {
+            return res.status(404).json({ error: 'Invalid code', valid: false });
+        }
+        
+        const codeData = codeSnap.data();
+        
+        // Validation checks
+        if (codeData.used) {
+            return res.status(400).json({ error: 'Code already used', valid: false });
+        }
+        
+        if (new Date(codeData.expiresAt) < new Date()) {
+            return res.status(400).json({ error: 'Code expired', valid: false });
+        }
+        
+        if (codeData.userId !== userId) {
+            return res.status(403).json({ error: 'Code not assigned to you', valid: false });
+        }
+        
+        // Code is valid!
+        res.status(200).json({
+            valid: true,
+            marketId: codeData.marketId,
+            marketTitle: codeData.marketTitle
+        });
+        
+    } catch (error) {
+        res.status(401).json({ error: 'Authentication failed', valid: false });
+    }
+});
+```
+
+### Submit Jury Vote
+
+```javascript
+/**
+ * Frontend: Submit jury vote
+ */
+async function submitJuryVote(marketId, vote) {
+    if (!currentUserId) {
+        showToast('Please login to vote', 'error');
+        return;
+    }
+    
+    try {
+        // Create vote document
+        const voteRef = db.collection(`artifacts/${APP_ID}/public/data/jury_votes`)
+            .doc(`${marketId}_${currentUserId}`);
+        
+        await voteRef.set({
+            marketId,
+            userId: currentUserId,
+            userName: userProfile.displayName || 'Anonymous',
+            vote,  // 'YES' or 'NO'
+            timestamp: serverTimestamp(),
+            votingPower: 1
+        });
+        
+        showToast('Your jury vote submitted! ⚖️', 'success');
+        
+        // Check if we should auto-resolve
+        await checkDisputeResolution(marketId);
+        
+    } catch (error) {
+        showToast('Failed to submit vote: ' + error.message, 'error');
+    }
+}
+```
+
+### Check Dispute Resolution
+
+```javascript
+/**
+ * After each vote, check if dispute is resolved
+ * Requires minimum 3 votes or all 5 jurors have voted
+ */
+async function checkDisputeResolution(marketId) {
+    try {
+        // Get all votes for this market
+        const votesRef = db.collection(`artifacts/${APP_ID}/public/data/jury_votes`);
+        const snapshot = await votesRef.get();
+        
+        let yesVotes = 0, noVotes = 0, totalVotes = 0;
+        
+        snapshot.forEach(voteDoc => {
+            const voteData = voteDoc.data();
+            if (voteData.marketId === marketId) {
+                totalVotes++;
+                if (voteData.vote === 'YES') yesVotes++;
+                else if (voteData.vote === 'NO') noVotes++;
+            }
+        });
+        
+        console.log(`📊 Jury votes for ${marketId}: YES=${yesVotes}, NO=${noVotes}`);
+        
+        // Resolution criteria:
+        // - Minimum 3 votes, OR
+        // - All 5 jurors voted
+        const juryCodesRef = db.collection(`artifacts/${APP_ID}/public/data/jury_codes`);
+        const juryCodesSnapshot = await juryCodesRef
+            .where('marketId', '==', marketId)
+            .get();
+        const totalJurors = juryCodesSnapshot.size;
+        
+        const shouldResolve = totalVotes >= 3 || totalVotes === totalJurors;
+        
+        if (shouldResolve) {
+            // Determine majority
+            const majority = yesVotes > noVotes ? 'YES' : 'NO';
+            
+            // Update market
+            const marketRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`)
+                .doc(marketId);
+            
+            await marketRef.update({
+                isResolved: true,
+                winningOutcome: majority,
+                status: 'resolved',
+                resolutionMethod: 'jury_resolved',
+                resolutionTime: new Date().toISOString(),
+                juryStats: {
+                    yesVotes,
+                    noVotes,
+                    totalVotes,
+                    totalJurors
+                }
+            });
+            
+            console.log(`⚖️ Market ${marketId} resolved by jury: ${majority} wins!`);
+            showToast(`Jury has resolved: ${majority} wins!`, 'success');
+        }
+        
+    } catch (error) {
+        console.error('Error checking dispute resolution:', error);
+    }
+}
+```
+
+### Jury Vote Aggregation
+
+```javascript
+/**
+ * Aggregate jury votes for admin dashboard
+ * Majority vote wins
+ * Ties default to original oracle outcome
+ */
+function aggregateJuryVotes(votes, originalOutcome) {
+    let yesCount = 0;
+    let noCount = 0;
+    
+    votes.forEach(vote => {
+        if (vote.vote === 'YES') yesCount++;
+        else if (vote.vote === 'NO') noCount++;
+    });
+    
+    if (yesCount > noCount) {
+        return {
+            outcome: 'YES',
+            margin: yesCount - noCount,
+            unanimous: yesCount === votes.length,
+            agreed_with_oracle: originalOutcome === 'YES'
+        };
+    } else if (noCount > yesCount) {
+        return {
+            outcome: 'NO',
+            margin: noCount - yesCount,
+            unanimous: noCount === votes.length,
+            agreed_with_oracle: originalOutcome === 'NO'
+        };
+    } else {
+        // Tie - use original oracle outcome
+        return {
+            outcome: originalOutcome,
+            margin: 0,
+            unanimous: false,
+            is_tie: true,
+            tie_broken_by: 'oracle'
+        };
+    }
+}
+```
+
+---
+
+## <a name="admin"></a>🎛️ Admin Dashboard
+
+### Fetch Disputed Markets
+
+```javascript
+/**
+ * GET /api/admin/disputed-markets
+ * Admin-only: List all disputed markets with jury stats
+ */
+app.post('/api/admin/disputed-markets', requireAdmin, async (req, res) => {
+    try {
+        const marketsRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`);
+        const snapshot = await marketsRef.where('status', '==', 'disputed').get();
+        
+        const disputedMarkets = [];
+        
+        for (const doc of snapshot.docs) {
+            const marketData = doc.data();
+            
+            // Get all votes for this market
+            const votesRef = db.collection(`artifacts/${APP_ID}/public/data/jury_votes`);
+            const votesSnapshot = await votesRef.get();
+            
+            let yesVotes = 0, noVotes = 0, totalVotes = 0;
+            const votes = [];
+            
+            votesSnapshot.forEach(voteDoc => {
+                const voteData = voteDoc.data();
+                if (voteData.marketId === doc.id) {
+                    totalVotes++;
+                    if (voteData.vote === 'YES') yesVotes++;
+                    else if (voteData.vote === 'NO') noVotes++;
+                    votes.push({
+                        userId: voteData.userId,
+                        userName: voteData.userName,
+                        vote: voteData.vote,
+                        timestamp: voteData.timestamp
+                    });
+                }
+            });
+            
+            // Get total jurors (from jury codes)
+            const juryCodesRef = db.collection(`artifacts/${APP_ID}/public/data/jury_codes`);
+            const juryCodesSnapshot = await juryCodesRef
+                .where('marketId', '==', doc.id)
+                .get();
+            const totalJurors = juryCodesSnapshot.size;
+            
+            disputedMarkets.push({
+                id: doc.id,
+                title: marketData.title,
+                description: marketData.description,
+                disputedAt: marketData.disputedAt,
+                winningOutcome: marketData.winningOutcome,
+                yesPool: marketData.yesPool,
+                noPool: marketData.noPool,
+                juryStats: {
+                    yesVotes,
+                    noVotes,
+                    totalVotes,
+                    totalJurors,
+                    votes,
+                    votingProgress: `${totalVotes}/${totalJurors} voted`,
+                    majorityOutcome: yesVotes > noVotes ? 'YES' : noVotes > yesVotes ? 'NO' : 'TIE'
+                }
+            });
+        }
+        
+        res.status(200).json({ markets: disputedMarkets });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+```
+
+### Admin Override Resolution
+
+```javascript
+/**
+ * POST /api/admin/override-market
+ * Admin can manually override jury decision
+ * For cases where jury is split or needs re-examination
+ */
+app.post('/api/admin/override-market', requireAdmin, async (req, res) => {
+    const { marketId, outcome, reason } = req.body;
+    
+    if (!marketId || !outcome) {
+        return res.status(400).json({ error: 'Missing marketId or outcome' });
+    }
+    
+    try {
+        const marketRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`)
+            .doc(marketId);
+        const marketSnap = await marketRef.get();
+        
+        if (!marketSnap.exists) {
+            return res.status(404).json({ error: 'Market not found' });
+        }
+        
+        // Update market with admin override
+        await marketRef.update({
+            isResolved: true,
+            winningOutcome: outcome,
+            resolutionMethod: 'admin_override',
+            adminOverrideReason: reason || 'Admin manual override',
+            adminOverrideAt: new Date().toISOString(),
+            status: 'resolved',
+            disputeStatus: 'admin_resolved'
+        });
+        
+        console.log(`🔧 Admin override: Market ${marketId} resolved as ${outcome}`);
+        res.status(200).json({ 
+            success: true, 
+            message: `Market resolved as ${outcome}` 
+        });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+```
+
+### Admin Statistics
+
+```javascript
+/**
+ * GET /api/admin/stats
+ * Admin dashboard statistics
+ */
+app.post('/api/admin/stats', requireAdmin, async (req, res) => {
+    try {
+        const marketsRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`);
+        const allMarketsSnapshot = await marketsRef.get();
+        const disputedMarketsSnapshot = await marketsRef
+            .where('status', '==', 'disputed')
+            .get();
+        
+        const juryCodesRef = db.collection(`artifacts/${APP_ID}/public/data/jury_codes`);
+        const juryCodesSnapshot = await juryCodesRef.get();
+        
+        // Filter active codes
+        const activeJuryCodes = juryCodesSnapshot.docs.filter(doc => {
+            const data = doc.data();
+            return !data.used && new Date(data.expiresAt) > new Date();
+        });
+        
+        // Count votes
+        const juryVotesRef = db.collection(`artifacts/${APP_ID}/public/data/jury_votes`);
+        const juryVotesSnapshot = await juryVotesRef.get();
+        
+        res.status(200).json({
+            totalMarkets: allMarketsSnapshot.size,
+            disputedMarkets: disputedMarketsSnapshot.size,
+            totalJuryCodes: juryCodesSnapshot.size,
+            activeJuryCodes: activeJuryCodes.length,
+            totalJuryVotes: juryVotesSnapshot.size
+        });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+```
+
+---
+
+## <a name="endpoints"></a>🔌 API Endpoints
+
+### 1. Dispute Market
+```
+POST /api/dispute-market
+Content-Type: application/json
+
+{
+  "marketId": "market123",
+  "marketTitle": "Will BTC hit 100k?",
+  "authToken": "user-firebase-token"
+}
+
+Response:
+{
+  "success": true,
+  "jurors": [
+    { "userId": "u1", "displayName": "Alice", "code": "A1B2C3D4" },
+    { "userId": "u2", "displayName": "Bob", "code": "B2C3D4E5" },
+    ...
+  ],
+  "message": "5 jurors have been notified"
+}
+```
+
+### 2. Verify Jury Code
+```
+POST /api/verify-jury-code
+Content-Type: application/json
+
+{
+  "code": "A1B2C3D4",
+  "authToken": "user-firebase-token"
+}
+
+Response:
+{
+  "valid": true,
+  "marketId": "market123",
+  "marketTitle": "Will BTC hit 100k?"
+}
+```
+
+### 3. Use Jury Code (Mark as Used)
+```
+POST /api/use-jury-code
+Content-Type: application/json
+
+{
+  "code": "A1B2C3D4",
+  "authToken": "user-firebase-token"
+}
+
+Response:
+{
+  "success": true
+}
+```
+
+### 4. Get Notifications
+```
+GET /api/notifications?authToken=user-firebase-token
+
+Response:
+{
+  "notifications": [
+    {
+      "id": "notif123",
+      "type": "jury_invite",
+      "marketId": "market123",
+      "marketTitle": "Will BTC hit 100k?",
+      "juryCode": "A1B2C3D4",
+      "juryLink": "http://localhost:5000/app.html?jury=A1B2C3D4",
+      "message": "You've been selected as a juror...",
+      "createdAt": "2025-01-15T10:00:00Z",
+      "read": false
+    }
+  ]
+}
+```
+
+### 5. Mark Notification as Read
+```
+POST /api/notifications/mark-read
+Content-Type: application/json
+
+{
+  "authToken": "user-firebase-token",
+  "notificationId": "notif123"
+}
+
+Response:
+{
+  "success": true
+}
+```
+
+### 6. Get Disputed Markets (Admin)
+```
+POST /api/admin/disputed-markets
+Headers:
+  x-admin-secret: your-admin-secret
+  OR
+  Authorization: Bearer user-firebase-token
+
+Response:
+{
+  "markets": [
+    {
+      "id": "market123",
+      "title": "Will BTC hit 100k?",
+      "description": "...",
+      "disputedAt": "2025-01-15T10:30:00Z",
+      "winningOutcome": "YES",
+      "yesPool": "1000",
+      "noPool": "500",
+      "juryStats": {
+        "yesVotes": 4,
+        "noVotes": 1,
+        "totalVotes": 5,
+        "totalJurors": 5,
+        "votes": [
+          { "userId": "u1", "userName": "Alice", "vote": "YES" },
+          ...
+        ],
+        "majorityOutcome": "YES"
+      }
+    }
+  ]
+}
+```
+
+### 7. Admin Override Market
+```
+POST /api/admin/override-market
+Headers:
+  x-admin-secret: your-admin-secret
+
+{
+  "marketId": "market123",
+  "outcome": "YES",
+  "reason": "Jury was split, oracle evidence was strong"
+}
+
+Response:
+{
+  "success": true,
+  "message": "Market resolved as YES"
+}
+```
+
+### 8. Admin Statistics
+```
+POST /api/admin/stats
+Headers:
+  x-admin-secret: your-admin-secret
+
+Response:
+{
+  "totalMarkets": 42,
+  "disputedMarkets": 3,
+  "totalJuryCodes": 15,
+  "activeJuryCodes": 8,
+  "totalJuryVotes": 12
+}
+```
+
+---
+
+## <a name="frontend"></a>💻 Frontend Components
+
+### Jury Voting Screen
+
+```html
+<!-- When user clicks jury link: /app.html?jury=CODE8CHAR -->
+<div id="jury-screen" class="screen screen-inactive space-y-6">
+    <h1 class="text-3xl font-bold text-white">⚖️ You're a Juror</h1>
+    
+    <!-- Market Details -->
+    <div class="ui-panel">
+        <h2 id="jury-market-title" class="text-2xl font-bold text-white mb-4">
+            Market Title
+        </h2>
+        <p id="jury-market-description" class="text-gray-300 mb-4">
+            Market description...
+        </p>
+        
+        <!-- Oracle Verdict -->
+        <div class="bg-blue-500/10 border border-blue-400/30 rounded p-4 mb-4">
+            <p class="text-sm text-gray-400">AI Oracle Resolved:</p>
+            <p id="jury-oracle-outcome" class="text-2xl font-bold text-blue-400">
+                YES (92% confidence)
+            </p>
+        </div>
+    </div>
+    
+    <!-- Vote Buttons -->
+    <div class="ui-panel space-y-3">
+        <p class="text-sm text-gray-300 mb-4">
+            Do you agree with the AI oracle's resolution?
+        </p>
+        
+        <button 
+            onclick="submitJuryVote('YES')" 
+            class="btn btn-agree w-full py-4 text-lg"
+        >
+            ✅ YES - I Agree with Oracle
+        </button>
+        
+        <button 
+            onclick="submitJuryVote('NO')" 
+            class="btn btn-disagree w-full py-4 text-lg"
+        >
+            ❌ NO - Oracle is Wrong
+        </button>
+    </div>
+    
+    <!-- Code Display -->
+    <div class="ui-panel bg-gray-800/50">
+        <p class="text-xs text-gray-400 mb-2">Your Jury Code:</p>
+        <p id="jury-code-display" class="text-2xl font-mono font-bold text-green-400">
+            A1B2C3D4
+        </p>
+        <p class="text-xs text-gray-400 mt-2">
+            Expires: <span id="jury-expiry">24 hours</span>
+        </p>
+    </div>
+</div>
+```
+
+### JavaScript: Jury Vote Handler
+
+```javascript
+/**
+ * Frontend: Submit jury vote
+ */
+async function submitJuryVote(vote) {
+    try {
+        // Get current user
+        const user = auth.currentUser;
+        if (!user) {
+            showToast('Please login first', 'error');
+            return;
+        }
+        
+        // Get auth token
+        const authToken = await user.getIdToken();
+        
+        // Submit vote
+        const response = await fetch('/api/jury-vote', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                marketId: currentMarketId,
+                vote,  // 'YES' or 'NO'
+                authToken
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showToast(`✅ Your vote (${vote}) submitted!`, 'success');
+            
+            // Redirect to results or home
+            setTimeout(() => {
+                showScreen('home-screen');
+            }, 2000);
+        } else {
+            showToast(result.error || 'Vote failed', 'error');
+        }
+        
+    } catch (error) {
+        showToast('Error: ' + error.message, 'error');
+    }
+}
+```
+
+### Disputed Market Banner
+
+```html
+<!-- Show when market status is "disputed" -->
+<div id="disputed-banner" class="ui-panel border-l-4 border-orange-500 bg-orange-500/10">
+    <div class="flex items-center gap-3">
+        <svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        <div class="flex-1">
+            <h3 class="text-lg font-bold text-orange-400">⚖️ Market Disputed - Awaiting Jury Results</h3>
+            <p class="text-sm text-gray-300 mt-1">
+                This market has been disputed and is currently frozen. 
+                A jury is reviewing the outcome. All payouts are on hold until the jury reaches a verdict.
+            </p>
+        </div>
+    </div>
+</div>
+```
+
+---
+
+## <a name="checklist"></a>✅ Integration Checklist
+
+### Prerequisites
+- [ ] Node.js 18+ installed
+- [ ] Express.js backend setup
+- [ ] Firebase Admin SDK configured
+- [ ] Firestore database initialized
+- [ ] Leaderboard collection populated with users/XP
+
+### Database Setup
+- [ ] Firestore collections auto-create on first write
+- [ ] Review `jury_codes` structure
+- [ ] Review `jury_votes` structure
+- [ ] Review `notifications` structure
+- [ ] Verify `standard_markets` has `status` field
+
+### Backend Integration
+- [ ] Copy all jury endpoints to `server/index.js`
+- [ ] Implement `POST /api/dispute-market` endpoint
+- [ ] Implement `POST /api/verify-jury-code` endpoint
+- [ ] Implement `POST /api/use-jury-code` endpoint
+- [ ] Implement `GET /api/notifications` endpoint
+- [ ] Implement `POST /api/notifications/mark-read` endpoint
+- [ ] Implement `POST /api/admin/disputed-markets` endpoint
+- [ ] Implement `POST /api/admin/override-market` endpoint
+- [ ] Implement `POST /api/admin/stats` endpoint
+- [ ] Set up `requireAdmin` middleware
+- [ ] Configure `ADMIN_SECRET` environment variable (optional)
+
+### Frontend Integration
+- [ ] Add jury voting screen in `app.html`
+- [ ] Parse `?jury=CODE8CHAR` URL parameter
+- [ ] Implement jury code verification flow
+- [ ] Implement vote submission handler
+- [ ] Add disputed market banner to detail screen
+- [ ] Add notification UI for jury invites
+- [ ] Add dispute button to resolved markets (within 30 min)
+- [ ] Show countdown to dispute window closure
+
+### Testing
+- [ ] Test jury selection with leaderboard users
+- [ ] Test jury code generation (8 chars, unique)
+- [ ] Test code verification (valid/expired/used)
+- [ ] Test jury vote submission
+- [ ] Test dispute resolution (3+ votes triggers auto-resolve)
+- [ ] Test admin dashboard with disputed markets
+- [ ] Test admin override functionality
+- [ ] Test jury statistics
+- [ ] Test notification generation and marking read
+- [ ] Test 24-hour code expiry
+- [ ] Test 30-minute dispute window
+
+### Admin Setup
+- [ ] Generate admin secret: `openssl rand -hex 32`
+- [ ] Store in `.env` as `ADMIN_SECRET`
+- [ ] Configure admin endpoints with secret OR Firebase token
+- [ ] Test admin authentication
+
+### Monitoring
+- [ ] Log all jury code generations
+- [ ] Log all votes received
+- [ ] Log dispute resolutions
+- [ ] Log admin overrides
+- [ ] Monitor jury participation rates
+- [ ] Track dispute frequency
+- [ ] Monitor code expiry patterns
+
+### Production Readiness
+- [ ] Validate email notifications work (if using)
+- [ ] Test with real leaderboard data
+- [ ] Load test with multiple disputes
+- [ ] Verify Firestore indexing for queries
+- [ ] Set up monitoring/alerts for dispute spikes
+- [ ] Document dispute resolution SLA (e.g., 24 hours)
+- [ ] Create jury participant guidelines
+- [ ] Set up dispute appeal process
+
+---
+
+## 🎯 Common Integration Patterns
+
+### Pattern 1: Basic Dispute Flow
+```javascript
+// User clicks "Dispute" button on resolved market
+// 1. Call POST /api/dispute-market
+// 2. Get back: 5 jurors selected, codes generated
+// 3. Firestore notifications sent automatically
+// 4. Admin sees disputed market in dashboard
+// 5. Jurors vote via /app.html?jury=CODE
+// 6. After 3 votes or all 5, auto-resolve
+```
+
+### Pattern 2: Jury Participation Incentives
+```javascript
+// Award points for jury participation
+// - Correct votes: +50 XP
+// - Unanimous agreement with oracle: +25 bonus
+// - First to vote: +10 bonus
+// - All votes on time: +15 bonus
+
+async function awardJuryPoints(marketId, userId, outcome, isCorrect) {
+    const points = isCorrect ? 50 : 25;  // Base + correctness
+    
+    await db.collection('users').doc(userId).update({
+        xp: increment(points),
+        juryParticipations: increment(1),
+        correctJuryVotes: isCorrect ? increment(1) : increment(0)
+    });
+}
+```
+
+### Pattern 3: Tie-Breaking Strategy
+```javascript
+// When jury votes are tied (2-2 or split):
+// Option A: Use original oracle outcome
+// Option B: Request second Swarm-Verify pass
+// Option C: Admin manual review
+
+if (yesVotes === noVotes) {
+    if (originalOutcome === 'YES') {
+        // Use oracle outcome
+        return 'YES';
+    } else if (secondSwarmAvailable) {
+        // Run second oracle pass
+        return await secondSwarmReview();
+    } else {
+        // Need admin review
+        await requestAdminReview(marketId);
+    }
+}
+```
+
+### Pattern 4: Early Resolution
+```javascript
+// If 4/5 vote YES within 5 minutes → resolve immediately
+// No need to wait for all 5 jurors or dispute window
+
+const EARLY_MAJORITY_THRESHOLD = 4;
+const EARLY_RESOLUTION_TIME = 5 * 60 * 1000;  // 5 minutes
+
+if (totalVotes >= EARLY_MAJORITY_THRESHOLD && 
+    maxVoteMargin >= 3 &&
+    elapsedTime < EARLY_RESOLUTION_TIME) {
+    // Early resolution allowed
+    return resolveMarket(outcome);
+}
+```
+
+---
+
+## 🚀 Advanced Features (Optional)
+
+### Weighted Voting by Reputation
+```javascript
+// Instead of 1 vote = 1 vote, weight by user XP/reputation
+// High XP users' votes count more
+
+function calculateVoteWeight(userId) {
+    const user = userXpMap.get(userId);
+    const xp = user.xp || 0;
+    
+    if (xp > 10000) return 2.0;      // 2x weight
+    if (xp > 5000) return 1.5;       // 1.5x weight
+    if (xp > 1000) return 1.0;       // 1x weight
+    return 0.5;                      // 0.5x weight (new users)
+}
+
+// Weighted aggregation
+const weightedYesVotes = yesVoters
+    .reduce((sum, voter) => sum + calculateVoteWeight(voter.userId), 0);
+```
+
+### Jury Diversity Requirements
+```javascript
+// Ensure jury comes from different categories/niches
+// Prevents coordinated voting
+
+function selectDiverseJurors(top10Users) {
+    const categories = {};
+    const selected = [];
+    
+    for (const user of top10Users) {
+        const category = user.preferredCategory || 'general';
+        
+        // Don't select more than 2 from same category
+        if ((categories[category] || 0) < 2) {
+            selected.push(user);
+            categories[category] = (categories[category] || 0) + 1;
+        }
+        
+        if (selected.length === 5) break;
+    }
+    
+    return selected;
+}
+```
+
+### Dispute Analytics Dashboard
+```javascript
+// Track disputes over time
+const disputeAnalytics = {
+    totalDisputes: 143,
+    oracleAccuracy: 94.4,  // % correct
+    averageJuryParticipation: 84.2,  // % voted
+    agreementWithOracle: 91.6,  // % voted same as oracle
+    averageTimeToResolution: "2.3 hours",
+    mostDisputedCategory: "Sports",
+    mostDisputedMonth: "January"
+};
+```
+
+---
+
+## 📊 You're Done!
+
+Your jury system is now fully integrated! It provides:
+
+✅ **Decentralized Dispute Resolution** - Top leaderboard users judge outcomes  
+✅ **Fair Selection** - 8-char codes, 24-hour expiry, 5-juror selection  
+✅ **Transparent Voting** - All votes visible in admin dashboard  
+✅ **Auto-Resolution** - Majority vote resolves after 3 votes  
+✅ **Admin Override** - Fallback for tied or edge-case votes  
+✅ **Notifications** - Firestore-based jury invites  
+✅ **Security** - Code validation, Firebase auth, role-based access  
+
+**Perfect for high-stakes prediction markets requiring human verification!** ⚖️
+

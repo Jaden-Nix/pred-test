@@ -780,6 +780,85 @@ app.post('/api/verify-jury-code', requireAuth, requireFirebase, async (req, res)
     }
 });
 
+app.post('/api/submit-jury-vote', requireAuth, requireFirebase, async (req, res) => {
+    const { code, vote } = req.body;
+    const userId = req.user.uid;
+    
+    try {
+        if (!vote || (vote !== 'YES' && vote !== 'NO')) {
+            return res.status(400).json({ error: 'Invalid vote. Must be YES or NO' });
+        }
+        
+        const codeRef = db.collection(`artifacts/${APP_ID}/public/data/jury_codes`).doc(code);
+        const codeSnap = await codeRef.get();
+        
+        if (!codeSnap.exists) {
+            return res.status(404).json({ error: 'Invalid jury code' });
+        }
+        
+        const codeData = codeSnap.data();
+        
+        if (codeData.used) {
+            return res.status(400).json({ error: 'Code already used' });
+        }
+        
+        if (new Date(codeData.expiresAt) < new Date()) {
+            return res.status(400).json({ error: 'Code expired' });
+        }
+        
+        if (codeData.userId !== userId) {
+            return res.status(403).json({ error: 'Code not assigned to you' });
+        }
+        
+        const marketRef = db.collection(`artifacts/${APP_ID}/public/data/standard_markets`).doc(codeData.marketId);
+        
+        await db.collection(`artifacts/${APP_ID}/public/data/jury_votes`).add({
+            code,
+            userId,
+            marketId: codeData.marketId,
+            vote,
+            timestamp: new Date(),
+            jurorName: codeData.userId
+        });
+        
+        await codeRef.update({ used: true, usedAt: new Date() });
+        
+        const voteSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/jury_votes`)
+            .where('marketId', '==', codeData.marketId)
+            .get();
+        
+        const votes = voteSnapshot.docs.map(d => d.data().vote);
+        const yesCount = votes.filter(v => v === 'YES').length;
+        const noCount = votes.filter(v => v === 'NO').length;
+        
+        if (votes.length >= 3 || votes.length === 5) {
+            const winner = yesCount > noCount ? 'YES' : noCount > yesCount ? 'NO' : 'TIE';
+            
+            await marketRef.update({
+                status: 'resolved',
+                isResolved: true,
+                winningOutcome: winner,
+                resolutionMethod: 'jury_resolved',
+                juroVotesSummary: { YES: yesCount, NO: noCount },
+                juryResolvedAt: new Date()
+            });
+            
+            console.log(`⚖️ Market ${codeData.marketId} jury resolved: ${winner} (${yesCount} YES, ${noCount} NO)`);
+        }
+        
+        res.status(200).json({
+            success: true,
+            message: 'Vote submitted successfully',
+            voteCount: votes.length,
+            voteTally: { YES: yesCount, NO: noCount }
+        });
+        
+    } catch (error) {
+        console.error('Error submitting jury vote:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // =============================================================================
 // SOCIAL FEED ENDPOINTS
 // =============================================================================
