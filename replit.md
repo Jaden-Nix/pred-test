@@ -10,7 +10,7 @@ Predora is a decentralized prediction market platform with AI-powered market res
   - Color-coded pools (green for YES, red for NO) for quick visual reference
   - Percentage change indicators with up/down arrows (↑↓) showing market momentum
   - Changes simulate realistic 5-20% market fluctuations
-  - Displays as "X.XXXX BNB" format for accurate decimal precision
+  - **Currency**: Displays as "X.XXXX BUSD" - tied to actual market pool data from Firestore
   - Fixed: Profile persistence issue - now saves to correct Firestore collection path
 
 - **Profile Persistence Fix**: 
