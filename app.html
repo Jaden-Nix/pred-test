@@ -4153,18 +4153,29 @@
                         }
                         
                         let html = '';
+                        console.log('📋 Rendering feed - currentUserId:', currentUserId, 'userProfile:', userProfile?.displayName);
                         filteredPosts.forEach(post => {
                             const reactLike = (post.reactions?.like || []).length;
                             const reactHeart = (post.reactions?.heart || []).length;
                             const reactFire = (post.reactions?.fire || []).length;
                             const reactRocket = (post.reactions?.rocket || []).length;
-                            // Check if author: by userId first, then fallback to displayName match
-                            let isAuthor = post.userId?.toLowerCase() === currentUserId?.toLowerCase();
-                            if (!isAuthor && !post.userId && userProfile?.displayName) {
-                                // Older posts might not have userId, check by displayName
-                                isAuthor = post.displayName === userProfile.displayName;
+                            // Check if author by comparing BOTH userId and displayName
+                            const userIdMatch = post.userId?.toLowerCase() === currentUserId?.toLowerCase();
+                            const displayNameMatch = post.displayName === userProfile?.displayName;
+                            const isAuthor = userIdMatch || displayNameMatch;
+                            if (post.imageUrl) {
+                                console.log('📸 Post with image:', {
+                                    postId: post.postId,
+                                    post_userId: post.userId,
+                                    post_displayName: post.displayName,
+                                    currentUserId: currentUserId,
+                                    userProfile_displayName: userProfile?.displayName,
+                                    userIdMatch: userIdMatch,
+                                    displayNameMatch: displayNameMatch,
+                                    isAuthor: isAuthor
+                                });
                             }
-                            const menuHtml = isAuthor ? `<div class="relative z-50"><button data-post-menu-toggle data-post-id="${post.postId}" class="text-gray-400 hover:text-white p-1 text-lg">⋮</button><div id="post-menu-${post.postId}" class="hidden fixed top-10 right-4 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-50 min-w-40"><button data-post-edit data-post-id="${post.postId}" data-user-id="${post.userId}" data-content="${post.content.replace(/"/g, '&quot;')}" data-display-name="${post.displayName}" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-t-lg">✏️ Edit</button><button data-post-delete data-post-id="${post.postId}" data-user-id="${post.userId}" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400 rounded-b-lg">🗑️ Delete</button></div></div>` : '';
+                            const menuHtml = isAuthor ? `<div class="relative z-50"><button data-post-menu-toggle data-post-id="${post.postId}" class="text-gray-400 hover:text-white p-1 text-lg">⋮</button><div id="post-menu-${post.postId}" class="hidden fixed top-10 right-4 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-50 min-w-40"><button data-post-edit data-post-id="${post.postId}" data-user-id="${post.userId}" data-content="${post.content.replace(/"/g, '&quot;')}" data-display-name="${post.displayName}" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-t-lg">✏️ Edit</button><button data-post-delete data-post-id="${post.postId}" data-user-id="${post.userId}" data-display-name="${post.displayName}" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400 rounded-b-lg">🗑️ Delete</button></div></div>` : '';
                             const imageHtml = post.imageUrl ? `<img data-lightbox-image class="w-full rounded-lg max-h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity" src="${post.imageUrl.replace(/"/g, '&quot;')}">` : '';
                             let marketHtml = '';
                             if (post.attachedMarket) {
@@ -4219,7 +4230,8 @@
                 const btn = e.target.closest('[data-post-delete]');
                 const postId = btn.dataset.postId;
                 const userId = btn.dataset.userId;
-                window.deletePost(postId, userId);
+                const displayName = btn.dataset.displayName;
+                window.deletePost(postId, userId, displayName);
             }
             // Reaction
             else if (e.target.closest('[data-react]')) {
@@ -4398,10 +4410,14 @@
             }
         };
 
-        window.deletePost = async (postId, authorId) => {
-            console.log('🗑️ Delete attempt - postId:', postId, 'authorId:', authorId, 'currentUserId:', currentUserId);
-            if (currentUserId?.toLowerCase() !== authorId?.toLowerCase()) { 
-                console.log('❌ Authorization failed:', currentUserId?.toLowerCase(), '!==', authorId?.toLowerCase());
+        window.deletePost = async (postId, authorId, displayName) => {
+            console.log('🗑️ Delete attempt - postId:', postId, 'authorId:', authorId, 'displayName:', displayName, 'currentUserId:', currentUserId);
+            const userIdMatch = currentUserId?.toLowerCase() === authorId?.toLowerCase();
+            const displayNameMatch = displayName === userProfile?.displayName;
+            const isAuthorized = userIdMatch || displayNameMatch;
+            
+            if (!isAuthorized) { 
+                console.log('❌ Authorization failed - userIdMatch:', userIdMatch, 'displayNameMatch:', displayNameMatch);
                 showToast('You can only delete your own posts', 'error'); 
                 return; 
             }
@@ -4429,7 +4445,11 @@
             }
         };
         window.editPost = async (postId, authorId, currentContent, displayName) => {
-            if (currentUserId?.toLowerCase() !== authorId?.toLowerCase()) { showToast('You can only edit your own posts', 'error'); return; }
+            const userIdMatch = currentUserId?.toLowerCase() === authorId?.toLowerCase();
+            const displayNameMatch = displayName === userProfile?.displayName;
+            const isAuthorized = userIdMatch || displayNameMatch;
+            
+            if (!isAuthorized) { showToast('You can only edit your own posts', 'error'); return; }
             const newContent = prompt('Edit your post:', currentContent);
             if (!newContent || newContent.trim() === '' || newContent === currentContent) return;
             try {
