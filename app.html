@@ -8247,57 +8247,69 @@ ${historyText}`;
         }
 
         /**
-         * Admin function to wipe all demo data from Firestore.
+         * Admin function to wipe all demo data from Firestore (comprehensive).
          */
         async function clearAllDemoData() {
-            if (!confirm("ARE YOU SURE? This will delete ALL demo markets, pledges, and user profiles.")) {
+            if (!confirm("ARE YOU SURE? This will delete ALL demo markets, social posts, pledges, comments, and user profiles. This action cannot be undone!")) {
                 return;
             }
 
-            showLoadingOverlay(true, "WIPING ALL DEMO DATA...");
-            const { getDocs, collection, writeBatch } = window.firebase.firestore;
+            showLoadingOverlay(true, "🧹 WIPING ALL DATA...");
+            const { getDocs, collection, writeBatch, deleteField } = window.firebase.firestore;
 
+            // All collections to wipe
             const collectionsToWipe = [
                 STANDARD_MARKETS_COLLECTION,
                 QUICK_PLAY_MARKETS_COLLECTION,
                 PLEDGES_COLLECTION,
                 PUBLIC_LEADERBOARD_COLLECTION,
-                USER_PROFILE_COLLECTION 
+                USER_PROFILE_COLLECTION,
+                'social_posts', // Social feed posts
+                'stake_logs',
+                'market_comments',
+                'notifications'
             ];
 
             try {
-                const batch = writeBatch(db);
                 let operationCount = 0;
 
                 for (const collName of collectionsToWipe) {
+                    const batch = writeBatch(db);
                     const collRef = collection(db, 'artifacts', APP_ID, 'public', 'data', collName);
                     const snapshot = await getDocs(collRef);
 
-                    if (snapshot.empty) continue;
+                    if (snapshot.empty) {
+                        console.log(`⏭️ ${collName}: No docs to delete`);
+                        continue;
+                    }
 
                     snapshot.forEach(doc => {
                         batch.delete(doc.ref);
                         operationCount++;
                     });
-                    console.log(`Added ${snapshot.size} docs from ${collName} to delete batch.`);
+
+                    await batch.commit();
+                    console.log(`✅ Deleted ${snapshot.size} docs from ${collName}`);
                 }
 
                 if (operationCount > 0) {
-                    await batch.commit();
                     showLoadingOverlay(false);
-                    showToast(`✅ Successfully deleted ${operationCount} documents.`);
+                    showToast(`✅ WIPE COMPLETE: Deleted ${operationCount} documents. Reloading...`, "success");
                     // Force a reload to clear the app's state
-                    localStorage.clear();
-                    location.reload(); 
+                    setTimeout(() => {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        location.reload(); 
+                    }, 1000);
                 } else {
                     showLoadingOverlay(false);
-                    showToast("No demo data was found to delete.");
+                    showToast("✨ No data found to delete - already clean!", "info");
                 }
 
             } catch (error) {
-                console.error("Error wiping demo data:", error);
+                console.error("❌ Error wiping demo data:", error);
                 showLoadingOverlay(false);
-                showToast("Error wiping data. Check console (it might be a permissions issue).");
+                showToast(`Error: ${error.message || 'Permissions issue or other error'}`);
             }
         }
 
