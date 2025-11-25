@@ -4128,6 +4128,18 @@
                         }
                         // 'all' filter uses all posts as-is
                         
+                        // Show appropriate empty message
+                        if (filteredPosts.length === 0) {
+                            let emptyMessage = 'No posts yet. Be the first to share!';
+                            if (socialFeedFilter === 'following') {
+                                emptyMessage = '📭 Your following hasn\'t posted yet. Check back later!';
+                            } else if (socialFeedFilter === 'trending') {
+                                emptyMessage = '🔥 No trending posts yet. React to posts to make them trend!';
+                            }
+                            container.innerHTML = `<p class="text-gray-400 text-center py-8">${emptyMessage}</p>`;
+                            return;
+                        }
+                        
                         let html = '';
                         filteredPosts.forEach(post => {
                             const reactLike = (post.reactions?.like || []).length;
