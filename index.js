@@ -1007,6 +1007,7 @@ REQUIREMENTS:
                         options: marketData.options,
                         optionAmounts: optionAmounts,
                         totalPool: poolPerOption * marketData.options.length,
+                        totalStakeVolume: 100,
                         isMock: false
                     });
                     console.log(`✅ Created multi-option market: ${marketData.title} (Options: ${marketData.options.join(', ')})`);
@@ -1027,6 +1028,7 @@ REQUIREMENTS:
                         yesPercent: 50,
                         noPercent: 50,
                         totalPool: 200000,
+                        totalStakeVolume: 100,
                         marketType: 'binary',
                         isMock: false
                     });
