@@ -2868,6 +2868,8 @@
         let leaderboardUnsubscribe = null;
         let detailMarketUnsubscribe = null; // --- RACE CONDITION FIX (NEW) ---
         let socialFeedUnsubscribe = null; // Real-time social feed listener
+        let socialFeedStakesUnsubscribe = null; // Real-time stakes listener for feed
+        let userStakesCache = {}; // Cache user stakes to avoid repeated fetches
         let userHistoryData = []; // To store history for AI summary
         let userActiveStakesData = []; // To store active stakes for sharing
 
@@ -4009,12 +4011,41 @@
             loadSocialLeaderboard();
         };
 
+        // Set up listener for user stakes (separate from feed to avoid repeated fetches)
+        function attachSocialFeedStakesListener() {
+            if (!currentUserId) return;
+            
+            const { collection, query, where, onSnapshot } = window.firebase.firestore;
+            
+            // Clean up old listener
+            if (socialFeedStakesUnsubscribe) {
+                socialFeedStakesUnsubscribe();
+                socialFeedStakesUnsubscribe = null;
+            }
+            
+            try {
+                const stakesQ = query(collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION), where('userId', '==', currentUserId));
+                socialFeedStakesUnsubscribe = onSnapshot(stakesQ, (snapshot) => {
+                    userStakesCache = {};
+                    snapshot.forEach(doc => {
+                        const stake = doc.data();
+                        userStakesCache[stake.marketId] = stake.selectedStance;
+                    });
+                });
+            } catch (err) {
+                console.error('Error setting up stakes listener:', err);
+            }
+        }
+
         window.loadSocialFeed = async () => {
             const container = document.getElementById('social-feed-container');
             if (!container) return;
             
+            // Show loading state
+            container.innerHTML = '<div class="text-center py-8"><p class="text-gray-400">Loading posts...</p></div>';
+            
             try {
-                const { collection, query, orderBy, onSnapshot, where, limit, getDocs } = window.firebase.firestore;
+                const { collection, query, orderBy, onSnapshot, limit } = window.firebase.firestore;
                 
                 // Clean up old listener if exists
                 if (socialFeedUnsubscribe) {
@@ -4022,21 +4053,16 @@
                     socialFeedUnsubscribe = null;
                 }
                 
+                // Set up stakes listener first (only once)
+                if (currentUserId && !socialFeedStakesUnsubscribe) {
+                    attachSocialFeedStakesListener();
+                }
+                
                 // Set up real-time listener for social posts
                 const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts'), orderBy('timestamp', 'desc'), limit(15));
                 
-                socialFeedUnsubscribe = onSnapshot(q, async (snapshot) => {
+                socialFeedUnsubscribe = onSnapshot(q, (snapshot) => {
                     try {
-                        let userStakes = {};
-                        if (currentUserId) {
-                            const stakesQ = query(collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION), where('userId', '==', currentUserId));
-                            const stakesSnapshot = await getDocs(stakesQ);
-                            stakesSnapshot.forEach(doc => {
-                                const stake = doc.data();
-                                userStakes[stake.marketId] = stake.selectedStance;
-                            });
-                        }
-                        
                         if (snapshot.empty) {
                             container.innerHTML = '<p class="text-gray-400 text-center py-8">No posts yet. Be the first to share!</p>';
                             return;
@@ -4054,7 +4080,7 @@
                             const imageHtml = post.imageUrl ? `<img src="${post.imageUrl}" class="w-full rounded-lg max-h-80 object-cover">` : '';
                             let marketHtml = '';
                             if (post.attachedMarket) {
-                                const hasStake = userStakes[post.attachedMarket.id] || (post.userId === currentUserId && post.attachedMarket.stance);
+                                const hasStake = userStakesCache[post.attachedMarket.id] || (post.userId === currentUserId && post.attachedMarket.stance);
                                 const stakeLabel = hasStake ? `<span class="text-green-400 font-semibold">Skin in game</span>` : `<span class="text-gray-400">No stake</span>`;
                                 marketHtml = `<div class="bg-sky-400/10 p-3 rounded border border-sky-400/30 text-sm"><p class="text-sky-300 font-medium">${post.attachedMarket.title}</p>${stakeLabel}</div>`;
                             }
@@ -4651,10 +4677,12 @@
             if (tickerUnsubscribe) { tickerUnsubscribe(); tickerUnsubscribe = null; }
             if (detailMarketUnsubscribe) { detailMarketUnsubscribe(); detailMarketUnsubscribe = null; } // --- RACE CONDITION FIX (NEW) ---
             if (socialFeedUnsubscribe) { socialFeedUnsubscribe(); socialFeedUnsubscribe = null; } // Clean up social feed listener
+            if (socialFeedStakesUnsubscribe) { socialFeedStakesUnsubscribe(); socialFeedStakesUnsubscribe = null; } // Clean up stakes listener
 
             // Clear local data
             userHistoryData = [];
             pledgePoolItems = [];
+            userStakesCache = {};
         }
 
         /**
