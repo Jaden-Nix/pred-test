@@ -119,30 +119,47 @@ export function checkBlocklist(content) {
     return { blocked: false };
 }
 
-export async function moderateContentWithOpenAI(content, openai) {
+export async function moderateContentWithGemini(content, geminiClient) {
     try {
-        const response = await openai.moderations.create({
-            model: 'text-moderation-latest',
-            input: content
+        if (!geminiClient) throw new Error('Gemini client not available');
+        
+        const model = geminiClient.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        
+        const systemPrompt = `You are a content moderation system. Analyze the given content and determine if it violates policies.
+
+Evaluate for:
+- Hate speech or discrimination
+- Harassment or threats
+- Violence or illegal content
+- Sexual content
+- Spam or manipulation
+
+Respond with a JSON object: { "flagged": boolean, "categories": string[], "confidence": 0-1 }
+If flagged is true, include the violation categories. Keep confidence between 0 (definitely safe) and 1 (definitely unsafe).`;
+
+        const userPrompt = `Content to moderate:\n"${content}"`;
+        
+        const result = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+            systemInstruction: systemPrompt,
+            generationConfig: {
+                maxOutputTokens: 256,
+                temperature: 0.2,
+            }
         });
         
-        const result = response.results[0];
+        const responseText = result.response.text();
         
-        const categories = [];
-        let maxScore = 0;
-        
-        for (const [key, value] of Object.entries(result.category_scores)) {
-            if (result.categories[key]) {
-                categories.push(key);
-            }
-            maxScore = Math.max(maxScore, value);
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+            return { flagged: false, categories: [], confidence: 0.3 };
         }
         
+        const modData = JSON.parse(jsonMatch[0]);
         return {
-            flagged: result.flagged,
-            categories,
-            confidence: maxScore,
-            scores: result.category_scores
+            flagged: modData.flagged || false,
+            categories: modData.categories || [],
+            confidence: Math.min(1, Math.max(0, modData.confidence || 0.3))
         };
     } catch (error) {
         console.error('Moderation API error:', error);
@@ -150,7 +167,7 @@ export async function moderateContentWithOpenAI(content, openai) {
     }
 }
 
-export async function moderateContent(content, contentType, openai, maxLength = 2000) {
+export async function moderateContent(content, contentType, geminiClient, maxLength = 2000) {
     const preFilter = preFilterContent(content, maxLength);
     if (preFilter.blocked) {
         return {
@@ -173,7 +190,7 @@ export async function moderateContent(content, contentType, openai, maxLength = 
         };
     }
     
-    if (!openai) {
+    if (!geminiClient) {
         return {
             approved: true,
             confidence: 0.5,
@@ -183,7 +200,7 @@ export async function moderateContent(content, contentType, openai, maxLength = 
         };
     }
     
-    const moderation = await moderateContentWithOpenAI(content, openai);
+    const moderation = await moderateContentWithGemini(content, geminiClient);
     
     if (moderation.error) {
         return {
@@ -307,7 +324,7 @@ export async function logSafetyEvent(db, APP_ID, event) {
     }
 }
 
-export function createRateLimitMiddleware(openai, db, APP_ID) {
+export function createRateLimitMiddleware(geminiClient, db, APP_ID) {
     return async (req, res, next) => {
         try {
             const userId = req.user?.uid || req.ip;

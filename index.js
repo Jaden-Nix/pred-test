@@ -7,7 +7,6 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
-import { OpenAI } from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
@@ -31,18 +30,7 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET;
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
 const APP_ID = 'predora-hackathon';
 
-// Initialize OpenAI for Swarm Agents & Content Moderation (conditional - only if keys are available)
-let openai = null;
-const openaiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-if (openaiKey) {
-    openai = new OpenAI({
-        apiKey: openaiKey,
-        baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || 'https://api.openai.com/v1'
-    });
-    console.log("✅ OpenAI initialized successfully for Swarm Agents & Content Moderation.");
-} else {
-    console.warn("⚠️ OpenAI API key not set. Swarm verification and content moderation will be disabled. Use Replit AI Integrations to enable.");
-}
+// OpenAI removed - now using Gemini for all AI features including content moderation
 
 // Initialize Gemini for AI Assistant Chat (free tier)
 let geminiClient = null;
@@ -1441,7 +1429,7 @@ app.post('/api/moderate-content', requireAuth, requireFirebase, async (req, res)
         }
         
         // Run full moderation pipeline
-        const result = await moderateContent(content, contentType, openai);
+        const result = await moderateContent(content, contentType, geminiClient);
         
         // Log the event
         await logSafetyEvent(db, APP_ID, {
@@ -1921,7 +1909,7 @@ app.get('/api/health', (req, res) => {
         status: 'ok',
         timestamp: new Date().toISOString(),
         features: {
-            guardRails: !!openai,
+            guardRails: !!geminiClient,
             firebase: !!db,
             sendGrid: !!process.env.REPLIT_CONNECTORS_HOSTNAME
         }
@@ -1930,5 +1918,5 @@ app.get('/api/health', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Predora Backend Server is live on port ${PORT}`);
-    console.log(`🛡️ AI Guardrails: ${openai ? '✅ ACTIVE' : '⚠️ DISABLED'}`);
+    console.log(`🛡️ AI Guardrails: ${geminiClient ? '✅ ACTIVE' : '⚠️ DISABLED'}`);
 });
