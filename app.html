@@ -8428,8 +8428,8 @@
                         xp: increment(xpToAward)
                     });
 
-                    // 5. TRANSACTION WRITE 3: Update public leaderboard
-                    transaction.update(publicProfileRef, { xp: increment(xpToAward) });
+                    // 5. TRANSACTION WRITE 3: Update public leaderboard (set with merge to create if doesn't exist)
+                    transaction.set(publicProfileRef, { xp: increment(xpToAward) }, { merge: true });
                 });
                 // --- END OF TRANSACTION ---
 
