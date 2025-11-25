@@ -810,47 +810,143 @@ async function autoResolveQuickPolls() {
     }
 }
 
-// Fetch current crypto prices from CoinGecko
-async function getCurrentCryptoPrices() {
+// Enhanced market data fetch with sentiment, volatility, and technical analysis
+async function getAdvancedMarketData() {
     try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_market_cap=true&include_24hr_vol=true');
+        // Fetch comprehensive market data from CoinGecko
+        const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?ids=bitcoin,ethereum&vs_currency=usd&order=market_cap_desc&per_page=2&sparkline=true&price_change_percentage=1h,24h,7d');
         const data = await response.json();
+        
+        const btcData = data[0];
+        const ethData = data[1];
+        
+        const btcPrice = btcData.current_price;
+        const ethPrice = ethData.current_price;
+        const btc24hChange = btcData.price_change_percentage_24h || 0;
+        const eth24hChange = ethData.price_change_percentage_24h || 0;
+        const btc7dChange = btcData.price_change_percentage_7d_in_currency || 0;
+        const eth7dChange = ethData.price_change_percentage_7d_in_currency || 0;
+        
+        // Calculate volatility from 7-day sparkline
+        const btcSparkline = btcData.sparkline_in_7d?.price || [];
+        const ethSparkline = ethData.sparkline_in_7d?.price || [];
+        
+        const calculateVolatility = (prices) => {
+            if (!prices || prices.length < 2) return 15;
+            const returns = [];
+            for (let i = 1; i < prices.length; i++) {
+                returns.push((prices[i] - prices[i-1]) / prices[i-1]);
+            }
+            const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+            const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / returns.length;
+            return Math.sqrt(variance) * 100; // Daily volatility %
+        };
+        
+        const btcVolatility = calculateVolatility(btcSparkline);
+        const ethVolatility = calculateVolatility(ethSparkline);
+        
+        // Determine market sentiment (simplified Fear & Greed)
+        const getSentiment = (change24h) => {
+            if (change24h > 5) return { label: 'EXTREME_GREED', score: 80 };
+            if (change24h > 2) return { label: 'GREED', score: 65 };
+            if (change24h > 0) return { label: 'NEUTRAL', score: 50 };
+            if (change24h > -2) return { label: 'FEAR', score: 35 };
+            return { label: 'EXTREME_FEAR', score: 20 };
+        };
+        
+        const btcSentiment = getSentiment(btc24hChange);
+        const ethSentiment = getSentiment(eth24hChange);
+        
+        // Calculate key levels (support/resistance)
+        const btc52wHigh = btcPrice * 1.4; // Approximate
+        const btc52wLow = btcPrice * 0.7;
+        const eth52wHigh = ethPrice * 1.4;
+        const eth52wLow = ethPrice * 0.7;
+        
         return {
-            btc: data.bitcoin?.usd || 88000,
-            eth: data.ethereum?.usd || 3300,
-            btcMarketCap: data.bitcoin?.usd_market_cap || 1750000000000
+            btc: {
+                price: btcPrice,
+                change24h: btc24hChange,
+                change7d: btc7dChange,
+                volatility: btcVolatility,
+                sentiment: btcSentiment,
+                support: btc52wLow,
+                resistance: btc52wHigh,
+                marketCap: btcData.market_cap || 1750000000000
+            },
+            eth: {
+                price: ethPrice,
+                change24h: eth24hChange,
+                change7d: eth7dChange,
+                volatility: ethVolatility,
+                sentiment: ethSentiment,
+                support: eth52wLow,
+                resistance: eth52wHigh,
+                marketCap: ethData.market_cap || 140000000000
+            }
         };
     } catch (error) {
-        console.warn("⚠️ Failed to fetch current prices, using fallback:", error.message);
-        return { btc: 88000, eth: 3300, btcMarketCap: 1750000000000 };
+        console.warn("⚠️ Failed to fetch advanced market data:", error.message);
+        return {
+            btc: { price: 88000, change24h: 1.5, change7d: -2, volatility: 15, sentiment: { label: 'NEUTRAL', score: 50 }, support: 61600, resistance: 123200, marketCap: 1750000000000 },
+            eth: { price: 3300, change24h: 2, change7d: -1, volatility: 12, sentiment: { label: 'NEUTRAL', score: 50 }, support: 2310, resistance: 4620, marketCap: 140000000000 }
+        };
     }
 }
 
 // Create daily markets with AI-generated trending questions
 async function createDailyMarkets() {
-    console.log("ORACLE: Creating daily markets with AI...");
+    console.log("ORACLE: Creating daily markets with ADVANCED AI analysis...");
     
     try {
-        // Get current market prices
-        const prices = await getCurrentCryptoPrices();
-        console.log(`📊 Current prices - BTC: $${prices.btc}, ETH: $${prices.eth}`);
+        // Get advanced market data with sentiment and technical analysis
+        const marketData = await getAdvancedMarketData();
+        console.log(`📊 Market Analysis:`);
+        console.log(`   BTC: $${Math.round(marketData.btc.price)} (24h: ${marketData.btc.change24h.toFixed(2)}%) | Volatility: ${marketData.btc.volatility.toFixed(1)}% | Sentiment: ${marketData.btc.sentiment.label}`);
+        console.log(`   ETH: $${Math.round(marketData.eth.price)} (24h: ${marketData.eth.change24h.toFixed(2)}%) | Volatility: ${marketData.eth.volatility.toFixed(1)}% | Sentiment: ${marketData.eth.sentiment.label}`);
         
-        // Use Gemini to generate trending market ideas BASED ON REAL PRICES
-        const systemPrompt = `You are a prediction market analyst. Generate 3 hot, trending prediction market questions that people will actually want to trade on. 
-Focus on:
-- Realistic price predictions based on REAL current prices
-- Tech trends and announcements
-- Crypto/DeFi movements around current market levels
-- Upcoming events and releases
-- Industry disruptions
+        // Build advanced prompt with technical + sentiment analysis
+        const systemPrompt = `You are an ADVANCED prediction market analyst with expertise in:
+- Technical analysis (support/resistance, volatility, momentum)
+- Market sentiment analysis (Fear vs Greed)
+- Risk management and probability weighting
+- Trend analysis and event-based predictions
 
-IMPORTANT: Use REAL market data, not made-up numbers. All predictions must be reasonable relative to current prices.
+Generate 3 HOTTEST, MOST TRADABLE prediction market questions that will attract sophisticated traders.
 
-Return ONLY a JSON array with objects containing: title (question), category (Crypto/Tech/Finance/Sports/Entertainment), description (1 sentence)
-Example format: [{"title": "Will...", "category": "Crypto", "description": "..."}]`;
+RULES:
+1. Use ONLY real market data provided - NO hallucinated numbers
+2. Create realistic price targets considering volatility and support/resistance levels
+3. Consider market sentiment (fear/greed) in predictions
+4. Make predictions that are plausible but exciting
+5. Balance between bullish and bearish perspectives
+6. Factor in recent momentum (24h/7d changes)
 
-        const userPrompt = `Today is November 25, 2025. Current market prices: Bitcoin at $${Math.round(prices.btc)}, Ethereum at $${Math.round(prices.eth)}.
-Generate 3 hot prediction market questions about future events (next 30-45 days). Make them specific, time-bound, exciting, and use REALISTIC price targets based on current prices. Use dates in December 2025. Focus on REAL events that could happen.`;
+Return ONLY a JSON array with objects containing:
+- title: specific, time-bound prediction question
+- category: Crypto/Tech/Finance/Sports/Entertainment
+- description: short analysis explaining why this matters
+- confidence: HIGH/MEDIUM/LOW (based on data quality)
+
+Example: [{"title": "Will BTC hit X by date?", "category": "Crypto", "description": "...", "confidence": "HIGH"}]`;
+
+        const userPrompt = `TODAY: November 25, 2025
+
+REAL MARKET DATA:
+Bitcoin: $${Math.round(marketData.btc.price)} (24h: ${marketData.btc.change24h.toFixed(2)}%, 7d: ${marketData.btc.change7d.toFixed(2)}%)
+- Volatility: ${marketData.btc.volatility.toFixed(1)}% | Sentiment: ${marketData.btc.sentiment.label} (${marketData.btc.sentiment.score}/100)
+- Support: $${Math.round(marketData.btc.support)} | Resistance: $${Math.round(marketData.btc.resistance)}
+
+Ethereum: $${Math.round(marketData.eth.price)} (24h: ${marketData.eth.change24h.toFixed(2)}%, 7d: ${marketData.eth.change7d.toFixed(2)}%)
+- Volatility: ${marketData.eth.volatility.toFixed(1)}% | Sentiment: ${marketData.eth.sentiment.label} (${marketData.eth.sentiment.score}/100)
+- Support: $${Math.round(marketData.eth.support)} | Resistance: $${Math.round(marketData.eth.resistance)}
+
+TASK: Generate 3 SMART prediction markets for December 2025 (30-45 day timeframe).
+- Make them specific and plausible (use support/resistance levels as anchors)
+- Consider current volatility when setting targets
+- Mix bullish + bearish scenarios
+- Include technical + fundamental + sentiment factors
+- Focus on what WILL HAPPEN, not what SHOULD happen`;
 
         const payload = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -918,25 +1014,44 @@ async function autoGenerateQuickPlays() {
     console.log("ORACLE: Generating quick play markets with AI...");
     
     try {
-        // Get current market prices
-        const prices = await getCurrentCryptoPrices();
+        // Get advanced market data for quick plays
+        const qpMarketData = await getAdvancedMarketData();
         
-        // Use Gemini to generate trending quick play questions
-        const systemPrompt = `You are a quick play market specialist. Generate 4 exciting quick play prediction questions (24-48 hour resolution).
-Focus on:
-- REALISTIC intraday crypto price movements around current levels
-- Stock market daily moves (realistic targets)
-- Sports game predictions
-- Live event outcomes
-- Real market events happening NOW
+        // Use Gemini to generate SMART quick play questions
+        const systemPrompt = `You are an EXPERT quick play market specialist for prediction markets. Generate 4 HOTTEST quick-play predictions (24-48 hour resolution).
 
-IMPORTANT: All price predictions must be based on REAL current prices, not made-up numbers.
+EXPERTISE:
+- Intraday crypto volatility and momentum patterns
+- Real market catalysts and news events
+- Statistical probability of moves
+- Risk/reward optimization for short timeframes
 
-Return ONLY a JSON array with objects containing: title (question), category, duration (24h/48h/12h)
-Example: [{"title": "Will...", "category": "Crypto", "duration": "24h"}]`;
+RULES:
+1. Use ONLY the real market data provided
+2. Price targets must be within 2-3% of current levels (realistic for 24-48h)
+3. Consider daily volatility when setting targets
+4. Mix YES/NO scenarios for balanced trading
+5. Focus on high-probability + high-interest events
+6. Think about what traders would actually want to bet on
 
-        const userPrompt = `Today is November 25, 2025. Current prices: Bitcoin $${Math.round(prices.btc)}, Ethereum $${Math.round(prices.eth)}.
-Generate 4 hot quick play market questions for November 26-27, 2025 (next 24-48 hours). Make them exciting with REALISTIC price targets based on current market levels. Use REAL dates and REAL market data.`;
+Return ONLY a JSON array with:
+- title: specific, short-term prediction
+- category: Crypto/Tech/Finance/Sports/Entertainment  
+- duration: 24h/48h (resolution window)
+- rationale: why this move is likely (short explanation)
+
+Example: [{"title": "Will BTC stay above $X on Nov 26?", "category": "Crypto", "duration": "24h", "rationale": "..."}]`;
+
+        const userPrompt = `TODAY: November 25, 2025, time-bound predictions for Nov 26-27
+
+LIVE MARKET DATA:
+Bitcoin: $${Math.round(qpMarketData.btc.price)} | 24h change: ${qpMarketData.btc.change24h.toFixed(2)}% | Volatility: ${qpMarketData.btc.volatility.toFixed(1)}%
+- Sentiment: ${qpMarketData.btc.sentiment.label} | Daily range expectation: ±${(qpMarketData.btc.volatility * 1.5).toFixed(1)}%
+
+Ethereum: $${Math.round(qpMarketData.eth.price)} | 24h change: ${qpMarketData.eth.change24h.toFixed(2)}% | Volatility: ${qpMarketData.eth.volatility.toFixed(1)}%
+- Sentiment: ${qpMarketData.eth.sentiment.label} | Daily range expectation: ±${(qpMarketData.eth.volatility * 1.5).toFixed(1)}%
+
+TASK: Generate 4 SUPER-SMART quick plays for next 24-48 hours that traders will DEFINITELY want to trade on. Be specific with prices and dates.`;
 
         const payload = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
