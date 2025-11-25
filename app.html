@@ -1321,6 +1321,23 @@
             background: #5B7CFF;
             color: white;
         }
+        /* Light mode support for filter pills */
+        :root.light-mode .filter-pill-clean,
+        body.light-mode .filter-pill-clean {
+            background: rgba(59, 130, 246, 0.1);
+            color: #64748B;
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+        :root.light-mode .filter-pill-clean:hover,
+        body.light-mode .filter-pill-clean:hover {
+            background: rgba(59, 130, 246, 0.15);
+            color: #1E293B;
+        }
+        :root.light-mode .filter-pill-clean.active,
+        body.light-mode .filter-pill-clean.active {
+            background: #3B82F6;
+            color: white;
+        }
         .social-fab {
             position: fixed;
             bottom: 100px;
@@ -1349,6 +1366,53 @@
         }
         .social-tab-btn:hover {
             color: #38BDF8;
+        }
+        /* Leaderboard tab styling */
+        .leaderboard-tab-social {
+            transition: all 0.2s ease;
+        }
+        /* Light mode support for leaderboard tabs */
+        :root.light-mode .leaderboard-tab-social,
+        body.light-mode .leaderboard-tab-social {
+            color: #9CA3AF;
+            border-color: transparent;
+        }
+        :root.light-mode .leaderboard-tab-social:hover,
+        body.light-mode .leaderboard-tab-social:hover {
+            color: #1E293B;
+            border-color: #CBD5F5;
+        }
+        :root.light-mode .leaderboard-tab-social.active,
+        body.light-mode .leaderboard-tab-social.active {
+            color: #3B82F6;
+            border-color: #3B82F6;
+        }
+        /* Post card light mode */
+        :root.light-mode .card-micro,
+        body.light-mode .card-micro {
+            background: rgba(59, 130, 246, 0.05) !important;
+            border-color: rgba(59, 130, 246, 0.2) !important;
+            color: #1F2937 !important;
+        }
+        :root.light-mode .card-micro .text-white,
+        body.light-mode .card-micro .text-white,
+        :root.light-mode .card-micro .text-gray-200,
+        body.light-mode .card-micro .text-gray-200 {
+            color: #1F2937 !important;
+        }
+        :root.light-mode .card-micro .text-gray-400,
+        body.light-mode .card-micro .text-gray-400,
+        :root.light-mode .card-micro .text-gray-500,
+        body.light-mode .card-micro .text-gray-500 {
+            color: #6B7280 !important;
+        }
+        :root.light-mode .card-micro .bg-white\/5,
+        body.light-mode .card-micro .bg-white\/5 {
+            background-color: rgba(59, 130, 246, 0.1) !important;
+        }
+        :root.light-mode .card-micro .border-white\/10,
+        body.light-mode .card-micro .border-white\/10 {
+            border-color: rgba(59, 130, 246, 0.2) !important;
         }
     </style>
 </head>
@@ -1978,7 +2042,7 @@
                     </button>
 
                     <!-- Feed / Leaderboard Toggle -->
-                    <div class="flex justify-between items-center relative backdrop-blur-md bg-white/5 rounded-xl p-1 gap-1">
+                    <div class="flex justify-between items-center relative backdrop-blur-md bg-white/5 dark:bg-white/5 rounded-xl p-1 gap-1" style="background-color: var(--bg-panel); background-image: none;">
                         <button onclick="switchSocialTab('feed')" id="social-tab-feed" 
                             class="social-tab-btn flex-1 pb-3 px-6 font-bold text-base text-sky-400 transition-all relative rounded-lg">
                             <span class="relative z-10">Feed</span>
@@ -2020,7 +2084,7 @@
                     <!-- Leaderboard Section -->
                     <div id="social-leaderboard-section" class="hidden space-y-6">
                         <!-- Leaderboard Tabs -->
-                        <div class="flex items-center border-b-2 border-white/10">
+                        <div class="flex items-center border-b-2 border-white/10 dark:border-white/10" style="border-bottom-color: var(--border-color);">
                             <button class="leaderboard-tab-social flex-1 pb-4 font-bold text-base border-b-4 border-sky-400 text-sky-400 text-left" 
                                 data-timeframe="all" onclick="switchLeaderboardTimeframeSocial('all')">
                                 All-Time
