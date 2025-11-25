@@ -11041,6 +11041,8 @@ ${historyText}`;
             }
         }
 
+        let searchDebounceTimer = null;
+
         /**
          * Handles the user typing in the search bar.
          */
@@ -11062,7 +11064,7 @@ ${historyText}`;
             }
 
             if (query.length < 1) {
-                // If search is cleared, show the category list
+                // If search is cleared, show the category list immediately
                 renderMarketFeed(baseList);
                 return;
             }
@@ -11074,6 +11076,21 @@ ${historyText}`;
 
             // Render only the final results
             renderMarketFeed(results);
+        }
+
+        /**
+         * Creates a debounced version of handleSearch - waits 500ms after user stops typing
+         */
+        function handleSearchDebounced() {
+            // Clear the previous timer
+            if (searchDebounceTimer) {
+                clearTimeout(searchDebounceTimer);
+            }
+            
+            // Set a new timer - only run search after 500ms of no typing
+            searchDebounceTimer = setTimeout(() => {
+                handleSearch();
+            }, 500);
         }
 
         /**
@@ -11644,7 +11661,7 @@ ${historyText}`;
             dom.followBtn.addEventListener('click', toggleFollow);
             dom.tickerPostBtn.addEventListener('click', postComment);
 
-dom.searchBarInput.addEventListener('input', handleSearch);
+dom.searchBarInput.addEventListener('input', handleSearchDebounced);
 
             // Use event delegation for the stake buttons (since they are in a dynamic panel)
             if (dom.stakeSection) {
