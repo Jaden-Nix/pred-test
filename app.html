@@ -10089,7 +10089,7 @@ ${historyText}`;
 
         /**
          * Admin function to wipe all demo data from Firestore (comprehensive).
-         * Recursively deletes subcollections to handle nested data.
+         * Deletes known subcollections before parent documents.
          */
         async function clearAllDemoData() {
             if (!confirm("ARE YOU SURE? This will delete ALL demo markets, social posts, pledges, comments, and user profiles. This action cannot be undone!")) {
@@ -10097,24 +10097,30 @@ ${historyText}`;
             }
 
             showLoadingOverlay(true, "🧹 WIPING ALL DATA...");
-            const { getDocs, collection, writeBatch, deleteField, collectionGroup, query, where } = window.firebase.firestore;
+            const { getDocs, collection, writeBatch } = window.firebase.firestore;
 
-            // Helper: Recursively delete subcollections
-            async function deleteCollectionRecursive(collRef) {
-                const batch = writeBatch(db);
+            // Helper: Delete a collection and its known subcollections
+            async function deleteCollectionWithSubcollections(collRef, subcolls = []) {
                 const snapshot = await getDocs(collRef);
                 let deleteCount = 0;
+                let batch = writeBatch(db);
 
                 for (const doc of snapshot.docs) {
-                    // Delete any subcollections first
-                    const subcollections = await doc.ref.listCollections();
-                    for (const subcoll of subcollections) {
-                        await deleteCollectionRecursive(subcoll);
+                    // Delete known subcollections first
+                    for (const subcollName of subcolls) {
+                        const subcollRef = collection(doc.ref, subcollName);
+                        const subcollSnapshot = await getDocs(subcollRef);
+                        for (const subdoc of subcollSnapshot.docs) {
+                            batch.delete(subdoc.ref);
+                            deleteCount++;
+                        }
                     }
-                    // Then delete the document
+                    
+                    // Then delete the parent document
                     batch.delete(doc.ref);
                     deleteCount++;
                     
+                    // Commit every 100 operations to stay within limits
                     if (deleteCount % 100 === 0) {
                         await batch.commit();
                         batch = writeBatch(db);
@@ -10129,30 +10135,30 @@ ${historyText}`;
 
             // All collections to wipe
             const collectionsToWipe = [
-                STANDARD_MARKETS_COLLECTION,
-                QUICK_PLAY_MARKETS_COLLECTION,
-                'quick_polls', // Quick play polls/events
-                PLEDGES_COLLECTION,
-                PUBLIC_LEADERBOARD_COLLECTION,
-                USER_PROFILE_COLLECTION,
-                'social_posts', // Social feed posts
-                'stake_logs',
-                'market_comments',
-                'notifications'
+                { name: STANDARD_MARKETS_COLLECTION, subcolls: ['resolutionEvidence'] },
+                { name: QUICK_PLAY_MARKETS_COLLECTION, subcolls: ['resolutionEvidence'] },
+                { name: 'quick_polls', subcolls: [] },
+                { name: PLEDGES_COLLECTION, subcolls: [] },
+                { name: PUBLIC_LEADERBOARD_COLLECTION, subcolls: [] },
+                { name: USER_PROFILE_COLLECTION, subcolls: ['notifications'] },
+                { name: 'social_posts', subcolls: [] },
+                { name: 'stake_logs', subcolls: [] },
+                { name: 'market_comments', subcolls: [] },
+                { name: 'notifications', subcolls: [] }
             ];
 
             try {
                 let totalOperationCount = 0;
 
-                for (const collName of collectionsToWipe) {
-                    const collRef = collection(db, 'artifacts', APP_ID, 'public', 'data', collName);
-                    const opCount = await deleteCollectionRecursive(collRef);
+                for (const item of collectionsToWipe) {
+                    const collRef = collection(db, 'artifacts', APP_ID, 'public', 'data', item.name);
+                    const opCount = await deleteCollectionWithSubcollections(collRef, item.subcolls);
                     
                     if (opCount > 0) {
-                        console.log(`✅ Deleted ${opCount} docs from ${collName} (including subcollections)`);
+                        console.log(`✅ Deleted ${opCount} docs from ${item.name} (including subcollections)`);
                         totalOperationCount += opCount;
                     } else {
-                        console.log(`⏭️ ${collName}: No docs to delete`);
+                        console.log(`⏭️ ${item.name}: No docs to delete`);
                     }
                 }
 
