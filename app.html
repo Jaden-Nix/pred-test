@@ -2741,8 +2741,8 @@
     </div> 
 
 
-            <div id="quick-play-screen" class="screen screen-inactive">
-                        <button onclick="goBack()" class="absolute top-4 left-4 z-10 flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300">
+            <div id="quick-play-screen" class="screen screen-inactive md:pt-20">
+                        <button onclick="goBack()" class="absolute top-4 left-4 z-10 flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300 md:hidden">
                     <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                     Back to Home
                 </button>
@@ -10102,6 +10102,7 @@ ${historyText}`;
             const collectionsToWipe = [
                 STANDARD_MARKETS_COLLECTION,
                 QUICK_PLAY_MARKETS_COLLECTION,
+                'quick_polls', // Quick play polls/events
                 PLEDGES_COLLECTION,
                 PUBLIC_LEADERBOARD_COLLECTION,
                 USER_PROFILE_COLLECTION,
