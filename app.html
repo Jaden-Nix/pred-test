@@ -3379,8 +3379,10 @@
             const { signInAnonymously } = window.firebase.auth;
 
             signInAnonymously(auth)
-                .then((userCredential) => {
+                .then(async (userCredential) => {
                     console.log("Firebase Auth UID (Anonymous):", userCredential.user.uid);
+                    // Get the auth token for API calls
+                    await getAuthToken();
                     // initializeUserProfile will now handle all navigation
                     return initializeUserProfile(); 
                 })
