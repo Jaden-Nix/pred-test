@@ -8399,15 +8399,18 @@
                         insight,
                         category: category,
                         marketStructure: marketStructure,
+                        marketType: marketStructure === 'binary' ? 'binary' : 'multi',
                         isFixedPot: isFixedPotFinal,
                         stakingDeadline,
                         resolutionDate,
                         yieldProtocol: yieldProtocolFinal,
                         totalStakeVolume: liquidityAmountInUsd,
+                        totalPool: liquidityAmountInUsd,
                         uniqueStakerCount: 1,
                         refundVolumeGoal: 100,
                         refundStakerGoal: 10,
                         isResolved: false,
+                        isMock: false,
                         winningOutcome: null,
                         createdAt: serverTimestamp(),
                         createdBy: currentUserId,
@@ -8430,10 +8433,11 @@
                         marketData.noPool = liquidityAmountInUsd * (noPercent / 100);
                     } else {
                         // Multi-option market - use creator's liquidity
-                        marketData.options = multiOptions.map(opt => ({
-                            ...opt,
-                            pool: liquidityAmountInUsd * (opt.odds / 100)
-                        }));
+                        marketData.optionAmounts = multiOptions.reduce((acc, opt) => {
+                            acc[opt.name || opt.option] = liquidityAmountInUsd * (opt.odds / 100);
+                            return acc;
+                        }, {});
+                        marketData.options = multiOptions;
                     }
 
                     transaction.set(newMarketRef, marketData);
