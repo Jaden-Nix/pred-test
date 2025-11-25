@@ -4014,7 +4014,7 @@
             if (!container) return;
             
             try {
-                const { collection, query, orderBy, onSnapshot, where, limit } = window.firebase.firestore;
+                const { collection, query, orderBy, onSnapshot, where, limit, getDocs } = window.firebase.firestore;
                 
                 // Clean up old listener if exists
                 if (socialFeedUnsubscribe) {
@@ -4026,57 +4026,64 @@
                 const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts'), orderBy('timestamp', 'desc'), limit(15));
                 
                 socialFeedUnsubscribe = onSnapshot(q, async (snapshot) => {
-                    let userStakes = {};
-                    if (currentUserId) {
-                        const stakesQ = query(collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION), where('userId', '==', currentUserId));
-                        const stakesSnapshot = await (await import('https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js').then(() => window.firebase.firestore)).getDocs(stakesQ);
-                        stakesSnapshot.forEach(doc => {
-                            const stake = doc.data();
-                            userStakes[stake.marketId] = stake.selectedStance;
+                    try {
+                        let userStakes = {};
+                        if (currentUserId) {
+                            const stakesQ = query(collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION), where('userId', '==', currentUserId));
+                            const stakesSnapshot = await getDocs(stakesQ);
+                            stakesSnapshot.forEach(doc => {
+                                const stake = doc.data();
+                                userStakes[stake.marketId] = stake.selectedStance;
+                            });
+                        }
+                        
+                        if (snapshot.empty) {
+                            container.innerHTML = '<p class="text-gray-400 text-center py-8">No posts yet. Be the first to share!</p>';
+                            return;
+                        }
+                        
+                        let html = '';
+                        snapshot.forEach(doc => {
+                            const post = { ...doc.data(), postId: doc.id };
+                            const reactLike = (post.reactions?.like || []).length;
+                            const reactHeart = (post.reactions?.heart || []).length;
+                            const reactFire = (post.reactions?.fire || []).length;
+                            const reactRocket = (post.reactions?.rocket || []).length;
+                            const isAuthor = post.userId === currentUserId;
+                            const menuHtml = isAuthor ? `<div class="relative z-50"><button onclick="togglePostMenu('${post.postId}')" class="text-gray-400 hover:text-white p-1 text-lg">⋮</button><div id="post-menu-${post.postId}" class="hidden fixed top-10 right-4 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-50 min-w-40"><button onclick="editPost('${post.postId}', '${post.userId}', '${post.content.replace(/'/g, "\\'")}}', '${post.displayName}')" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-t-lg">✏️ Edit</button><button onclick="deletePost('${post.postId}', '${post.userId}')" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400 rounded-b-lg">🗑️ Delete</button></div></div>` : '';
+                            const imageHtml = post.imageUrl ? `<img src="${post.imageUrl}" class="w-full rounded-lg max-h-80 object-cover">` : '';
+                            let marketHtml = '';
+                            if (post.attachedMarket) {
+                                const hasStake = userStakes[post.attachedMarket.id] || (post.userId === currentUserId && post.attachedMarket.stance);
+                                const stakeLabel = hasStake ? `<span class="text-green-400 font-semibold">Skin in game</span>` : `<span class="text-gray-400">No stake</span>`;
+                                marketHtml = `<div class="bg-sky-400/10 p-3 rounded border border-sky-400/30 text-sm"><p class="text-sky-300 font-medium">${post.attachedMarket.title}</p>${stakeLabel}</div>`;
+                            }
+                            const getRelativeTime = (timestamp) => {
+                                if (!timestamp) return 'now';
+                                const now = Date.now();
+                                const postTime = timestamp.toMillis ? timestamp.toMillis() : new Date(timestamp).getTime();
+                                const diff = Math.floor((now - postTime) / 1000);
+                                if (diff < 60) return 'now';
+                                if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+                                if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+                                return Math.floor(diff / 86400) + 'd ago';
+                            };
+                            const timeStr = getRelativeTime(post.timestamp);
+                            html += `<div class="card-micro ui-panel backdrop-blur-md bg-white/5 border border-white/10 p-5 space-y-3 cursor-pointer"><div class="flex gap-3 items-start"><img src="${post.avatarUrl || LOGO_URL}" class="w-12 h-12 rounded-full ring-2 ring-sky-400/30"><div class="flex-1"><p class="font-bold text-white">${post.displayName}</p><p class="text-xs text-gray-500">· ${timeStr}</p></div>${menuHtml}</div><p class="text-gray-200 leading-relaxed">${post.content}</p>${imageHtml}${marketHtml}<div class="bg-white/5 border border-white/10 rounded-full px-3 py-2 inline-flex items-center gap-4"><button onclick="toggleReaction('${post.postId}', 'like')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>👍</span><span class="text-xs text-gray-400">${reactLike}</span></button><button onclick="toggleReaction('${post.postId}', 'heart')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>❤️</span><span class="text-xs text-gray-400">${reactHeart}</span></button><button onclick="toggleReaction('${post.postId}', 'fire')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>🔥</span><span class="text-xs text-gray-400">${reactFire}</span></button><button onclick="toggleReaction('${post.postId}', 'rocket')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>🚀</span><span class="text-xs text-gray-400">${reactRocket}</span></button><button onclick="toggleComments('${post.postId}')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1 ml-2 border-l border-white/20 pl-4"><span>💬</span><span class="text-xs text-gray-400">${post.commentCount || 0}</span></button></div><div id="comments-section-${post.postId}" class="hidden mt-4 pt-4 border-t border-white/10"><div id="comments-list-${post.postId}" class="space-y-3 mb-3 max-h-60 overflow-y-auto"></div><div class="flex gap-2"><input id="comment-box-${post.postId}" type="text" class="flex-1 text-sm bg-white/10 border border-white/20 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-sky-400" placeholder="Add a comment..."><button onclick="submitCommentQuick('${post.postId}')" class="btn btn-primary px-3 py-1 text-sm">Post</button></div></div></div>`;
                         });
+                        container.innerHTML = html;
+                    } catch (err) {
+                        console.error('Error rendering feed:', err);
+                        container.innerHTML = '<p class="text-red-400">Failed to render feed</p>';
                     }
-                    
-                    if (snapshot.empty) {
-                        container.innerHTML = '<p class="text-gray-400 text-center py-8">No posts yet. Be the first to share!</p>';
-                        return;
-                    }
-                    let html = '';
-                    snapshot.forEach(doc => {
-                    const post = { ...doc.data(), postId: doc.id };
-                    const reactLike = (post.reactions?.like || []).length;
-                    const reactHeart = (post.reactions?.heart || []).length;
-                    const reactFire = (post.reactions?.fire || []).length;
-                    const reactRocket = (post.reactions?.rocket || []).length;
-                    const isAuthor = post.userId === currentUserId;
-                    const menuHtml = isAuthor ? `<div class="relative z-50"><button onclick="togglePostMenu('${post.postId}')" class="text-gray-400 hover:text-white p-1 text-lg">⋮</button><div id="post-menu-${post.postId}" class="hidden fixed top-10 right-4 bg-gray-800 border border-white/10 rounded-lg shadow-xl z-50 min-w-40"><button onclick="editPost('${post.postId}', '${post.userId}', '${post.content.replace(/'/g, "\\'")}', '${post.displayName}')" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-yellow-500/20 hover:text-yellow-400 rounded-t-lg">✏️ Edit</button><button onclick="deletePost('${post.postId}', '${post.userId}')" class="w-full text-left px-4 py-2.5 text-sm text-gray-300 hover:bg-red-500/20 hover:text-red-400 rounded-b-lg">🗑️ Delete</button></div></div>` : '';
-                    const imageHtml = post.imageUrl ? `<img src="${post.imageUrl}" class="w-full rounded-lg max-h-80 object-cover">` : '';
-                    let marketHtml = '';
-                    if (post.attachedMarket) {
-                        const hasStake = userStakes[post.attachedMarket.id] || (post.userId === currentUserId && post.attachedMarket.stance);
-                        const stakeLabel = hasStake ? `<span class="text-green-400 font-semibold">Skin in game</span>` : `<span class="text-gray-400">No stake</span>`;
-                        marketHtml = `<div class="bg-sky-400/10 p-3 rounded border border-sky-400/30 text-sm"><p class="text-sky-300 font-medium">${post.attachedMarket.title}</p>${stakeLabel}</div>`;
-                    }
-                    const getRelativeTime = (timestamp) => {
-                        if (!timestamp) return 'now';
-                        const now = Date.now();
-                        const postTime = timestamp.toMillis ? timestamp.toMillis() : new Date(timestamp).getTime();
-                        const diff = Math.floor((now - postTime) / 1000);
-                        if (diff < 60) return 'now';
-                        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-                        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-                        return Math.floor(diff / 86400) + 'd ago';
-                    };
-                    const timeStr = getRelativeTime(post.timestamp);
-                    html += `<div class="card-micro ui-panel backdrop-blur-md bg-white/5 border border-white/10 p-5 space-y-3 cursor-pointer"><div class="flex gap-3 items-start"><img src="${post.avatarUrl || LOGO_URL}" class="w-12 h-12 rounded-full ring-2 ring-sky-400/30"><div class="flex-1"><p class="font-bold text-white">${post.displayName}</p><p class="text-xs text-gray-500">· ${timeStr}</p></div>${menuHtml}</div><p class="text-gray-200 leading-relaxed">${post.content}</p>${imageHtml}${marketHtml}<div class="bg-white/5 border border-white/10 rounded-full px-3 py-2 inline-flex items-center gap-4"><button onclick="toggleReaction('${post.postId}', 'like')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>👍</span><span class="text-xs text-gray-400">${reactLike}</span></button><button onclick="toggleReaction('${post.postId}', 'heart')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>❤️</span><span class="text-xs text-gray-400">${reactHeart}</span></button><button onclick="toggleReaction('${post.postId}', 'fire')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>🔥</span><span class="text-xs text-gray-400">${reactFire}</span></button><button onclick="toggleReaction('${post.postId}', 'rocket')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1"><span>🚀</span><span class="text-xs text-gray-400">${reactRocket}</span></button><button onclick="toggleComments('${post.postId}')" class="reaction-btn button-micro hover:scale-125 transition-transform flex items-center gap-1 ml-2 border-l border-white/20 pl-4"><span>💬</span><span class="text-xs text-gray-400">${post.commentCount || 0}</span></button></div><div id="comments-section-${post.postId}" class="hidden mt-4 pt-4 border-t border-white/10"><div id="comments-list-${post.postId}" class="space-y-3 mb-3 max-h-60 overflow-y-auto"></div><div class="flex gap-2"><input id="comment-box-${post.postId}" type="text" class="flex-1 text-sm bg-white/10 border border-white/20 rounded px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-sky-400" placeholder="Add a comment..."><button onclick="submitCommentQuick('${post.postId}')" class="btn btn-primary px-3 py-1 text-sm">Post</button></div></div></div>`;
                 });
-                container.innerHTML = html;
             } catch (error) {
-                console.error('Feed error:', error);
+                console.error('Feed listener error:', error);
                 container.innerHTML = '<p class="text-red-400">Failed to load feed</p>';
             }
         };
 
-        window.filterSocialFeed = (filter) => {
+        window.filterSocialFeedwindow.filterSocialFeed = (filter) => {
             socialFeedFilter = filter;
             document.querySelectorAll('[id^="feed-filter-"]').forEach(btn => btn.classList.remove('active'));
             const btn = document.getElementById(`feed-filter-${filter}`);
@@ -4183,7 +4190,6 @@
                 });
                 
                 if (!response.ok) throw new Error('Reaction failed');
-                setTimeout(() => { loadSocialFeed(); }, 200);
             } catch (error) {
                 console.error('Reaction error:', error);
                 showToast('Failed to react', 'error');
