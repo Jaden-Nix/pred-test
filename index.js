@@ -10,6 +10,7 @@ import admin from 'firebase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
+import cron from 'node-cron';
 import { 
     preFilterContent, 
     checkBlocklist, 
@@ -2618,7 +2619,27 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// =============================================================================
+// AUTOMATED ORACLE CRON SCHEDULING
+// =============================================================================
+// Run oracle jobs every 5 minutes to auto-resolve markets and quick polls
+cron.schedule('*/5 * * * *', async () => {
+    console.log(`\n⏰ [ORACLE CRON] Running scheduled oracle sweep at ${new Date().toISOString()}`);
+    try {
+        await autoResolveMarkets();
+        await autoResolveQuickPolls();
+        await createDailyMarkets();
+        await autoGenerateQuickPlays();
+        console.log('✅ [ORACLE CRON] All oracle jobs completed successfully');
+    } catch (error) {
+        console.error('❌ [ORACLE CRON] Error running oracle jobs:', error.message);
+    }
+});
+
+console.log('⏰ Oracle cron scheduler initialized (runs every 5 minutes)');
+
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Predora Backend Server is live on port ${PORT}`);
     console.log(`🛡️ AI Guardrails: ${geminiClient ? '✅ ACTIVE' : '⚠️ DISABLED'}`);
+    console.log(`🔄 Oracle Auto-Scheduling: ✅ ACTIVE (every 5 minutes)`);
 });
