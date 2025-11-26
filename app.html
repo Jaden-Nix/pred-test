@@ -9790,17 +9790,22 @@
                         
                         const systemPrompt_1 = `You are a research assistant. Use Google Search to find up-to-date, real-time information about the user's topic.
 
-CRITICAL: TODAY IS ${todayFormatted}. Only find events that will happen in the FUTURE (December 2025 or later).
+CRITICAL: TODAY IS ${todayFormatted}.
 
-Find a *single, specific, future-focused* event. DO NOT suggest events that have already occurred.
+Find a RELEVANT event - can be LIVE/ONGOING, NEAR-TERM (this week), or FUTURE (December 2025+).
+Priority order:
+1. LIVE/ONGOING events (happening right now - like a sports match today)
+2. NEAR-TERM events (happening this week)
+3. FUTURE events (December 2025 or later)
 
 IMPORTANT: Look for UNCERTAIN outcomes, not confirmed announcements. 
 ❌ BAD: "Apple will release iPhone on Sept 22" (too obvious, already confirmed)
+✅ GOOD: "Real Madrid vs Barcelona match happening today" (uncertain outcome)
 ✅ GOOD: "Bitcoin might break $100k by year end" (uncertain, speculative)
 ✅ GOOD: "Super Bowl matchup predictions" (uncertain outcome)
-✅ GOOD: "Will Apple's new product outsell last year?" (uncertain metric)
 
-Respond ONLY with a 1-2 sentence summary of this UNCERTAIN FUTURE event.
+Respond ONLY with a 1-2 sentence summary including WHEN it's happening.
+Example: "Real Madrid is playing against Barcelona TODAY, November 26, 2025."
 Example: "Analysts predict Bitcoin could reach $150k by Q2 2026 if institutional adoption continues."`;
 
                         // We call with 'tools' (for Search) and null for 'jsonSchema'
@@ -9838,26 +9843,35 @@ Example: "Analysts predict Bitcoin could reach $150k by Q2 2026 if institutional
                         };
                         const functionTools = [ createMarketTool ]; // Note: No Google Search
 
-                        const systemPrompt_2 = `You are a market creator. A user has provided context about a future event.
+                        const systemPrompt_2 = `You are a market creator. A user has provided context about an event.
                         Your ONLY job is to use the 'create_market_form' tool to create a market based on this context.
 
-                        CRITICAL: TODAY IS ${todayFormatted}. The resolutionDate MUST be in the FUTURE (December 1, 2025 or later).
+                        CRITICAL: TODAY IS ${todayFormatted}.
+
+                        RESOLUTION DATE RULES - VERY IMPORTANT:
+                        - If event is LIVE/HAPPENING TODAY → resolutionDate = TODAY (${today.toISOString().split('T')[0]})
+                        - If event is TOMORROW → resolutionDate = TOMORROW
+                        - If event is THIS WEEK → resolutionDate = actual event date
+                        - If event is FUTURE (Dec 2025+) → resolutionDate = event date
+                        
+                        STAKING DEADLINE RULES:
+                        - For LIVE/TODAY events → stakingDeadline = TODAY (${today.toISOString().split('T')[0]})
+                        - For near-term events (this week) → stakingDeadline = 1 day before event
+                        - For future events → stakingDeadline = 1-7 days before resolutionDate
 
                         CREATE SPECULATIVE, UNCERTAIN MARKETS - NOT OBVIOUS CONFIRMATIONS:
                         ❌ BAD: "Will Apple release a phone on September 22?" (if they already announced it - too obvious!)
+                        ✅ GOOD: "Will Real Madrid win their match today?" (live event, uncertain outcome)
                         ✅ GOOD: "Will the new iPhone outsell the iPhone 15 in Q4 2025?"
                         ✅ GOOD: "Will Bitcoin reach $150,000 by March 31, 2026?"
-                        ✅ GOOD: "Will Kansas City win the Super Bowl?"
 
                         RULES:
                         - 'title' must be a YES/NO question about an UNCERTAIN outcome (not a confirmed announcement)
                         - Make it SPECULATIVE - ask about prices, performance, winners, records, milestones (not confirmed schedules)
                         - 'insight' must be a brief summary of the context
-                        - 'category' must match one from the allowed list (use new categories like Campus, Gaming, Creator Milestones for GenZ content)
-                        - 'resolutionDate' MUST be in the future - December 2025 or later (Format: YYYY-MM-DD)
-                          Examples: Q1 2026 = 2026-03-31, Q2 2026 = 2026-06-30, end of 2025 = 2025-12-31, December 15 = 2025-12-15
-                        - 'marketType' should be 'fixed-pot' for low-risk/GenZ/campus events, 'traditional' for high-volume crypto/sports
-                        - 'stakingDeadline' should be 1-7 days before resolutionDate
+                        - 'category' must match one from the allowed list (Sports, Crypto, Entertainment, Tech, Politics, Gaming, etc.)
+                        - 'resolutionDate' format: YYYY-MM-DD (follow the rules above based on event timing!)
+                        - 'marketType' should be 'traditional' for most markets
                         - Odds (yesPercent, noPercent) must be between 1 and 99, and sum to 100
 
                         You MUST use the 'create_market_form' tool.`;
