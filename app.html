@@ -2023,6 +2023,10 @@
                             <svg class="w-5 h-5 inline-block mr-2 -mt-0.5 group-hover:text-rose-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             <span class="hidden sm:inline">Create</span>
                         </button>
+                        <button data-screen="copy-trading-screen" class="top-nav-btn group px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-gradient-to-r hover:from-emerald-500/20 hover:to-green-500/20 border border-transparent hover:border-emerald-400/30">
+                            <svg class="w-5 h-5 inline-block mr-2 -mt-0.5 group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="hidden sm:inline">Copy</span>
+                        </button>
                         <!-- AI Assistant Button - DISABLED (Not shipping) -->
                         <!-- <button data-screen="ai-assistant-screen" class="top-nav-btn group px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 border border-transparent hover:border-cyan-400/30">
                             <svg class="w-5 h-5 inline-block mr-2 -mt-0.5 group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -3758,9 +3762,9 @@
             <button id="nav-create-btn" onclick="handleGuestCreateClick()" class="nav-button flex flex-col items-center text-gray-400 -mt-2 bg-gradient-to-br from-indigo-600 to-blue-600 p-3 rounded-full shadow-lg shadow-blue-500/30 border-2 border-sky-400">
                 <svg class="w-5 h-5" fill="none" stroke="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
             </button>
-            <button id="nav-quick-btn" onclick="handleGuestQuickClick()" class="nav-button flex flex-col items-center text-gray-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                <span class="text-xs mt-1">Quick</span>
+            <button onclick="showScreen('copy-trading-screen')" class="nav-button flex flex-col items-center text-gray-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <span class="text-xs mt-1">Copy</span>
             </button>
             <button id="nav-profile-btn" onclick="handleProfileClick()" class="nav-button flex flex-col items-center text-gray-400">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
@@ -4011,7 +4015,7 @@
 
         <!-- Streak Modal -->
         <div id="streak-modal" class="hidden fixed inset-0 z-[995] bg-black/70 backdrop-blur-sm flex justify-center items-center p-4">
-            <div class="ui-panel max-w-lg w-full p-6 space-y-6 animate-scale-in">
+            <div id="streak-modal-panel" class="ui-panel max-w-lg w-full p-6 space-y-6">
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold gradient-text">🔥 Prediction Streaks</h2>
                     <button onclick="closeStreakModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
@@ -13079,6 +13083,7 @@ ${historyText}`;
          */
         window.showStreakModal = () => {
             const modal = document.getElementById('streak-modal');
+            const modalPanel = document.getElementById('streak-modal-panel');
             const streak = userProfile.streak || 0;
 
             document.getElementById('streak-modal-count').innerText = `${streak} Wins`;
@@ -13095,6 +13100,13 @@ ${historyText}`;
             document.getElementById('streak-badge-20').innerText = streak >= 20 ? '👑 Unlocked!' : 'Locked';
             document.getElementById('streak-badge-20').classList.toggle('text-green-400', streak >= 20);
             document.getElementById('streak-badge-20').classList.toggle('text-gray-500', streak < 20);
+
+            // Respect animation settings
+            if (appSettings.animationsEnabled) {
+                modalPanel.classList.add('animate-scale-in');
+            } else {
+                modalPanel.classList.remove('animate-scale-in');
+            }
 
             modal.classList.remove('hidden');
         };
