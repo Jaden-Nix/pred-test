@@ -5552,10 +5552,10 @@
                     console.log(`Comment by ${c.displayName}: userId=${c.userId}, firebaseUid=${firebaseUid}, isOwner=${isOwner}`);
                     const replyBtn = `<button class="text-sky-400 hover:text-sky-300 text-xs reply-btn" data-post-id="${postId}" data-comment-id="${c.commentId}" data-display-name="${c.displayName}">Reply</button>`;
                     const menuId = `comment-menu-${c.commentId}`;
-                    const menuBtn = isOwner ? `<div class="relative"><button class="text-gray-400 hover:text-white text-xs px-2 comment-menu-btn" data-menu-id="${menuId}">⋯</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg z-10"><button class="block w-full text-left px-4 py-2 text-sm text-yellow-400 hover:bg-gray-700 edit-comment-btn" data-post-id="${postId}" data-comment-id="${c.commentId}" data-content="${c.content.replace(/"/g, '&quot;')}">✏️ Edit</button><button class="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 delete-comment-btn" data-post-id="${postId}" data-comment-id="${c.commentId}">🗑️ Delete</button></div></div>` : '';
+                    const menuBtn = isOwner ? `<div class="relative"><button class="text-gray-400 hover:text-gray-200 text-xs px-2 comment-menu-btn transition-colors" data-menu-id="${menuId}" title="Options">•••</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-10 min-w-32"><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white edit-comment-btn transition-colors border-b border-gray-700" data-post-id="${postId}" data-comment-id="${c.commentId}" data-content="${c.content.replace(/"/g, '&quot;')}">Edit</button><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-red-400 delete-comment-btn transition-colors" data-post-id="${postId}" data-comment-id="${c.commentId}">Delete</button></div></div>` : '';
                     const timeStr = getRelativeTime(c.timestamp);
                     const indent = c.parentCommentId ? 'ml-8 pl-3 border-l border-gray-600' : '';
-                    html += `<div class="flex gap-2 text-sm ${indent}"><img src="${c.avatarUrl || LOGO_URL}" class="w-6 h-6 rounded-full flex-shrink-0"><div class="flex-1"><div class="flex items-start justify-between"><div><p class="font-semibold text-white text-xs">${c.displayName}<span class="text-gray-500 text-xs ml-1">· ${timeStr}</span></p></div>${menuBtn}</div><p class="text-gray-300">${c.content}</p><div class="flex gap-1 mt-1">${replyBtn}</div></div></div>`;
+                    html += `<div class="flex gap-2 text-sm ${indent}" data-user-id="${c.userId}"><img src="${c.avatarUrl || LOGO_URL}" class="w-6 h-6 rounded-full flex-shrink-0"><div class="flex-1"><div class="flex items-start justify-between"><div><p class="font-semibold text-white text-xs">${c.displayName}<span class="text-gray-500 text-xs ml-1">· ${timeStr}</span></p></div>${menuBtn}</div><p class="text-gray-300">${c.content}</p><div class="flex gap-1 mt-1">${replyBtn}</div></div></div>`;
                     if (c.parentCommentId) {
                         const parentComment = comments.find(cm => cm.commentId === c.parentCommentId);
                         if (parentComment && !html.includes(`reply-to-${c.parentCommentId}`)) {
@@ -5574,6 +5574,8 @@
                     } else if (e.target.classList.contains('reply-btn')) {
                         replyToComment(e.target.dataset.postId, e.target.dataset.commentId, e.target.dataset.displayName);
                     } else if (e.target.classList.contains('edit-comment-btn')) {
+                        const commentDiv = e.target.closest('[data-comment-user-id]');
+                        const userId = commentDiv?.dataset.commentUserId || e.target.closest('.flex')?.dataset.userId;
                         editComment(e.target.dataset.postId, e.target.dataset.commentId, firebaseUid, e.target.dataset.content);
                     } else if (e.target.classList.contains('delete-comment-btn')) {
                         deleteComment(e.target.dataset.postId, e.target.dataset.commentId, firebaseUid);
@@ -5661,7 +5663,7 @@
         };
         
         window.editComment = async (postId, commentId, userId, currentContent) => {
-            if (currentUserId !== userId) { showToast('Can only edit your own comments', 'error'); return; }
+            if (firebaseUid !== userId) { showToast('Can only edit your own comments', 'error'); return; }
             const newContent = prompt('Edit your comment:', currentContent);
             if (!newContent || newContent.trim() === '' || newContent === currentContent) return;
             try {
@@ -5681,7 +5683,7 @@
         };
 
         window.deleteComment = async (postId, commentId, authorId) => {
-            if (currentUserId !== authorId) { showToast('Can only delete your own comments', 'error'); return; }
+            if (firebaseUid !== authorId) { showToast('Can only delete your own comments', 'error'); return; }
             if (!confirm('Delete comment?')) return;
             try {
                 const response = await fetch('/api/social/delete-comment', {
