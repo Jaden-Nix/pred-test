@@ -6246,7 +6246,7 @@
             listEl.dataset.hasCommentHandler = 'true';
         };
         
-        // Reload comments without toggling visibility
+        // Reload comments without toggling visibility - with threaded display
         window.reloadComments = async (postId) => {
             const listEl = document.getElementById(`comments-list-${postId}`);
             if (!listEl) return;
@@ -6261,24 +6261,152 @@
                     comments.push({ ...doc.data(), commentId: doc.id });
                 });
                 console.log(`💬 Loaded ${comments.length} comments for post ${postId}. Current user: ${currentUserId}`);
-                let html = '';
-                comments.forEach(comment => {
-                    // Check ownership - compare both userId AND displayName for demo accounts
+                
+                // Separate parent comments and replies
+                const parentComments = comments.filter(c => !c.parentCommentId);
+                const repliesMap = {};
+                comments.forEach(c => {
+                    if (c.parentCommentId) {
+                        if (!repliesMap[c.parentCommentId]) repliesMap[c.parentCommentId] = [];
+                        repliesMap[c.parentCommentId].push(c);
+                    }
+                });
+                
+                // HTML escape function to prevent XSS
+                const escapeHtml = (text) => {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                };
+                
+                // Store comment data for safe retrieval by event handlers
+                const commentDataStore = {};
+                
+                // Render function for individual comments (supports deep Reddit-style nesting)
+                const renderComment = (comment, depth = 0, maxDepth = 5, visited = new Set()) => {
+                    // Prevent infinite recursion and cycles
+                    if (depth > maxDepth || visited.has(comment.commentId)) return '';
+                    visited.add(comment.commentId);
+                    
                     const userIdMatch = comment.userId?.toLowerCase() === currentUserId?.toLowerCase();
                     const displayNameMatch = comment.displayName === userProfile?.displayName;
                     const isOwner = userIdMatch || displayNameMatch;
-                    console.log(`Comment by ${comment.displayName}: userId=${comment.userId}, currentUserId=${currentUserId}, displayName=${comment.displayName}, userProfile=${userProfile?.displayName}, isOwner=${isOwner}`);
-                    const menuHtml = isOwner ? `<div class="relative"><button onclick="window.toggleCommentMenu('comment-menu-${comment.commentId}')" class="text-gray-400 hover:text-white">⋯</button><div id="comment-menu-${comment.commentId}" class="hidden absolute right-0 top-6 bg-gray-800 border border-white/10 rounded shadow-xl z-50 min-w-32"><button onclick="window.editComment('${postId}', '${comment.commentId}', '${comment.userId}', '${comment.content.replace(/'/g, "\\'")}'); window.toggleCommentMenu('comment-menu-${comment.commentId}');" class="w-full text-left px-3 py-2 text-sm hover:bg-yellow-500/20 text-gray-300 hover:text-yellow-400">✏️ Edit</button><button onclick="window.deleteComment('${postId}', '${comment.commentId}', '${comment.userId}'); window.toggleCommentMenu('comment-menu-${comment.commentId}');" class="w-full text-left px-3 py-2 text-sm hover:bg-red-500/20 text-gray-300 hover:text-red-400">🗑️ Delete</button></div></div>` : '';
-                    const replyBtn = `<button onclick="window.replyToComment('${postId}', '${comment.commentId}', '${comment.displayName}')" class="text-xs text-gray-400 hover:text-sky-400 transition-colors">Reply</button>`;
-                    html += `<div class="flex items-start gap-2 p-2 rounded bg-white/5"><img src="${comment.avatarUrl || LOGO_URL}" class="w-8 h-8 rounded-full"><div class="flex-1"><div class="flex items-center gap-2"><p class="text-sm font-semibold text-white">${comment.displayName}</p>${menuHtml}</div><p class="text-sm text-gray-300 mt-1">${comment.content}</p><div class="mt-1">${replyBtn}</div></div></div>`;
+                    
+                    // Store comment data safely for event handlers
+                    commentDataStore[comment.commentId] = {
+                        displayName: comment.displayName,
+                        content: comment.content,
+                        userId: comment.userId
+                    };
+                    
+                    // Escape user-generated content to prevent XSS
+                    const safeDisplayName = escapeHtml(comment.displayName || 'Anonymous');
+                    const safeContent = escapeHtml(comment.content || '');
+                    
+                    // Use data attributes instead of inline onclick with user content
+                    const menuHtml = isOwner ? `<div class="relative">
+                        <button class="comment-menu-toggle text-gray-400 hover:text-white" data-menu-id="comment-menu-${comment.commentId}">⋯</button>
+                        <div id="comment-menu-${comment.commentId}" class="hidden absolute right-0 top-6 bg-gray-800 border border-white/10 rounded shadow-xl z-50 min-w-32">
+                            <button class="comment-edit-btn w-full text-left px-3 py-2 text-sm hover:bg-yellow-500/20 text-gray-300 hover:text-yellow-400" 
+                                data-post-id="${postId}" data-comment-id="${comment.commentId}" data-user-id="${comment.userId}">✏️ Edit</button>
+                            <button class="comment-delete-btn w-full text-left px-3 py-2 text-sm hover:bg-red-500/20 text-gray-300 hover:text-red-400" 
+                                data-post-id="${postId}" data-comment-id="${comment.commentId}" data-user-id="${comment.userId}">🗑️ Delete</button>
+                        </div>
+                    </div>` : '';
+                    const replyBtn = `<button class="comment-reply-btn text-xs text-gray-400 hover:text-sky-400 transition-colors" 
+                        data-post-id="${postId}" data-comment-id="${comment.commentId}">Reply</button>`;
+                    
+                    const isNested = depth > 0;
+                    const indentClass = isNested ? 'ml-6 pl-3 border-l-2 border-white/10' : '';
+                    const bgClass = isNested ? 'bg-white/[0.02]' : 'bg-white/5';
+                    
+                    let html = `<div class="${indentClass}"><div class="flex items-start gap-2 p-2 rounded ${bgClass}">
+                        <img src="${comment.avatarUrl || LOGO_URL}" class="w-8 h-8 rounded-full flex-shrink-0">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <p class="text-sm font-semibold text-white truncate">${safeDisplayName}</p>
+                                ${menuHtml}
+                            </div>
+                            <p class="text-sm text-gray-300 mt-1 break-words">${safeContent}</p>
+                            <div class="mt-1">${replyBtn}</div>
+                        </div>
+                    </div>`;
+                    
+                    // Recursively render nested replies (Reddit-style deep threading)
+                    const replies = repliesMap[comment.commentId] || [];
+                    if (replies.length > 0 && depth < maxDepth) {
+                        html += '<div class="mt-1 space-y-1">';
+                        // Sort replies by timestamp
+                        const sortedReplies = [...replies].sort((a, b) => 
+                            (a.timestamp?.toMillis?.() || 0) - (b.timestamp?.toMillis?.() || 0)
+                        );
+                        sortedReplies.forEach(reply => {
+                            html += renderComment(reply, depth + 1, maxDepth, visited);
+                        });
+                        html += '</div>';
+                    }
+                    
+                    html += '</div>';
+                    return html;
+                };
+                
+                // Render all parent comments with their threaded replies
+                let html = '';
+                parentComments.forEach(comment => {
+                    html += renderComment(comment);
                 });
+                
                 listEl.innerHTML = html;
                 
                 if (!listEl.dataset.hasCommentHandler) {
                     const commentClickHandler = (e) => {
-                        if (e.target.closest('button[onclick^="window.toggleCommentMenu"]')) return;
-                        if (e.target.closest('button[onclick^="window.editComment"]')) return;
-                        if (e.target.closest('button[onclick^="window.deleteComment"]')) return;
+                        // Handle menu toggle
+                        if (e.target.classList.contains('comment-menu-toggle')) {
+                            const menuId = e.target.dataset.menuId;
+                            const menu = document.getElementById(menuId);
+                            if (menu) menu.classList.toggle('hidden');
+                            e.stopPropagation();
+                            return;
+                        }
+                        
+                        // Handle edit button
+                        if (e.target.classList.contains('comment-edit-btn')) {
+                            const commentId = e.target.dataset.commentId;
+                            const postId = e.target.dataset.postId;
+                            const commentData = commentDataStore[commentId];
+                            if (commentData) {
+                                const newContent = prompt('Edit your comment:', commentData.content);
+                                if (newContent && newContent.trim() !== '' && newContent !== commentData.content) {
+                                    window.editComment(postId, commentId, commentData.userId, newContent);
+                                }
+                            }
+                            e.stopPropagation();
+                            return;
+                        }
+                        
+                        // Handle delete button
+                        if (e.target.classList.contains('comment-delete-btn')) {
+                            const commentId = e.target.dataset.commentId;
+                            const postId = e.target.dataset.postId;
+                            const userId = e.target.dataset.userId;
+                            window.deleteComment(postId, commentId, userId);
+                            e.stopPropagation();
+                            return;
+                        }
+                        
+                        // Handle reply button
+                        if (e.target.classList.contains('comment-reply-btn')) {
+                            const commentId = e.target.dataset.commentId;
+                            const postId = e.target.dataset.postId;
+                            const commentData = commentDataStore[commentId];
+                            if (commentData) {
+                                window.replyToComment(postId, commentId, commentData.displayName);
+                            }
+                            e.stopPropagation();
+                            return;
+                        }
+                        
+                        // Close all menus when clicking elsewhere
                         const menus = listEl.querySelectorAll('[id^="comment-menu-"]');
                         menus.forEach(m => m.classList.add('hidden'));
                     };
