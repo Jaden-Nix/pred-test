@@ -5548,8 +5548,8 @@
                 let html = '';
                 comments.forEach(c => {
                     const isRootComment = !c.parentCommentId;
-                    const isOwner = c.userId === firebaseUid;
-                    console.log(`Comment by ${c.displayName}: userId=${c.userId}, firebaseUid=${firebaseUid}, isOwner=${isOwner}`);
+                    const isOwner = c.userId === currentUserId;
+                    console.log(`Comment by ${c.displayName}: userId=${c.userId}, currentUserId=${currentUserId}, isOwner=${isOwner}`);
                     const replyBtn = `<button class="text-sky-400 hover:text-sky-300 text-xs reply-btn" data-post-id="${postId}" data-comment-id="${c.commentId}" data-display-name="${c.displayName}">Reply</button>`;
                     const menuId = `comment-menu-${c.commentId}`;
                     const menuBtn = isOwner ? `<div class="relative"><button class="text-gray-400 hover:text-gray-200 text-xs px-2 comment-menu-btn transition-colors" data-menu-id="${menuId}" title="Options">•••</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-10 min-w-32"><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white edit-comment-btn transition-colors border-b border-gray-700" data-post-id="${postId}" data-comment-id="${c.commentId}" data-content="${c.content.replace(/"/g, '&quot;')}">Edit</button><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-red-400 delete-comment-btn transition-colors" data-post-id="${postId}" data-comment-id="${c.commentId}">Delete</button></div></div>` : '';
