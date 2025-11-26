@@ -1425,10 +1425,16 @@ app.post('/api/auth/verify-otp', requireFirebase, async (req, res) => {
         const storedOtp = String(otpData.otp).trim();
         const providedOtp = String(otp).trim();
         
-        console.log(`🔐 OTP Verification Attempt - Email: ${email}, Stored: ${storedOtp}, Provided: ${providedOtp}, Match: ${storedOtp === providedOtp}`);
+        console.log(`🔐 OTP Verification Debug:`);
+        console.log(`   Email: ${email}`);
+        console.log(`   Stored OTP: "${storedOtp}" (type: ${typeof otpData.otp}, length: ${storedOtp.length})`);
+        console.log(`   Provided OTP: "${providedOtp}" (type: ${typeof otp}, length: ${providedOtp.length})`);
+        console.log(`   Match: ${storedOtp === providedOtp}`);
+        console.log(`   Char codes stored: ${Array.from(storedOtp).map(c => c.charCodeAt(0)).join(',')}`);
+        console.log(`   Char codes provided: ${Array.from(providedOtp).map(c => c.charCodeAt(0)).join(',')}`);
         
         if (storedOtp !== providedOtp) {
-            console.warn(`❌ OTP mismatch for ${email}: stored="${storedOtp}" vs provided="${providedOtp}"`);
+            console.warn(`❌ OTP mismatch for ${email}`);
             return res.status(401).json({ error: 'Invalid code' });
         }
         
