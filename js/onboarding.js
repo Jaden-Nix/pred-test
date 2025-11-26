@@ -233,24 +233,45 @@ function skipOnboarding() {
 
 // Complete onboarding
 function completeOnboarding() {
-    localStorage.setItem('predora_onboarding_complete', 'true');
-    
-    // Show completion celebration
-    showCelebration();
-    
-    // Fade out and remove UI
-    onboardingOverlay.style.opacity = '0';
-    onboardingTooltip.style.transform = onboardingTooltip.style.transform.replace('scale(1)', 'scale(0.8)');
-    onboardingTooltip.style.opacity = '0';
-    
-    setTimeout(() => {
-        clearHighlight();
-        onboardingOverlay?.remove();
-        onboardingTooltip?.remove();
-        onboardingOverlay = null;
-        onboardingTooltip = null;
-        console.log('✅ Onboarding complete!');
-    }, 300);
+    try {
+        localStorage.setItem('predora_onboarding_complete', 'true');
+        
+        // Show completion celebration
+        showCelebration();
+        
+        // Fade out and remove UI with proper null checks
+        if (onboardingOverlay) {
+            onboardingOverlay.style.opacity = '0';
+        }
+        if (onboardingTooltip) {
+            onboardingTooltip.style.transform = onboardingTooltip.style.transform.replace('scale(1)', 'scale(0.8)');
+            onboardingTooltip.style.opacity = '0';
+        }
+        
+        setTimeout(() => {
+            try {
+                clearHighlight();
+                onboardingOverlay?.remove();
+                onboardingTooltip?.remove();
+                
+                // Force remove any remaining onboarding elements
+                document.getElementById('onboarding-overlay')?.remove();
+                document.getElementById('onboarding-tooltip')?.remove();
+                
+                onboardingOverlay = null;
+                onboardingTooltip = null;
+                console.log('✅ Onboarding complete!');
+            } catch (err) {
+                console.error('Error removing onboarding UI:', err);
+                // Force cleanup
+                document.querySelectorAll('#onboarding-overlay, #onboarding-tooltip').forEach(el => el.remove());
+            }
+        }, 300);
+    } catch (err) {
+        console.error('Error completing onboarding:', err);
+        // Emergency cleanup
+        document.querySelectorAll('#onboarding-overlay, #onboarding-tooltip').forEach(el => el.remove());
+    }
 }
 
 // Show celebration animation

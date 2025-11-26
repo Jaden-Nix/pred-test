@@ -474,6 +474,26 @@
             animation: flame-flicker 1.5s ease-in-out infinite;
         }
         
+        /* One-time bounce for streak modal */
+        @keyframes bounce-once {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            25% {
+                transform: translateY(-15px);
+            }
+            50% {
+                transform: translateY(0);
+            }
+            75% {
+                transform: translateY(-7px);
+            }
+        }
+        
+        .bounce-once {
+            animation: bounce-once 0.6s ease-out;
+        }
+        
         /* Live Counter Update */
         @keyframes counter-update {
             0% {
@@ -4129,15 +4149,15 @@
         </div>
 
         <!-- Streak Modal -->
-        <div id="streak-modal" class="hidden fixed inset-0 z-[995] bg-black/70 backdrop-blur-sm flex justify-center items-center p-4">
-            <div id="streak-modal-panel" class="ui-panel max-w-lg w-full p-6 space-y-6">
+        <div id="streak-modal" class="hidden fixed inset-0 z-[995] bg-black/70 backdrop-blur-sm flex justify-center items-center p-4" onclick="closeStreakModal()">
+            <div id="streak-modal-panel" class="ui-panel max-w-lg w-full p-6 space-y-6" onclick="event.stopPropagation()">
                 <div class="flex justify-between items-center">
                     <h2 class="text-2xl font-bold gradient-text">🔥 Prediction Streaks</h2>
                     <button onclick="closeStreakModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
                 </div>
 
                 <div class="text-center py-6">
-                    <div class="text-6xl mb-4">🔥</div>
+                    <div id="streak-fire-emoji" class="text-6xl mb-4 bounce-once">🔥</div>
                     <h3 id="streak-modal-count" class="text-4xl font-bold text-white mb-2">0 Wins</h3>
                     <p class="text-gray-400">Current winning streak</p>
                 </div>
@@ -13317,6 +13337,7 @@ ${historyText}`;
         window.showStreakModal = () => {
             const modal = document.getElementById('streak-modal');
             const modalPanel = document.getElementById('streak-modal-panel');
+            const fireEmoji = document.getElementById('streak-fire-emoji');
             const streak = userProfile.streak || 0;
 
             document.getElementById('streak-modal-count').innerText = `${streak} Wins`;
@@ -13337,6 +13358,10 @@ ${historyText}`;
             // Respect animation settings
             if (appSettings.animationsEnabled) {
                 modalPanel.classList.add('animate-scale-in');
+                // Restart bounce animation
+                fireEmoji.classList.remove('bounce-once');
+                void fireEmoji.offsetWidth; // Trigger reflow
+                fireEmoji.classList.add('bounce-once');
             } else {
                 modalPanel.classList.remove('animate-scale-in');
             }
