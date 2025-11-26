@@ -44,6 +44,7 @@ if (GEMINI_API_KEY) {
 // SendGrid connector function - gets fresh credentials each time (don't cache)
 async function getUncachableSendGridClient() {
   try {
+    // Try Replit connector first
     const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
     const xReplitToken = process.env.REPL_IDENTITY 
       ? 'repl ' + process.env.REPL_IDENTITY 
@@ -51,41 +52,44 @@ async function getUncachableSendGridClient() {
       ? 'depl ' + process.env.WEB_REPL_RENEWAL 
       : null;
 
-    if (!xReplitToken) {
-      console.warn("⚠️ SendGrid token not found");
-      return null;
-    }
+    if (xReplitToken) {
+      try {
+        const url = 'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid';
+        const fetchRes = await fetch(url, {
+          headers: {
+            'Accept': 'application/json',
+            'X_REPLIT_TOKEN': xReplitToken
+          }
+        });
 
-    const url = 'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid';
-    const fetchRes = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
+        if (fetchRes.ok) {
+          const data = await fetchRes.json();
+          const connectionSettings = data.items?.[0];
+
+          if (connectionSettings && connectionSettings.settings?.api_key && connectionSettings.settings?.from_email) {
+            const apiKey = connectionSettings.settings.api_key;
+            const fromEmail = connectionSettings.settings.from_email;
+            sgMail.setApiKey(apiKey);
+            console.log("✅ SendGrid client initialized from Replit connector");
+            return { client: sgMail, fromEmail };
+          }
+        }
+      } catch (connectorError) {
+        console.warn("⚠️ Replit connector failed, trying environment variables:", connectorError.message);
       }
-    });
+    }
 
-    if (!fetchRes.ok) {
-      console.warn(`⚠️ SendGrid connector API returned status ${fetchRes.status}`);
+    // Fallback to environment variables (for Vercel and other deployments)
+    const apiKey = process.env.SENDGRID_API_KEY;
+    const fromEmail = process.env.SENDGRID_FROM_EMAIL;
+
+    if (!apiKey || !fromEmail) {
+      console.warn("⚠️ SendGrid credentials not found (neither connector nor env vars available)");
       return null;
     }
 
-    const data = await fetchRes.json();
-    const connectionSettings = data.items?.[0];
-
-    if (!connectionSettings) {
-      console.warn("⚠️ SendGrid connection not found in items");
-      return null;
-    }
-
-    if (!connectionSettings.settings?.api_key || !connectionSettings.settings?.from_email) {
-      console.warn("⚠️ SendGrid credentials missing (api_key or from_email not set)");
-      return null;
-    }
-
-    const apiKey = connectionSettings.settings.api_key;
-    const fromEmail = connectionSettings.settings.from_email;
     sgMail.setApiKey(apiKey);
-    console.log("✅ SendGrid client initialized successfully");
+    console.log("✅ SendGrid client initialized from environment variables");
     
     return { client: sgMail, fromEmail };
   } catch (error) {
