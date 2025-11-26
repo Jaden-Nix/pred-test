@@ -1671,6 +1671,10 @@
                         <button onclick="handleTopProfileClick()" data-screen="profile-screen" id="nav-profile-button" class="hidden w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl hover:shadow-indigo-500/50 active:scale-95">
                             P
                         </button>
+
+                        <button onclick="logout()" id="desktop-signout-btn" class="hidden px-4 py-2 text-sm font-semibold text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500 rounded-full transition-all duration-300 border border-red-500/30 hover:border-red-500">
+                            Sign Out
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2374,15 +2378,15 @@
 
 
             <div id="social-feed-screen" class="screen screen-inactive">
-                <div class="max-w-md mx-auto space-y-6 px-4 pb-6 pt-6">
-                    <button onclick="openCreatePost()" id="social-fab" class="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center button-micro z-50 pointer-events-auto" title="Create Post">
+                <div class="max-w-md md:max-w-3xl lg:max-w-5xl mx-auto space-y-6 px-4 md:px-6 pb-6 pt-6">
+                    <button onclick="openCreatePost()" id="social-fab" class="fixed bottom-24 right-6 md:right-10 w-14 h-14 rounded-full bg-gradient-to-r from-sky-400 to-indigo-500 text-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center button-micro z-50 pointer-events-auto" title="Create Post">
                         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
                         </svg>
                     </button>
 
                     <!-- Feed / Leaderboard Toggle -->
-                    <div class="flex justify-between items-center relative backdrop-blur-md bg-white/5 dark:bg-white/5 rounded-xl p-1 gap-1" style="background-color: var(--bg-panel); background-image: none;">
+                    <div class="flex justify-between items-center relative backdrop-blur-md bg-white/5 dark:bg-white/5 rounded-xl p-1 gap-1 md:max-w-md" style="background-color: var(--bg-panel); background-image: none;">
                         <button onclick="switchSocialTab('feed')" id="social-tab-feed" 
                             class="social-tab-btn flex-1 pb-3 px-6 font-bold text-base text-sky-400 transition-all relative rounded-lg">
                             <span class="relative z-10">Feed</span>
@@ -2413,9 +2417,9 @@
                             </button>
                         </div>
 
-                        <!-- Posts Feed Container -->
-                        <div id="social-feed-container" class="space-y-5">
-                            <div class="ui-panel p-8 text-center">
+                        <!-- Posts Feed Container - Grid layout on desktop -->
+                        <div id="social-feed-container" class="space-y-5 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:space-y-0">
+                            <div class="ui-panel p-8 text-center md:col-span-2 lg:col-span-3">
                                 <p class="text-gray-400 text-lg font-medium">Loading feed...</p>
                             </div>
                         </div>
@@ -2424,7 +2428,7 @@
                     <!-- Leaderboard Section -->
                     <div id="social-leaderboard-section" class="hidden space-y-6">
                         <!-- Leaderboard Tabs -->
-                        <div class="flex items-center border-b-2 border-white/10 dark:border-white/10" style="border-bottom-color: var(--border-color);">
+                        <div class="flex items-center border-b-2 border-white/10 dark:border-white/10 md:max-w-lg" style="border-bottom-color: var(--border-color);">
                             <button class="leaderboard-tab-social flex-1 pb-4 font-bold text-base border-b-4 border-sky-400 text-sky-400 text-left" 
                                 data-timeframe="all" onclick="switchLeaderboardTimeframeSocial('all')">
                                 All-Time
@@ -2440,13 +2444,13 @@
                         </div>
 
                         <!-- Your Rank Panel -->
-                        <div id="social-user-rank-panel" class="ui-panel p-8 shadow-xl">
+                        <div id="social-user-rank-panel" class="ui-panel p-8 shadow-xl md:max-w-2xl">
                             <p class="text-gray-400 text-lg">Loading your rank...</p>
                         </div>
 
-                        <!-- Rankings List -->
-                        <div id="social-ranking-list" class="space-y-4">
-                            <div class="ui-panel p-8 text-center">
+                        <!-- Rankings List - Grid on desktop -->
+                        <div id="social-ranking-list" class="space-y-4 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:space-y-0">
+                            <div class="ui-panel p-8 text-center md:col-span-2 lg:col-span-3">
                                 <p class="text-gray-400 text-lg font-medium">Fetching top players...</p>
                             </div>
                         </div>
@@ -3952,6 +3956,8 @@
                     console.log(`Resuming session for demo user: ${demoDisplayName}`);
                     currentUserId = demoUserId;
                     userProfile.displayName = demoDisplayName;
+                    isGuestMode = false;
+                    isDemoAccount = true;
 
                     // Re-authenticate with Firebase to get a valid token
                     const { signInAnonymously } = window.firebase.auth;
@@ -3961,6 +3967,14 @@
                             console.log('Token on resume:', token ? '✅ Token set' : '❌ No token');
                             await initializeUserProfile();
                             attachDataListeners();
+                            
+                            // Show profile button and sign out for logged-in users on desktop
+                            const navProfileBtn = document.getElementById('nav-profile-button');
+                            const desktopSignOutBtn = document.getElementById('desktop-signout-btn');
+                            const guestSignInBtn = document.getElementById('guest-signin-btn');
+                            if (navProfileBtn) navProfileBtn.classList.remove('hidden');
+                            if (desktopSignOutBtn) desktopSignOutBtn.classList.remove('hidden');
+                            if (guestSignInBtn) guestSignInBtn.style.display = 'none';
                             // Don't override admin screens that were accessed via URL/tap
                             const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen'];
                             console.log('🔐 Session resume check - isAdminMode:', isAdminMode, 'currentScreenId:', currentScreenId);
@@ -3981,6 +3995,8 @@
                     console.log(`Resuming session for email user: ${emailUserId}`);
                     currentUserId = emailUserId;
                     userProfile.displayName = emailUserName || emailUserId.split('@')[0]; // Use stored name, fallback to email prefix
+                    isGuestMode = false;
+                    isDemoAccount = false;
 
                     // Re-authenticate with Firebase to get a valid token
                     const { signInAnonymously } = window.firebase.auth;
@@ -3990,6 +4006,14 @@
                             console.log('Email user token on resume:', token ? '✅ Token set' : '❌ No token');
                             await initializeUserProfile();
                             attachDataListeners();
+                            
+                            // Show profile button and sign out for logged-in users on desktop
+                            const navProfileBtn = document.getElementById('nav-profile-button');
+                            const desktopSignOutBtn = document.getElementById('desktop-signout-btn');
+                            const guestSignInBtn = document.getElementById('guest-signin-btn');
+                            if (navProfileBtn) navProfileBtn.classList.remove('hidden');
+                            if (desktopSignOutBtn) desktopSignOutBtn.classList.remove('hidden');
+                            if (guestSignInBtn) guestSignInBtn.style.display = 'none';
                             
                             // Check if this is first login (displayName is still email prefix)
                             const isFirstLogin = userProfile.displayName === emailUserId.split('@')[0];
@@ -4220,8 +4244,13 @@
             // Show sign-in buttons for guests (desktop and mobile)
             const guestSignInBtn = document.getElementById('guest-signin-btn');
             const mobileSignInBtn = document.getElementById('mobile-signin-btn');
+            const desktopSignOutBtn = document.getElementById('desktop-signout-btn');
+            const navProfileBtn = document.getElementById('nav-profile-button');
+            
             if (guestSignInBtn) guestSignInBtn.style.display = 'block';
             if (mobileSignInBtn) mobileSignInBtn.style.display = 'block';
+            if (desktopSignOutBtn) desktopSignOutBtn.classList.add('hidden');
+            if (navProfileBtn) navProfileBtn.classList.add('hidden');
             
             // Hide Create and Quick buttons, but show Profile with "Sign In" label
             const createBtn = document.getElementById('nav-create-btn');
@@ -4256,8 +4285,13 @@
             // Hide sign-in buttons for logged-in users (desktop and mobile)
             const guestSignInBtn = document.getElementById('guest-signin-btn');
             const mobileSignInBtn = document.getElementById('mobile-signin-btn');
+            const desktopSignOutBtn = document.getElementById('desktop-signout-btn');
+            const navProfileBtn = document.getElementById('nav-profile-button');
+            
             if (guestSignInBtn) guestSignInBtn.style.display = 'none';
             if (mobileSignInBtn) mobileSignInBtn.style.display = 'none';
+            if (desktopSignOutBtn) desktopSignOutBtn.classList.remove('hidden');
+            if (navProfileBtn) navProfileBtn.classList.remove('hidden');
             
             // Show restricted buttons for logged-in users
             const createBtn = document.getElementById('nav-create-btn');
@@ -4412,6 +4446,14 @@
                     showLoadingOverlay(false);
                     dom.topNav.classList.remove('hidden');
                     dom.bottomNav.classList.remove('hidden');
+                    
+                    // Show profile button and sign out for logged-in users on desktop
+                    const navProfileBtn = document.getElementById('nav-profile-button');
+                    const desktopSignOutBtn = document.getElementById('desktop-signout-btn');
+                    const guestSignInBtn = document.getElementById('guest-signin-btn');
+                    if (navProfileBtn) navProfileBtn.classList.remove('hidden');
+                    if (desktopSignOutBtn) desktopSignOutBtn.classList.remove('hidden');
+                    if (guestSignInBtn) guestSignInBtn.style.display = 'none';
                 }
 
                 // Sync with the public leaderboard collection (for both paths)
