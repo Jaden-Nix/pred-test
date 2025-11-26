@@ -4,7 +4,7 @@
 
 Predora is a prediction markets platform that enables users to create markets, place bets, and have outcomes automatically resolved using AI-powered oracles. The platform emphasizes ease of use ("tap to bet, chat to earn") while leveraging Google's Gemini AI for content moderation, market resolution, and user assistance. Built as a full-stack web application with Firebase backend, the system includes sophisticated AI guardrails, swarm verification for oracle decisions, and automated cron jobs for market resolution.
 
-## User Preferences
+##  Preferences
 
 Preferred communication style: Simple, everyday language.
 
@@ -118,13 +118,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Infrastructure & Deployment
 
-1. **Replit Platform**
-   - Hosting environment
-   - Scheduled deployment for cron jobs
-   - Environment variable management
-   - Connector system for third-party credentials
 
-2. **Vercel** (optional deployment target)
+. **Vercel** 
    - Configuration in `vercel.json`
    - Rewrites all routes to `index.js`
 
