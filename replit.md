@@ -34,6 +34,10 @@ Preferred communication style: Simple, everyday language.
   - Previously, posting a comment would reload the entire social feed and close all comment sections
   - Implemented state preservation to keep comment sections open when feed updates
   - Users can now see their comment appear immediately without losing their position in the feed
+- **Fixed edit/delete comment buttons**: Edit and delete options now properly appear on user's own comments
+  - Previous ownership check only matched exact userId, failing for demo accounts
+  - Updated to check both userId AND displayName for proper comment ownership detection
+  - Users can now edit and delete their own comments regardless of account type
 
 ## System Architecture
 
