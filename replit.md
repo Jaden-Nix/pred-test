@@ -38,6 +38,14 @@ Preferred communication style: Simple, everyday language.
   - Previous ownership check only matched exact userId, failing for demo accounts
   - Updated to check both userId AND displayName for proper comment ownership detection
   - Users can now edit and delete their own comments regardless of account type
+- **Implemented Twitter/Reddit style threaded comments**: Comments now display in hierarchical conversation threads
+  - Deep nesting support up to 5 levels with visual indentation (6ml left margin, vertical line separator)
+  - Replies appear nested under parent comments with lighter background color
+  - Recursive rendering with cycle prevention using visited Set
+  - Replies sorted chronologically within each thread
+  - XSS security: Removed all inline onclick handlers, implemented data-attribute pattern with commentDataStore
+  - User content HTML-escaped before rendering to prevent script injection
+  - Event delegation handles all comment interactions (edit, delete, reply, menu toggle)
 
 ## System Architecture
 
