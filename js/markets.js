@@ -123,9 +123,9 @@ function formatDate(timestamp) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-// Place bet function - used by copy trading and manual clicks
-async function placeBet(marketId, pick, amount = 10) {
-    console.log('💰 placeBet called:', { marketId, pick, amount });
+// Place bet function - used by copy trading and manual clicks (DOM-independent)
+async function placeBet(marketId, pick, amount = 10, asset = 'balance') {
+    console.log('💰 placeBet called:', { marketId, pick, amount, asset });
     
     // Check if user is authenticated
     if (!window.currentUserId) {
@@ -150,7 +150,7 @@ async function placeBet(marketId, pick, amount = 10) {
         let market = allStandardMarkets.find(m => m.id === marketId);
         
         // If not in standard markets, try to fetch from Firebase
-        if (!market && window.db) {
+        if (!market && window.db && window.firebase) {
             console.log('📊 Market not in cache, fetching from Firebase...');
             const { doc, getDoc } = window.firebase.firestore;
             const APP_ID = window.APP_ID;
@@ -178,39 +178,27 @@ async function placeBet(marketId, pick, amount = 10) {
             return false;
         }
         
-        // Set the global market context needed by stakeMarket()
-        window.currentMarketId = marketId;
-        window.currentMarket = market;
+        // Call the DOM-independent executeStakeTransaction function
+        console.log('📊 Executing stake transaction with pick:', pick);
         
-        // Set the stake amount in the input field
-        const stakeAmountInput = document.getElementById('stake-amount-input');
-        if (stakeAmountInput) {
-            stakeAmountInput.value = amount;
-        } else {
-            console.warn('⚠️ stake-amount-input not found in DOM');
+        // Check if executeStakeTransaction is available
+        if (typeof window.executeStakeTransaction !== 'function') {
+            console.error('❌ executeStakeTransaction not available, falling back to legacy flow');
+            // Fallback: set DOM and call stakeMarket
+            window.currentMarketId = marketId;
+            window.currentMarket = market;
+            const stakeAmountInput = document.getElementById('stake-amount-input');
+            if (stakeAmountInput) stakeAmountInput.value = amount;
+            await window.stakeMarket(pick);
+            return true;
         }
         
-        // Set the asset selector to default to balance/USD
-        const stakeAssetSelect = document.getElementById('stake-asset-select');
-        if (stakeAssetSelect) {
-            // Select the first available option (usually balance/USD)
-            if (stakeAssetSelect.options.length > 0) {
-                stakeAssetSelect.value = stakeAssetSelect.options[0].value;
-            } else {
-                // If no options, manually add a default option
-                stakeAssetSelect.innerHTML = '<option value="balance">Balance (USD)</option>';
-                stakeAssetSelect.value = 'balance';
-            }
-            console.log('📊 Asset selector set to:', stakeAssetSelect.value);
-        } else {
-            console.warn('⚠️ stake-asset-select not found in DOM');
-        }
-        
-        // Call the existing stakeMarket function
-        console.log('📊 Calling stakeMarket with pick:', pick);
-        await window.stakeMarket(pick);
+        await window.executeStakeTransaction(marketId, market, pick, amount, asset);
         
         console.log('✅ Bet placed successfully');
+        if (window.showToast) {
+            window.showToast('Copy trade executed!', 'success');
+        }
         return true;
         
     } catch (error) {

@@ -7988,10 +7988,207 @@
         }
 
         /**
-         * Submits a stake for a standard market.
+         * Executes the core staking transaction logic (DOM-independent).
+         * Used by both stakeMarket() and copy trading placeBet().
          */
-        //
+        async function executeStakeTransaction(marketId, market, pick, amount, asset) {
+            // 1. Get all Firebase functions
+            const { doc, updateDoc, increment, addDoc, collection, serverTimestamp, runTransaction } = window.firebase.firestore;
 
+            // Determine if this is a multi-option pick
+            const isMultiOption = market.marketStructure === 'multi-option';
+            const optionLabel = isMultiOption ? market.options.find(o => o.id === pick)?.label : null;
+
+            // 2. --- VALIDATION ---
+            if (!amount || amount <= 0) {
+                throw new Error("Invalid stake amount");
+            }
+            if (!marketId || !market) {
+                throw new Error("No market selected");
+            }
+            if (market.isResolved) {
+                throw new Error("Market is closed");
+            }
+
+            // 3. --- MAIN LOGIC (NOW INSIDE A TRANSACTION) ---
+            const balanceFieldToUpdate = getBalanceField(asset);
+            const amountInUsd = amount * getMockPrice(asset);
+            const xpToAward = getRandomXP(10);
+            const txHash = generateFakeTxHash();
+            
+            // Variables to track updated pool values for UI update
+            let updatedYesPool = null;
+            let updatedNoPool = null;
+
+            // Wrap all database reads and writes in a transaction
+            await runTransaction(db, async (transaction) => {
+                const profileRef = doc(db, 'artifacts', APP_ID, 'public', 'data', USER_PROFILE_COLLECTION, currentUserId);
+                const publicProfileRef = doc(db, 'artifacts', APP_ID, 'public', 'data', PUBLIC_LEADERBOARD_COLLECTION, currentUserId);
+                const pledgeCollection = collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION);
+
+                // 1. TRANSACTION READ: Get user's profile to check balance
+                const profileSnap = await transaction.get(profileRef);
+                if (!profileSnap.exists()) {
+                    throw new Error("User profile not found.");
+                }
+
+                // 2. BALANCE CHECK:
+                const currentAssetBalance = profileSnap.data()[balanceFieldToUpdate] || 0;
+                if (amount > currentAssetBalance) {
+                    throw new Error(`Insufficient ${asset} balance. You only have ${currentAssetBalance.toFixed(4)}.`);
+                }
+
+                // 3. TRANSACTION READ: Get the market (unless it's the mock)
+                let marketData, marketRef, potentialPayoutUsd;
+
+                if (market.isMock) {
+                    marketData = MOCK_ETH_MARKET;
+                    const odds = pick === 'YES' ? marketData.yesPercent : marketData.noPercent;
+                    potentialPayoutUsd = (amountInUsd / (odds / 100));
+                } else {
+                    marketRef = doc(db, 'artifacts', APP_ID, 'public', 'data', STANDARD_MARKETS_COLLECTION, marketId);
+                    const marketSnap = await transaction.get(marketRef);
+                    if (!marketSnap.exists()) { throw new Error("Market not found"); }
+                    marketData = marketSnap.data();
+                    if (marketData.isResolved) { throw new Error("Market is closed."); }
+
+                    // 4. AMM MATH (Traditional markets only)
+                    if (!marketData.isNoLoss) {
+                        if (isMultiOption) {
+                            // MULTI-OPTION AMM: Dynamic odds shifting
+                            let options = marketData.options.map(opt => ({
+                                ...opt,
+                                pool: opt.pool || (opt.odds / 100) * 1000
+                            }));
+
+                            const stakedOptionIndex = options.findIndex(o => o.id === pick);
+                            if (stakedOptionIndex === -1) throw new Error("Invalid option selected.");
+
+                            options[stakedOptionIndex].pool += amountInUsd;
+
+                            const totalPool = options.reduce((sum, opt) => sum + opt.pool, 0);
+                            options = options.map(opt => ({
+                                ...opt,
+                                odds: (opt.pool / totalPool) * 100
+                            }));
+
+                            const stakedOdds = options[stakedOptionIndex].odds;
+                            potentialPayoutUsd = amountInUsd / (stakedOdds / 100);
+
+                            transaction.update(marketRef, {
+                                options: options.map(opt => ({
+                                    id: opt.id,
+                                    label: opt.label,
+                                    odds: parseFloat(opt.odds.toFixed(2)),
+                                    pool: opt.pool
+                                })),
+                                totalStakeVolume: increment(amountInUsd)
+                            });
+                        } else {
+                            // BINARY AMM: YES/NO constant product formula
+                            let yesPool = marketData.yesPool;
+                            let noPool = marketData.noPool;
+                            const k = yesPool * noPool;
+
+                            if (pick === 'YES') {
+                                const newYesPool = yesPool + amountInUsd;
+                                const newNoPool = k / newYesPool;
+                                potentialPayoutUsd = noPool - newNoPool;
+                                yesPool = newYesPool;
+                                noPool = newNoPool;
+                            } else {
+                                const newNoPool = noPool + amountInUsd;
+                                const newYesPool = k / newNoPool;
+                                potentialPayoutUsd = yesPool - newYesPool;
+                                yesPool = newYesPool;
+                                noPool = newNoPool;
+                            }
+                            const totalPool = yesPool + noPool;
+                            
+                            updatedYesPool = yesPool;
+                            updatedNoPool = noPool;
+
+                            transaction.update(marketRef, {
+                                yesPool: yesPool,
+                                noPool: noPool,
+                                yesPercent: (yesPool / totalPool) * 100,
+                                noPercent: (noPool / totalPool) * 100,
+                                totalStakeVolume: increment(amountInUsd)
+                            });
+                        }
+                    } else {
+                        // Logic for No-Loss markets
+                        const odds = pick === 'YES' ? marketData.yesPercent : marketData.noPercent;
+                        potentialPayoutUsd = (amountInUsd / (odds / 100));
+                        transaction.update(marketRef, { totalStakeVolume: increment(amountInUsd) });
+                    }
+                }
+
+                // 6. TRANSACTION WRITE 2: Create the Pledge
+                const newPledgeRef = doc(pledgeCollection);
+                const pledgeData = {
+                    marketId: marketId,
+                    marketTitle: marketData.title || market.title,
+                    userId: currentUserId,
+                    pick: pick,
+                    amount: amount,
+                    asset: asset,
+                    amountUsd: amountInUsd,
+                    potentialReturn: potentialPayoutUsd,
+                    txHash: txHash,
+                    isResolved: false,
+                    isWinner: null,
+                    payout: 0,
+                    createdAt: new Date().toISOString(),
+                    marketStructure: marketData.marketStructure || market.marketStructure || 'binary'
+                };
+
+                if (isMultiOption && optionLabel) {
+                    pledgeData.optionLabel = optionLabel;
+                }
+
+                transaction.set(newPledgeRef, pledgeData);
+
+                // 7. TRANSACTION WRITE 3: Log for the chart
+                if (!market.isMock) {
+                    const logRef = doc(collection(db, 'artifacts', APP_ID, 'public', 'data', STAKE_LOGS_COLLECTION));
+                    transaction.set(logRef, {
+                        marketId: marketId,
+                        amountUsd: amountInUsd,
+                        timestamp: serverTimestamp()
+                    });
+                }
+
+                // 8. TRANSACTION WRITE 4 & 5: Update user's profile and leaderboard
+                transaction.update(profileRef, {
+                    [balanceFieldToUpdate]: increment(-amount),
+                    xp: increment(xpToAward),
+                    totalPredictions: increment(1)
+                });
+                transaction.update(publicProfileRef, { 
+                    xp: increment(xpToAward),
+                    totalPredictions: increment(1)
+                });
+            });
+
+            // Return transaction results for UI updates
+            return {
+                balanceFieldToUpdate,
+                amount,
+                xpToAward,
+                updatedYesPool,
+                updatedNoPool,
+                marketId,
+                isMock: market.isMock
+            };
+        }
+
+        // Expose executeStakeTransaction to window for copy trading
+        window.executeStakeTransaction = executeStakeTransaction;
+
+        /**
+         * Submits a stake for a standard market (UI wrapper).
+         */
         window.stakeMarket = async function(pick) {
             // Guest mode check
             if (isGuestMode && !isDemoAccount) {
@@ -8000,18 +8197,11 @@
                 return;
             }
             
-            // 1. Get all Firebase functions
-            const { doc, updateDoc, increment, addDoc, collection, serverTimestamp, runTransaction } = window.firebase.firestore;
-
-            // 2. Get Form Values
+            // Get Form Values from DOM
             const amount = parseFloat(dom.stakeAmountInput.value);
             const selectedAsset = dom.stakeAssetSelect.value;
 
-            // Determine if this is a multi-option pick
-            const isMultiOption = currentMarket.marketStructure === 'multi-option';
-            const optionLabel = isMultiOption ? currentMarket.options.find(o => o.id === pick)?.label : null;
-
-            // 3. --- VALIDATION ---
+            // Basic validation
             if (!amount || amount <= 0) {
                 showToast("Please enter a valid stake amount.", "warning");
                 return;
@@ -8025,187 +8215,18 @@
                 return;
             }
 
-            // 4. --- MOCK DELAY ---
+            // Show loading overlay
             showLoadingOverlay(true, "Confirming on-chain...");
-            await new Promise(res => setTimeout(res, 1500)); // Shortened delay
+            await new Promise(res => setTimeout(res, 1500));
 
-            // 5. --- MAIN LOGIC (NOW INSIDE A TRANSACTION) ---
+            // Execute the transaction
             try {
-                const balanceFieldToUpdate = getBalanceField(selectedAsset);
-                const amountInUsd = amount * getMockPrice(selectedAsset);
-                const xpToAward = getRandomXP(10);
-                const txHash = generateFakeTxHash();
+                const result = await executeStakeTransaction(currentMarketId, currentMarket, pick, amount, selectedAsset);
                 
-                // Variables to track updated pool values for UI update
-                let updatedYesPool = null;
-                let updatedNoPool = null;
-
-                // --- THIS IS THE FIX ---
-                // We wrap all database reads and writes in a transaction
-                await runTransaction(db, async (transaction) => {
-                    const profileRef = doc(db, 'artifacts', APP_ID, 'public', 'data', USER_PROFILE_COLLECTION, currentUserId);
-                    const publicProfileRef = doc(db, 'artifacts', APP_ID, 'public', 'data', PUBLIC_LEADERBOARD_COLLECTION, currentUserId);
-                    const pledgeCollection = collection(db, 'artifacts', APP_ID, 'public', 'data', PLEDGES_COLLECTION);
-
-                    // 1. TRANSACTION READ: Get user's profile to check balance
-                    const profileSnap = await transaction.get(profileRef);
-                    if (!profileSnap.exists()) {
-                        throw new Error("User profile not found.");
-                    }
-
-                    // 2. BALANCE CHECK:
-                    const currentAssetBalance = profileSnap.data()[balanceFieldToUpdate] || 0;
-                    if (amount > currentAssetBalance) {
-                        throw new Error(`Insufficient ${selectedAsset} balance. You only have ${currentAssetBalance.toFixed(4)}.`);
-                    }
-
-                    // 3. TRANSACTION READ: Get the market (unless it's the mock)
-                    let market, marketRef, potentialPayoutUsd;
-
-                    if (currentMarket.isMock) {
-                        market = MOCK_ETH_MARKET;
-                        const odds = pick === 'YES' ? market.yesPercent : market.noPercent;
-                        potentialPayoutUsd = (amountInUsd / (odds / 100));
-                    } else {
-                        marketRef = doc(db, 'artifacts', APP_ID, 'public', 'data', STANDARD_MARKETS_COLLECTION, currentMarketId);
-                        const marketSnap = await transaction.get(marketRef);
-                        if (!marketSnap.exists()) { throw new Error("Market not found"); }
-                        market = marketSnap.data();
-                        if (market.isResolved) { throw new Error("Market is closed."); }
-
-                        // 4. AMM MATH (Traditional markets only)
-                        if (!market.isNoLoss) {
-                            if (isMultiOption) {
-                                // MULTI-OPTION AMM: Dynamic odds shifting
-                                let options = market.options.map(opt => ({
-                                    ...opt,
-                                    pool: opt.pool || (opt.odds / 100) * 1000 // Initialize pools if missing
-                                }));
-
-                                // Find the option being staked on
-                                const stakedOptionIndex = options.findIndex(o => o.id === pick);
-                                if (stakedOptionIndex === -1) throw new Error("Invalid option selected.");
-
-                                // Add stake to the selected option's pool
-                                options[stakedOptionIndex].pool += amountInUsd;
-
-                                // Recalculate odds for ALL options using pool distribution
-                                const totalPool = options.reduce((sum, opt) => sum + opt.pool, 0);
-                                options = options.map(opt => ({
-                                    ...opt,
-                                    odds: (opt.pool / totalPool) * 100
-                                }));
-
-                                // Calculate payout (inverse of odds)
-                                const stakedOdds = options[stakedOptionIndex].odds;
-                                potentialPayoutUsd = amountInUsd / (stakedOdds / 100);
-
-                                // Update market with new options and pools
-                                transaction.update(marketRef, {
-                                    options: options.map(opt => ({
-                                        id: opt.id,
-                                        label: opt.label,
-                                        odds: parseFloat(opt.odds.toFixed(2)),
-                                        pool: opt.pool
-                                    })),
-                                    totalStakeVolume: increment(amountInUsd)
-                                });
-                            } else {
-                                // BINARY AMM: YES/NO constant product formula
-                                let yesPool = market.yesPool;
-                                let noPool = market.noPool;
-                                const k = yesPool * noPool;
-
-                                if (pick === 'YES') {
-                                    const newYesPool = yesPool + amountInUsd;
-                                    const newNoPool = k / newYesPool;
-                                    potentialPayoutUsd = noPool - newNoPool;
-                                    yesPool = newYesPool;
-                                    noPool = newNoPool;
-                                } else {
-                                    const newNoPool = noPool + amountInUsd;
-                                    const newYesPool = k / newNoPool;
-                                    potentialPayoutUsd = yesPool - newYesPool;
-                                    yesPool = newYesPool;
-                                    noPool = newNoPool;
-                                }
-                                const totalPool = yesPool + noPool;
-                                
-                                // Store updated pools for UI update
-                                updatedYesPool = yesPool;
-                                updatedNoPool = noPool;
-
-                                // Update market
-                                transaction.update(marketRef, {
-                                    yesPool: yesPool,
-                                    noPool: noPool,
-                                    yesPercent: (yesPool / totalPool) * 100,
-                                    noPercent: (noPool / totalPool) * 100,
-                                    totalStakeVolume: increment(amountInUsd)
-                                });
-                            }
-                        } else {
-                            // Logic for No-Loss markets
-                            const odds = pick === 'YES' ? market.yesPercent : market.noPercent;
-                            potentialPayoutUsd = (amountInUsd / (odds / 100));
-                            transaction.update(marketRef, { totalStakeVolume: increment(amountInUsd) });
-                        }
-                    }
-
-                    // 6. TRANSACTION WRITE 2: Create the Pledge
-                    const newPledgeRef = doc(pledgeCollection);
-                    const pledgeData = {
-                        marketId: currentMarketId,
-                        marketTitle: market.title,
-                        userId: currentUserId,
-                        pick: pick,
-                        amount: amount,
-                        asset: selectedAsset,
-                        amountUsd: amountInUsd,
-                        potentialReturn: potentialPayoutUsd,
-                        txHash: txHash,
-                        isResolved: false,
-                        isWinner: null,
-                        payout: 0,
-                        createdAt: new Date().toISOString(),
-                        marketStructure: market.marketStructure || 'binary'
-                    };
-
-                    // Add option label for multi-option markets
-                    if (isMultiOption && optionLabel) {
-                        pledgeData.optionLabel = optionLabel;
-                    }
-
-                    transaction.set(newPledgeRef, pledgeData);
-
-                    // 7. TRANSACTION WRITE 3: Log for the chart
-                    if (!currentMarket.isMock) {
-                        const logRef = doc(collection(db, 'artifacts', APP_ID, 'public', 'data', STAKE_LOGS_COLLECTION));
-                        transaction.set(logRef, {
-                            marketId: currentMarketId,
-                            amountUsd: amountInUsd,
-                            timestamp: serverTimestamp()
-                        });
-                    }
-
-                    // 8. TRANSACTION WRITE 4 & 5: Update user's profile and leaderboard
-                    transaction.update(profileRef, {
-                        [balanceFieldToUpdate]: increment(-amount),
-                        xp: increment(xpToAward),
-                        totalPredictions: increment(1) // Track total predictions for copy trading
-                    });
-                    transaction.update(publicProfileRef, { 
-                        xp: increment(xpToAward),
-                        totalPredictions: increment(1) // Track total predictions for copy trading leaderboard
-                    });
-                });
-                // --- END OF TRANSACTION ---
-
-                // Optimistically update the UI balance immediately
-                const balanceField = getBalanceField(selectedAsset);
-                if (userProfile && userProfile[balanceField] !== undefined) {
-                    userProfile[balanceField] -= amount;
-                    userProfile.xp += xpToAward;
+                // Optimistically update the UI based on transaction result
+                if (userProfile && userProfile[result.balanceFieldToUpdate] !== undefined) {
+                    userProfile[result.balanceFieldToUpdate] -= result.amount;
+                    userProfile.xp += result.xpToAward;
 
                     // Update UI elements
                     if (dom.mockBalance) {
@@ -8220,27 +8241,27 @@
                 }
                 
                 // Update the UI to display new pool values
-                if (updatedYesPool !== null && updatedNoPool !== null && currentMarketId && !currentMarket.isMock) {
+                if (result.updatedYesPool !== null && result.updatedNoPool !== null && !result.isMock) {
                     // Update the market object in memory
                     if (currentMarket) {
-                        currentMarket.yesPool = updatedYesPool;
-                        currentMarket.noPool = updatedNoPool;
-                        const totalPool = updatedYesPool + updatedNoPool;
-                        currentMarket.yesPercent = (updatedYesPool / totalPool) * 100;
-                        currentMarket.noPercent = (updatedNoPool / totalPool) * 100;
+                        currentMarket.yesPool = result.updatedYesPool;
+                        currentMarket.noPool = result.updatedNoPool;
+                        const totalPool = result.updatedYesPool + result.updatedNoPool;
+                        currentMarket.yesPercent = (result.updatedYesPool / totalPool) * 100;
+                        currentMarket.noPercent = (result.updatedNoPool / totalPool) * 100;
                     }
                     
                     // Update the displayed pools on the current market card
-                    updateMarketPoolDisplay(currentMarketId, updatedYesPool, updatedNoPool);
+                    updateMarketPoolDisplay(result.marketId, result.updatedYesPool, result.updatedNoPool);
                     
                     // Also update the market in the allStandardMarkets array
-                    const marketIndex = allStandardMarkets.findIndex(m => m.id === currentMarketId);
+                    const marketIndex = allStandardMarkets.findIndex(m => m.id === result.marketId);
                     if (marketIndex !== -1) {
-                        allStandardMarkets[marketIndex].yesPool = updatedYesPool;
-                        allStandardMarkets[marketIndex].noPool = updatedNoPool;
-                        const totalPool = updatedYesPool + updatedNoPool;
-                        allStandardMarkets[marketIndex].yesPercent = (updatedYesPool / totalPool) * 100;
-                        allStandardMarkets[marketIndex].noPercent = (updatedNoPool / totalPool) * 100;
+                        allStandardMarkets[marketIndex].yesPool = result.updatedYesPool;
+                        allStandardMarkets[marketIndex].noPool = result.updatedNoPool;
+                        const totalPool = result.updatedYesPool + result.updatedNoPool;
+                        allStandardMarkets[marketIndex].yesPercent = (result.updatedYesPool / totalPool) * 100;
+                        allStandardMarkets[marketIndex].noPercent = (result.updatedNoPool / totalPool) * 100;
                     }
                     
                     // Re-render the market feed to ensure home screen shows updated pools
