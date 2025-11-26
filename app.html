@@ -5856,27 +5856,26 @@
                             const imageHtml = post.imageUrl ? `<img data-lightbox-image class="w-full rounded-lg max-h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity" src="${post.imageUrl.replace(/"/g, '&quot;')}">` : '';
                             let marketHtml = '';
                             if (post.attachedMarket) {
-                                // Check if CURRENT USER has a stake in this market (not the post author)
-                                const marketIdLower = post.attachedMarket.id?.toLowerCase();
-                                const currentUserStance = userStakesCache[marketIdLower] || null;
-                                const hasStake = !!currentUserStance;
+                                // Check if POST AUTHOR has a stake in the market they're posting about
+                                const authorStance = post.attachedMarket.stance; // Author's position (YES/NO/option)
+                                const hasStake = !!authorStance;
                                 
                                 let stakeLabel = '';
                                 if (hasStake) {
-                                    const stanceColor = currentUserStance === 'YES' ? 'text-green-400' : currentUserStance === 'NO' ? 'text-red-400' : 'text-sky-400';
-                                    stakeLabel = `<span class="${stanceColor} font-bold text-xs px-2 py-1 rounded bg-white/10">💰 ${currentUserStance} - Skin in game</span>`;
+                                    const stanceColor = authorStance === 'YES' ? 'text-green-400' : authorStance === 'NO' ? 'text-red-400' : 'text-sky-400';
+                                    stakeLabel = `<span class="${stanceColor} font-bold text-xs px-2.5 py-1 rounded-full bg-white/10 border border-white/20">💰 ${authorStance} - Skin in game</span>`;
                                 } else {
-                                    stakeLabel = `<span class="text-gray-500 text-xs px-2 py-1 rounded border border-gray-600/30">No stake</span>`;
+                                    stakeLabel = `<span class="text-gray-500 text-xs px-2.5 py-1 rounded-full border border-gray-600/40">🚫 No stake</span>`;
                                 }
                                 
                                 console.log('📊 Market Stake Check:', {
                                     marketId: post.attachedMarket.id,
                                     marketTitle: post.attachedMarket.title,
-                                    currentUserStance,
-                                    hasStake,
-                                    userStakesCache
+                                    postAuthor: post.displayName,
+                                    authorStance,
+                                    hasStake
                                 });
-                                marketHtml = `<div class="bg-sky-400/10 p-3 rounded-lg border border-sky-400/30 text-sm cursor-pointer hover:bg-sky-400/20 transition-all" onclick="navigateToMarket('${post.attachedMarket.id}')">
+                                marketHtml = `<div class="bg-sky-400/10 p-3 rounded-lg border border-sky-400/30 text-sm cursor-pointer hover:bg-sky-400/20 transition-all hover:shadow-lg hover:shadow-sky-400/20" onclick="navigateToMarket('${post.attachedMarket.id}')">
                                     <p class="text-sky-300 font-medium mb-2">${post.attachedMarket.title}</p>
                                     ${stakeLabel}
                                 </div>`;
