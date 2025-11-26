@@ -7,291 +7,817 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        * { font-family: 'Outfit', sans-serif; }
-        .mono { font-family: 'Space Grotesk', monospace; }
-        html, body { margin: 0; padding: 0; width: 100%; overflow: hidden; }
-        body { 
-            background: #0a0a0a; 
-            color: #fff; 
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --accent: #22d3ee;
+            --accent-2: #a855f7;
+            --bg-dark: #030712;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        html, body { 
+            width: 100%; 
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+
+        body {
             position: fixed;
-            height: 100vh;
-            transition: background 0.3s, color 0.3s;
+            inset: 0;
         }
+
         body.light-mode {
-            background: #f8f9fa;
-            color: #0a0a0a;
+            --bg-dark: #fafafa;
+            --bg-card: rgba(0, 0, 0, 0.02);
+            --border: rgba(0, 0, 0, 0.06);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #64748b;
         }
 
-        @keyframes pulse-glow { 
-            0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
-            50% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.6); }
+        .bg-mesh {
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.15), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 50%, rgba(168, 85, 247, 0.1), transparent),
+                radial-gradient(ellipse 50% 50% at 0% 80%, rgba(34, 211, 238, 0.08), transparent);
+            pointer-events: none;
+            z-index: 0;
         }
-        @keyframes float-up {
-            0% { transform: translateY(20px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
+
+        body.light-mode .bg-mesh {
+            background: 
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.08), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 50%, rgba(168, 85, 247, 0.05), transparent),
+                radial-gradient(ellipse 50% 50% at 0% 80%, rgba(34, 211, 238, 0.04), transparent);
         }
-        @keyframes slide-in-left {
-            0% { transform: translateX(-100px); opacity: 0; }
-            100% { transform: translateX(0); opacity: 1; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes slide-in-right {
-            0% { transform: translateX(100px); opacity: 0; }
-            100% { transform: translateX(0); opacity: 1; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-        @keyframes bounce-in {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
         }
+
+        @keyframes slideLeft {
+            from { opacity: 0; transform: translateX(60px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideRight {
+            from { opacity: 0; transform: translateX(-60px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.5); }
+        }
+
         @keyframes shimmer {
-            0% { background-position: -1000px 0; }
-            100% { background-position: 1000px 0; }
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
         }
 
-        .animate-in { animation: float-up 0.6s ease-out; }
-        .animate-pulse-glow { animation: pulse-glow 2s infinite; }
-        .animate-slide-left { animation: slide-in-left 0.7s ease-out; }
-        .animate-slide-right { animation: slide-in-right 0.7s ease-out; }
-        .animate-bounce-in { animation: bounce-in 0.5s ease-out; }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
 
-        .gradient-text { background: linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .gradient-bg { background: linear-gradient(135deg, #38BDF8, #818CF8, #C084FC); }
-        
-        .glass { 
-            background: rgba(255, 255, 255, 0.08); 
-            border: 1px solid rgba(255, 255, 255, 0.15); 
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+        .animate-fade-up { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fade-in { animation: fadeIn 0.6s ease forwards; }
+        .animate-scale-in { animation: scaleIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-slide-left { animation: slideLeft 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-slide-right { animation: slideRight 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-glow { animation: glow 3s ease-in-out infinite; }
+        .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+        .delay-6 { animation-delay: 0.6s; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 50%, var(--accent-2) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        
-        body.light-mode .glass {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
+
+        .gradient-border {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
         }
-        
-        .container { width: 100%; height: 100%; position: fixed; top: 0; left: 0; }
-        .slide-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; overflow-y: auto; }
-        .slide-container.active { opacity: 1; pointer-events: auto; z-index: 10; }
-        .slide-content { min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
-        
+
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--primary), var(--accent), var(--accent-2));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .gradient-border:hover::before {
+            opacity: 1;
+        }
+
+        .glass {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+        }
+
+        .container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+        }
+
+        .slide-container {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .slide-container.active {
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        .slide-content {
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 5rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
         @media (max-width: 768px) {
-            .slide-content { padding: 1.5rem; justify-content: flex-start; padding-top: 6rem; }
-            h1 { font-size: 2.5rem !important; }
-            h2 { font-size: 1.8rem !important; }
-            .grid-3 { grid-template-columns: 1fr !important; }
+            .slide-content {
+                padding: 7rem 1.5rem 5rem;
+                justify-content: flex-start;
+            }
         }
 
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
-        
-        @media (max-width: 768px) {
-            .grid-2 { grid-template-columns: 1fr; }
-            .grid-3 { grid-template-columns: 1fr; }
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            padding: 1.75rem;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
         }
 
-        .card { 
-            background: rgba(255, 255, 255, 0.08); 
-            border: 1px solid rgba(255, 255, 255, 0.15); 
-            backdrop-filter: blur(10px);
-            padding: 1.5rem; 
-            border-radius: 1rem; 
-            transition: all 0.3s; 
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(168, 85, 247, 0.05));
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 
+                0 20px 40px -20px rgba(99, 102, 241, 0.3),
+                0 0 0 1px rgba(99, 102, 241, 0.1);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-accent {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .card-accent:hover {
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        .stat-number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.02em;
+        }
+
+        .icon-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin-bottom: 1.25rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .nav-controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .nav-btn {
+            padding: 0.875rem 1.5rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-radius: 12px;
             cursor: pointer;
-        }
-        
-        body.light-mode .card {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-        
-        .card:hover { transform: translateY(-8px); border-color: rgba(56, 189, 248, 0.5); box-shadow: 0 20px 40px rgba(56, 189, 248, 0.15); }
-        
-        .btn { padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 700; cursor: pointer; transition: all 0.3s; border: none; }
-        .btn-primary { background: linear-gradient(135deg, #38BDF8, #818CF8); color: #000; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(56, 189, 248, 0.3); }
-        
-        .btn-nav { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; gap: 1rem; }
-        .btn-nav button { 
-            padding: 0.75rem 1.25rem; 
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #38BDF8; 
-            font-weight: 700; 
-            border-radius: 0.5rem; 
-            cursor: pointer; 
             transition: all 0.3s;
-            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
-        .btn-nav button:hover { background: rgba(56, 189, 248, 0.2); }
-        
-        body.light-mode .btn-nav button {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            color: #38BDF8;
+
+        .nav-btn:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-2px);
         }
-        
-        .counter { position: fixed; top: 2rem; right: 4rem; z-index: 50; font-size: 0.9rem; color: #666; mono; }
-        
+
+        .slide-counter {
+            position: fixed;
+            top: 2rem;
+            right: 6rem;
+            z-index: 50;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent), var(--accent-2));
+            z-index: 100;
+            transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
         .theme-toggle {
             position: fixed;
             top: 2rem;
             right: 2rem;
             z-index: 50;
-            width: 50px;
-            height: 30px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
+            width: 48px;
+            height: 28px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
-            padding: 0 4px;
+            padding: 3px;
         }
-        
+
         .theme-toggle:hover {
-            border-color: rgba(56, 189, 248, 0.5);
+            border-color: rgba(99, 102, 241, 0.3);
         }
-        
+
         .theme-toggle-dot {
             width: 22px;
             height: 22px;
-            background: white;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
             border-radius: 50%;
-            transition: transform 0.3s;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
         }
-        
+
         body.light-mode .theme-toggle-dot {
             transform: translateX(20px);
-            background: #333;
         }
-        
-        .logo-header {
-            position: fixed;
-            top: 2rem;
-            left: 2rem;
-            z-index: 50;
-            width: 50px;
-            height: 50px;
-            border-radius: 0.5rem;
-            background-size: cover;
-            background-position: center;
-        }
-        
-        h1 { font-size: 4rem; font-weight: 900; line-height: 1.1; margin: 0; }
-        h2 { font-size: 3rem; font-weight: 800; margin: 1rem 0; }
-        h3 { font-size: 1.25rem; font-weight: 700; }
-        
-        .subtitle { font-size: 1.3rem; color: #bbb; margin: 1rem 0; }
-        body.light-mode .subtitle { color: #666; }
-        
-        .desc { color: #999; font-size: 0.95rem; line-height: 1.5; }
-        body.light-mode .desc { color: #666; }
-        
-        .emoji { font-size: 3rem; margin: 1rem 0; display: block; }
 
-        .progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #38BDF8, #818CF8, #C084FC); z-index: 100; transition: width 0.5s ease; }
+        .logo-container {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-img {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.03em;
+        }
+
+        h2 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            max-width: 600px;
+        }
+
+        .desc {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--primary-light);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+        }
+
+        .category-tag {
+            padding: 1rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .category-tag:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .roadmap-item {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .roadmap-dot {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            background: rgba(99, 102, 241, 0.1);
+            border: 2px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .roadmap-dot.completed {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border: none;
+        }
+
+        .roadmap-dot.current {
+            background: linear-gradient(135deg, var(--primary), var(--accent-2));
+            border: none;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .tech-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tech-item:last-child {
+            border-bottom: none;
+        }
+
+        .tech-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+        }
+
+        .cta-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.15));
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            border-radius: 1.5rem;
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .cta-card:hover {
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 60px rgba(99, 102, 241, 0.2);
+        }
+
+        .email-link {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-light);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .email-link:hover {
+            color: var(--accent);
+        }
+
+        .vision-item {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            text-align: left;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .vision-item:last-child {
+            border-bottom: none;
+        }
+
+        .vision-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+        }
+
+        .flow-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .flow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+
+        .flow-arrow {
+            color: var(--text-muted);
+            font-size: 1.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .flow-container {
+                flex-direction: column;
+            }
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 4rem;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .hero-stat {
+            text-align: center;
+        }
+
+        .hero-stat-value {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .hero-stat-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        .large-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 28px;
+            object-fit: cover;
+            margin-bottom: 2rem;
+            border: 2px solid var(--border);
+            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+        }
     </style>
 </head>
 <body>
-    <div class="logo-header" style="background-image: url('https://res.cloudinary.com/djslxbghy/image/upload/IMG_4551_e9bv2x.jpg');"></div>
-    <div class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">
+    <div class="bg-mesh"></div>
+    
+    <div class="logo-container">
+        <img src="https://res.cloudinary.com/djslxbghy/image/upload/IMG_4551_e9bv2x.jpg" alt="Predora" class="logo-img">
+        <span class="logo-text">Predora</span>
+    </div>
+
+    <div class="theme-toggle" onclick="toggleTheme()">
         <div class="theme-toggle-dot"></div>
     </div>
+
     <div class="progress-bar" id="progress-bar"></div>
 
-    <!-- SLIDE 1: Title -->
+    <div class="slide-counter">
+        <span class="mono"><span id="current-slide">01</span> / <span id="total-slides">09</span></span>
+    </div>
+
+    <!-- SLIDE 1: Hero -->
     <div class="slide-container active" id="slide-1">
         <div class="slide-content">
-            <div style="margin-top: 3rem;"></div>
-            <div class="emoji">🎯</div>
-            <h1 class="gradient-text animate-in">PREDORA</h1>
-            <p class="subtitle animate-in" style="animation-delay: 0.1s">YOUR TAKES HAVE VALUE</p>
-            <p class="desc max-w-md mx-auto animate-in" style="animation-delay: 0.2s">
-                Tap to bet. Chat to earn. Watch Gemini settle it in real-time. 💰
+            <img src="https://res.cloudinary.com/djslxbghy/image/upload/IMG_4551_e9bv2x.jpg" alt="Predora" class="large-logo animate-scale-in">
+            
+            <div class="badge animate-fade-up" style="opacity: 0; margin-bottom: 1.5rem;">
+                <span style="font-size: 0.75rem;">AI-POWERED</span>
+                PREDICTION MARKETS
+            </div>
+            
+            <h1 class="gradient-text animate-fade-up delay-1" style="opacity: 0;">PREDORA</h1>
+            
+            <p class="subtitle animate-fade-up delay-2" style="opacity: 0; margin-top: 1.5rem;">
+                Your takes have value. Tap to bet. Chat to earn. <br>Watch AI settle it in real-time.
             </p>
-            <div style="margin-top: 3rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem;">
-                <div class="animate-in" style="animation-delay: 0.3s;">
-                    <div style="font-size: 2.5rem; background: linear-gradient(135deg, #38BDF8, #818CF8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900;">4</div>
-                    <div class="desc">AI Agents</div>
+
+            <div class="hero-stats animate-fade-up delay-3" style="opacity: 0;">
+                <div class="hero-stat">
+                    <div class="hero-stat-value">4</div>
+                    <div class="hero-stat-label">AI Agents</div>
                 </div>
-                <div class="animate-in" style="animation-delay: 0.4s;">
-                    <div style="font-size: 2.5rem; background: linear-gradient(135deg, #818CF8, #C084FC); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900;">90%</div>
-                    <div class="desc">Auto-Resolved</div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value">90%</div>
+                    <div class="hero-stat-label">Auto-Resolved</div>
                 </div>
-                <div class="animate-in" style="animation-delay: 0.5s;">
-                    <div style="font-size: 2.5rem; background: linear-gradient(135deg, #C084FC, #38BDF8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 900;">∞</div>
-                    <div class="desc">Real Money</div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value">30m</div>
+                    <div class="hero-stat-label">Resolution Time</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 2: The Problem -->
+    <!-- SLIDE 2: Problem -->
     <div class="slide-container" id="slide-2">
         <div class="slide-content">
-            <h2 class="gradient-text mb-4 animate-in">why prediction markets are mid 😴</h2>
-            <div class="grid-2 max-w-4xl mx-auto">
-                <div class="card animate-slide-left" style="animation-delay: 0.1s;">
-                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤔</div>
-                    <h3>literally too complicated</h3>
-                    <p class="desc mt-2">Order books? Liquidity pools? Nobody gets it. Nobody cares. We do simple.</p>
+            <div class="badge animate-fade-up" style="opacity: 0; margin-bottom: 2rem;">THE PROBLEM</div>
+            
+            <h2 class="gradient-text animate-fade-up delay-1" style="opacity: 0; margin-bottom: 3rem;">
+                Why prediction markets<br>haven't gone mainstream
+            </h2>
+
+            <div class="grid-2" style="max-width: 900px;">
+                <div class="card animate-slide-right delay-1" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>🤯</span>
+                    </div>
+                    <h3>Too Complicated</h3>
+                    <p class="desc" style="margin-top: 0.75rem;">
+                        Order books, liquidity pools, complex UX. Nobody gets it. We make it simple.
+                    </p>
                 </div>
-                <div class="card animate-slide-right" style="animation-delay: 0.1s;">
-                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">⏳</div>
-                    <h3>resolution takes forever</h3>
-                    <p class="desc mt-2">Waiting weeks for manual review? That's ancient. We settle in 30 minutes.</p>
+
+                <div class="card animate-slide-left delay-2" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>⏳</span>
+                    </div>
+                    <h3>Slow Resolution</h3>
+                    <p class="desc" style="margin-top: 0.75rem;">
+                        Waiting weeks for manual review is ancient. We settle in 30 minutes with AI.
+                    </p>
                 </div>
-                <div class="card animate-slide-left" style="animation-delay: 0.2s;">
-                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">👻</div>
-                    <h3>zero community</h3>
-                    <p class="desc mt-2">Cold, anonymous markets. No flex. No rep. No social layer. We changed that.</p>
+
+                <div class="card animate-slide-right delay-3" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>👻</span>
+                    </div>
+                    <h3>Zero Community</h3>
+                    <p class="desc" style="margin-top: 0.75rem;">
+                        Cold, anonymous markets. No flex, no reputation, no social layer.
+                    </p>
                 </div>
-                <div class="card animate-slide-right" style="animation-delay: 0.2s;">
-                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚩</div>
-                    <h3>no safety at all</h3>
-                    <p class="desc mt-2">Scams, spam, illegal stuff = the norm. We built 5-layer protection instead.</p>
+
+                <div class="card animate-slide-left delay-4" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>🚨</span>
+                    </div>
+                    <h3>Safety Concerns</h3>
+                    <p class="desc" style="margin-top: 0.75rem;">
+                        Scams, spam, and illegal content. We built 5-layer AI protection.
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 3: The Solution -->
+    <!-- SLIDE 3: Solution -->
     <div class="slide-container" id="slide-3">
         <div class="slide-content">
-            <h2 class="gradient-text mb-4 animate-in">meet PREDORA 🚀</h2>
-            <p class="desc max-w-md mx-auto mb-6">the prediction market for gen z</p>
-            <div class="grid-3 max-w-5xl mx-auto">
-                <div class="card animate-bounce-in" style="animation-delay: 0s;">
-                    <div class="emoji">⚡</div>
+            <div class="badge animate-fade-up" style="opacity: 0; margin-bottom: 2rem;">THE SOLUTION</div>
+            
+            <h2 class="gradient-text animate-fade-up delay-1" style="opacity: 0; margin-bottom: 1rem;">
+                Meet Predora
+            </h2>
+            
+            <p class="subtitle animate-fade-up delay-2" style="opacity: 0; margin-bottom: 3rem;">
+                The prediction market built for Gen Z
+            </p>
+
+            <div class="grid-3" style="max-width: 1100px;">
+                <div class="card animate-scale-in delay-1" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>⚡</span>
+                    </div>
                     <h3>One-Tap Betting</h3>
-                    <p class="desc">Swipe → Tap → Done. 2 seconds.</p>
+                    <p class="desc" style="margin-top: 0.75rem;">Swipe. Tap. Done. 2 seconds flat.</p>
                 </div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.1s;">
-                    <div class="emoji">🤖</div>
+
+                <div class="card animate-scale-in delay-2" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>🤖</span>
+                    </div>
                     <h3>Swarm Oracle</h3>
-                    <p class="desc">4 AI agents vote. 90% settled in 30 min.</p>
+                    <p class="desc" style="margin-top: 0.75rem;">4 AI agents vote. 90% settled in 30 min.</p>
                 </div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.2s;">
-                    <div class="emoji">👥</div>
+
+                <div class="card animate-scale-in delay-3" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>👥</span>
+                    </div>
                     <h3>Social Feed</h3>
-                    <p class="desc">Drop takes. Build rep. Earn rewards.</p>
+                    <p class="desc" style="margin-top: 0.75rem;">Drop takes. Build rep. Earn rewards.</p>
                 </div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.3s;">
-                    <div class="emoji">🏛️</div>
+
+                <div class="card animate-scale-in delay-4" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>⚖️</span>
+                    </div>
                     <h3>Jury Mode</h3>
-                    <p class="desc">Disagree? Top 5 vote. Pure democracy.</p>
+                    <p class="desc" style="margin-top: 0.75rem;">Disagree? Top 5 users vote. Pure democracy.</p>
                 </div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.4s;">
-                    <div class="emoji">🛡️</div>
+
+                <div class="card animate-scale-in delay-5" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>🛡️</span>
+                    </div>
                     <h3>Multi-Layer Safety</h3>
-                    <p class="desc">Gemini + human review. Safe AF.</p>
+                    <p class="desc" style="margin-top: 0.75rem;">Gemini + human review. Completely safe.</p>
                 </div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.5s;">
-                    <div class="emoji">💸</div>
+
+                <div class="card animate-scale-in delay-6" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>💎</span>
+                    </div>
                     <h3>AMM Liquidity</h3>
-                    <p class="desc">Instant fills. Real pricing. No slippage.</p>
+                    <p class="desc" style="margin-top: 0.75rem;">Instant fills. Real pricing. Zero slippage.</p>
                 </div>
             </div>
         </div>
@@ -300,58 +826,82 @@
     <!-- SLIDE 4: Categories -->
     <div class="slide-container" id="slide-4">
         <div class="slide-content">
-            <h2 class="gradient-text mb-6 animate-in">12 categories you LIVE for</h2>
-            <div class="grid-3 max-w-5xl mx-auto">
-                <div class="card animate-bounce-in" style="animation-delay: 0s;">💰 Crypto</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.05s;">🏈 Sports</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.1s;">🏛️ Politics</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.15s;">💼 Finance</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.2s;">💻 Tech</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.25s;">🌐 Social</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.3s;">⭐ Influencers</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.35s;">🎨 Creators</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.4s;">💬 Gossip</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.45s;">🎓 Campus</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.5s;">🎮 Gaming</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.55s;">🎬 Entertainment</div>
+            <div class="badge animate-fade-up" style="opacity: 0; margin-bottom: 2rem;">MARKET CATEGORIES</div>
+            
+            <h2 class="gradient-text animate-fade-up delay-1" style="opacity: 0; margin-bottom: 3rem;">
+                12 categories you care about
+            </h2>
+
+            <div class="grid-4" style="max-width: 900px;">
+                <div class="category-tag animate-scale-in delay-1" style="opacity: 0;"><span>💰</span> Crypto</div>
+                <div class="category-tag animate-scale-in delay-1" style="opacity: 0;"><span>🏈</span> Sports</div>
+                <div class="category-tag animate-scale-in delay-2" style="opacity: 0;"><span>🏛️</span> Politics</div>
+                <div class="category-tag animate-scale-in delay-2" style="opacity: 0;"><span>💼</span> Finance</div>
+                <div class="category-tag animate-scale-in delay-2" style="opacity: 0;"><span>💻</span> Tech</div>
+                <div class="category-tag animate-scale-in delay-3" style="opacity: 0;"><span>🌐</span> Social</div>
+                <div class="category-tag animate-scale-in delay-3" style="opacity: 0;"><span>⭐</span> Influencers</div>
+                <div class="category-tag animate-scale-in delay-3" style="opacity: 0;"><span>🎨</span> Creators</div>
+                <div class="category-tag animate-scale-in delay-4" style="opacity: 0;"><span>💬</span> Gossip</div>
+                <div class="category-tag animate-scale-in delay-4" style="opacity: 0;"><span>🎓</span> Campus</div>
+                <div class="category-tag animate-scale-in delay-5" style="opacity: 0;"><span>🎮</span> Gaming</div>
+                <div class="category-tag animate-scale-in delay-5" style="opacity: 0;"><span>🎬</span> Entertainment</div>
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 5: The Tech -->
+    <!-- SLIDE 5: Technology -->
     <div class="slide-container" id="slide-5">
         <div class="slide-content">
-            <h2 class="gradient-text mb-6 animate-in">built on the best tech 🔧</h2>
-            <div class="grid-2 max-w-4xl mx-auto mb-6">
-                <div class="card animate-slide-left" style="animation-delay: 0.1s;">
-                    <h3 style="color: #38BDF8; margin-top: 0;">🧠 AI Layer</h3>
-                    <ul class="text-left mt-3 space-y-2 desc">
-                        <li>• Google Gemini 2.0</li>
-                        <li>• OpenAI GPT-4o</li>
-                        <li>• Byzantine Consensus</li>
-                        <li>• Web Search Grounding</li>
-                    </ul>
+            <div class="badge animate-fade-up" style="opacity: 0; margin-bottom: 2rem;">TECHNOLOGY</div>
+            
+            <h2 class="gradient-text animate-fade-up delay-1" style="opacity: 0; margin-bottom: 3rem;">
+                Built on cutting-edge tech
+            </h2>
+
+            <div class="grid-2" style="max-width: 900px; margin-bottom: 2rem;">
+                <div class="card animate-slide-right delay-2" style="opacity: 0;">
+                    <h3 style="color: var(--primary-light); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🧠</span> AI Layer
+                    </h3>
+                    <div class="tech-item"><div class="tech-dot"></div><span class="desc">Google Gemini 2.0 Flash</span></div>
+                    <div class="tech-item"><div class="tech-dot" style="background: var(--accent);"></div><span class="desc">OpenAI GPT-4o</span></div>
+                    <div class="tech-item"><div class="tech-dot" style="background: var(--accent-2);"></div><span class="desc">Byzantine Consensus</span></div>
+                    <div class="tech-item"><div class="tech-dot"></div><span class="desc">Web Search Grounding</span></div>
                 </div>
-                <div class="card animate-slide-right" style="animation-delay: 0.1s;">
-                    <h3 style="color: #818CF8; margin-top: 0;">⚙️ Backend Stack</h3>
-                    <ul class="text-left mt-3 space-y-2 desc">
-                        <li>• Firebase Firestore DB</li>
-                        <li>• Node.js + Express</li>
-                        <li>• SendGrid for Email</li>
-                        <li>• Auto-cron (5 min)</li>
-                    </ul>
+
+                <div class="card animate-slide-left delay-3" style="opacity: 0;">
+                    <h3 style="color: var(--accent); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>⚙️</span> Backend Stack
+                    </h3>
+                    <div class="tech-item"><div class="tech-dot"></div><span class="desc">Firebase Firestore</span></div>
+                    <div class="tech-item"><div class="tech-dot" style="background: var(--accent);"></div><span class="desc">Node.js + Express</span></div>
+                    <div class="tech-item"><div class="tech-dot" style="background: var(--accent-2);"></div><span class="desc">SendGrid Email</span></div>
+                    <div class="tech-item"><div class="tech-dot"></div><span class="desc">Auto-Cron (5 min)</span></div>
                 </div>
             </div>
-            <div class="card max-w-2xl mx-auto animate-in">
-                <h3 style="color: #C084FC; margin-top: 0; margin-bottom: 1rem;">Oracle Resolution</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 1rem; text-align: center; font-size: 0.85rem;">
-                    <div>📅<br>Market<br>Expires</div>
-                    <div style="color: #999;">→</div>
-                    <div>🤖<br>Swarm<br>Votes</div>
-                    <div style="color: #999;">→</div>
-                    <div>✅<br>90%<br>Confident</div>
-                    <div style="color: #999;">→</div>
-                    <div>💸<br>Instant<br>Payout</div>
+
+            <div class="card card-accent animate-fade-up delay-4" style="opacity: 0; max-width: 700px; width: 100%;">
+                <h3 style="color: var(--accent-2); margin-bottom: 1.5rem;">Oracle Resolution Flow</h3>
+                <div class="flow-container">
+                    <div class="flow-step">
+                        <span style="font-size: 1.5rem;">📅</span>
+                        <span class="desc">Market Expires</span>
+                    </div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step">
+                        <span style="font-size: 1.5rem;">🤖</span>
+                        <span class="desc">Swarm Votes</span>
+                    </div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step">
+                        <span style="font-size: 1.5rem;">✅</span>
+                        <span class="desc">90% Confident</span>
+                    </div>
+                    <span class="flow-arrow">→</span>
+                    <div class="flow-step">
+                        <span style="font-size: 1.5rem;">💸</span>
+                        <span class="desc">Instant Payout</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -360,41 +910,49 @@
     <!-- SLIDE 6: Roadmap -->
     <div class="slide-container" id="slide-6">
         <div class="slide-content">
-            <h2 class="gradient-text mb-6 animate-in">the ROADMAP 🗺️</h2>
-            <div class="max-w-2xl mx-auto space-y-3">
-                <div class="card animate-slide-left" style="animation-delay: 0s;">
-                    <div style="display: flex; gap: 1rem; align-items: center;">
-                        <span style="font-size: 1.5rem;">✅</span>
-                        <div style="text-align: left; flex: 1;">
-                            <strong>Q4 2024: Genesis</strong>
-                            <p class="desc" style="margin: 0.5rem 0 0;">Core markets • Gemini Oracle • Quick Play • Email OTP</p>
+            <div class="badge animate-fade-up" style="opacity: 0; margin-bottom: 2rem;">ROADMAP</div>
+            
+            <h2 class="gradient-text animate-fade-up delay-1" style="opacity: 0; margin-bottom: 3rem;">
+                Our journey ahead
+            </h2>
+
+            <div style="max-width: 650px; display: flex; flex-direction: column; gap: 1.5rem;">
+                <div class="card animate-slide-right delay-2" style="opacity: 0;">
+                    <div class="roadmap-item">
+                        <div class="roadmap-dot completed">✓</div>
+                        <div>
+                            <h3>Q4 2024: Genesis</h3>
+                            <p class="desc" style="margin-top: 0.5rem;">Core markets, Gemini Oracle, Quick Play, Email OTP authentication</p>
                         </div>
                     </div>
                 </div>
-                <div class="card animate-slide-left" style="animation-delay: 0.1s;">
-                    <div style="display: flex; gap: 1rem; align-items: center;">
-                        <span style="font-size: 1.5rem;">✅</span>
-                        <div style="text-align: left; flex: 1;">
-                            <strong>Q1 2025: Social Layer</strong>
-                            <p class="desc" style="margin: 0.5rem 0 0;">Feed • Swarm AI • 5-layer safety • Jury disputes</p>
+
+                <div class="card animate-slide-right delay-3" style="opacity: 0;">
+                    <div class="roadmap-item">
+                        <div class="roadmap-dot completed">✓</div>
+                        <div>
+                            <h3>Q1 2025: Social Layer</h3>
+                            <p class="desc" style="margin-top: 0.5rem;">Feed system, Swarm AI, 5-layer safety, Jury disputes</p>
                         </div>
                     </div>
                 </div>
-                <div class="card animate-slide-left" style="animation-delay: 0.2s;">
-                    <div style="display: flex; gap: 1rem; align-items: center;">
-                        <span style="font-size: 1.5rem; color: #38BDF8;">🚀</span>
-                        <div style="text-align: left; flex: 1;">
-                            <strong style="color: #38BDF8;">Q2 2025: Web3 Integration</strong>
-                            <p class="desc" style="margin: 0.5rem 0 0;">Wallet connect • On-chain settlement • Token-gated • NFTs</p>
+
+                <div class="card card-accent animate-slide-right delay-4" style="opacity: 0;">
+                    <div class="roadmap-item">
+                        <div class="roadmap-dot current">🚀</div>
+                        <div>
+                            <h3 style="color: var(--primary-light);">Q2 2025: Web3 Integration</h3>
+                            <p class="desc" style="margin-top: 0.5rem;">Wallet connect, On-chain settlement, Token-gated markets, NFTs</p>
                         </div>
                     </div>
                 </div>
-                <div class="card animate-slide-left" style="animation-delay: 0.3s;">
-                    <div style="display: flex; gap: 1rem; align-items: center;">
-                        <span style="font-size: 1.5rem;">⭐</span>
-                        <div style="text-align: left; flex: 1;">
-                            <strong>Q3-Q4 2025: Scale & Expand</strong>
-                            <p class="desc" style="margin: 0.5rem 0 0;">Mobile apps • Developer API • Enterprise • Governance token</p>
+
+                <div class="card animate-slide-right delay-5" style="opacity: 0;">
+                    <div class="roadmap-item">
+                        <div class="roadmap-dot">⭐</div>
+                        <div>
+                            <h3>Q3-Q4 2025: Scale</h3>
+                            <p class="desc" style="margin-top: 0.5rem;">Mobile apps, Developer API, Enterprise tier, Governance token</p>
                         </div>
                     </div>
                 </div>
@@ -402,64 +960,115 @@
         </div>
     </div>
 
-    <!-- SLIDE 7: BIG DREAMS -->
+    <!-- SLIDE 7: Vision -->
     <div class="slide-container" id="slide-7">
         <div class="slide-content">
-            <h2 class="gradient-text mb-6 animate-in">our VISION 🌟</h2>
-            <div class="card max-w-2xl mx-auto space-y-4" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3);">
-                <p class="desc animate-slide-left" style="animation-delay: 0s; text-align: left; margin: 0;">
-                    <strong style="color: #38BDF8;">🎯 1M Active Users by 2026</strong><br>
-                    Prediction markets as easy as TikTok. Just tap.
-                </p>
-                <p class="desc animate-slide-left" style="animation-delay: 0.1s; text-align: left; margin: 0;">
-                    <strong style="color: #818CF8;">💰 $100M+ TVL</strong><br>
-                    Most liquid prediction platform. Real money, real outcomes.
-                </p>
-                <p class="desc animate-slide-left" style="animation-delay: 0.2s; text-align: left; margin: 0;">
-                    <strong style="color: #C084FC;">🌍 Global Governance</strong><br>
-                    Users vote on categories, features, and rules. Pure DAO.
-                </p>
-                <p class="desc animate-slide-left" style="animation-delay: 0.3s; text-align: left; margin: 0;">
-                    <strong style="color: #38BDF8;">📱 Mobile First</strong><br>
-                    iOS & Android with push notifications. Predict anywhere.
-                </p>
-                <p class="desc animate-slide-left" style="animation-delay: 0.4s; text-align: left; margin: 0;">
-                    <strong style="color: #818CF8;">🏆 Creator Economy</strong><br>
-                    Partnerships, sponsored markets, revenue share. New career.
-                </p>
-                <p class="desc animate-slide-left" style="animation-delay: 0.5s; text-align: left; margin: 0;">
-                    <strong style="color: #C084FC;">🔗 Multi-Chain</strong><br>
-                    Ethereum, Arbitrum, Polygon, Base. Omnichain liquidity.
-                </p>
+            <div class="badge animate-fade-up" style="opacity: 0; margin-bottom: 2rem;">OUR VISION</div>
+            
+            <h2 class="gradient-text animate-fade-up delay-1" style="opacity: 0; margin-bottom: 3rem;">
+                Where we're headed
+            </h2>
+
+            <div class="card card-accent animate-fade-up delay-2" style="opacity: 0; max-width: 700px; width: 100%; padding: 2rem;">
+                <div class="vision-item">
+                    <div class="vision-icon">🎯</div>
+                    <div>
+                        <h3 style="color: var(--primary-light);">1M Active Users by 2026</h3>
+                        <p class="desc" style="margin-top: 0.25rem;">Prediction markets as easy as TikTok. Just tap.</p>
+                    </div>
+                </div>
+
+                <div class="vision-item">
+                    <div class="vision-icon">💰</div>
+                    <div>
+                        <h3 style="color: var(--accent);">$100M+ TVL</h3>
+                        <p class="desc" style="margin-top: 0.25rem;">Most liquid prediction platform. Real money, real outcomes.</p>
+                    </div>
+                </div>
+
+                <div class="vision-item">
+                    <div class="vision-icon">🌍</div>
+                    <div>
+                        <h3 style="color: var(--accent-2);">Global Governance</h3>
+                        <p class="desc" style="margin-top: 0.25rem;">Users vote on categories, features, and rules. Pure DAO.</p>
+                    </div>
+                </div>
+
+                <div class="vision-item">
+                    <div class="vision-icon">📱</div>
+                    <div>
+                        <h3 style="color: var(--primary-light);">Mobile First</h3>
+                        <p class="desc" style="margin-top: 0.25rem;">iOS & Android with push notifications. Predict anywhere.</p>
+                    </div>
+                </div>
+
+                <div class="vision-item">
+                    <div class="vision-icon">🏆</div>
+                    <div>
+                        <h3 style="color: var(--accent);">Creator Economy</h3>
+                        <p class="desc" style="margin-top: 0.25rem;">Partnerships, sponsored markets, revenue share.</p>
+                    </div>
+                </div>
+
+                <div class="vision-item" style="border-bottom: none;">
+                    <div class="vision-icon">🔗</div>
+                    <div>
+                        <h3 style="color: var(--accent-2);">Multi-Chain</h3>
+                        <p class="desc" style="margin-top: 0.25rem;">Ethereum, Arbitrum, Polygon, Base. Omnichain liquidity.</p>
+                    </div>
+                </div>
             </div>
-            <p class="desc mt-6">Bold? Yes. Achievable? Absolutely. We're executing daily. 💪</p>
         </div>
     </div>
 
-    <!-- SLIDE 8: WHY NOW -->
+    <!-- SLIDE 8: Why Now -->
     <div class="slide-container" id="slide-8">
         <div class="slide-content">
-            <h2 class="gradient-text mb-6 animate-in">WHY NOW? 🔥</h2>
-            <div class="grid-2 max-w-4xl mx-auto">
-                <div class="card animate-slide-left" style="animation-delay: 0s;">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📈</div>
+            <div class="badge animate-fade-up" style="opacity: 0; margin-bottom: 2rem;">TIMING</div>
+            
+            <h2 class="gradient-text animate-fade-up delay-1" style="opacity: 0; margin-bottom: 3rem;">
+                Why now?
+            </h2>
+
+            <div class="grid-2" style="max-width: 900px;">
+                <div class="card animate-scale-in delay-2" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>📈</span>
+                    </div>
                     <h3>Market is Ready</h3>
-                    <p class="desc mt-2">Gen Z + prediction markets = $6B+ volume. Perfect timing.</p>
+                    <p class="desc" style="margin-top: 0.75rem;">
+                        Gen Z + prediction markets = $6B+ volume. Perfect timing for disruption.
+                    </p>
                 </div>
-                <div class="card animate-slide-right" style="animation-delay: 0s;">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤖</div>
-                    <h3>AI Matured</h3>
-                    <p class="desc mt-2">Gemini 2.0 + GPT-4o = autonomous oracles. We built it first.</p>
+
+                <div class="card animate-scale-in delay-3" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>🤖</span>
+                    </div>
+                    <h3>AI Has Matured</h3>
+                    <p class="desc" style="margin-top: 0.75rem;">
+                        Gemini 2.0 + GPT-4o enables autonomous oracles. We built it first.
+                    </p>
                 </div>
-                <div class="card animate-slide-left" style="animation-delay: 0.1s;">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📱</div>
+
+                <div class="card animate-scale-in delay-4" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>📱</span>
+                    </div>
                     <h3>Mobile Moment</h3>
-                    <p class="desc mt-2">Prediction betting = TikTok for trading. Perfect UX fit.</p>
+                    <p class="desc" style="margin-top: 0.75rem;">
+                        Prediction betting = TikTok for trading. Perfect UX fit for the swipe generation.
+                    </p>
                 </div>
-                <div class="card animate-slide-right" style="animation-delay: 0.1s;">
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔓</div>
+
+                <div class="card animate-scale-in delay-5" style="opacity: 0;">
+                    <div class="icon-box">
+                        <span>🔗</span>
+                    </div>
                     <h3>Web3 Wave</h3>
-                    <p class="desc mt-2">Crypto users want decentralized predictions. We're solving it.</p>
+                    <p class="desc" style="margin-top: 0.75rem;">
+                        Crypto users want decentralized predictions. We're building the solution.
+                    </p>
                 </div>
             </div>
         </div>
@@ -468,43 +1077,69 @@
     <!-- SLIDE 9: CTA -->
     <div class="slide-container" id="slide-9">
         <div class="slide-content">
-            <div class="emoji">🚀</div>
-            <h2 class="gradient-text mb-2 animate-in">JOIN US</h2>
-            <p class="subtitle animate-in" style="animation-delay: 0.1s;">we're hiring everyone</p>
-            <div class="grid-2 max-w-2xl mx-auto mt-8 mb-8">
-                <div class="card animate-bounce-in" style="animation-delay: 0.1s;">👩‍💻 Builders</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.2s;">🎨 Designers</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.3s;">📊 Growth Hacks</div>
-                <div class="card animate-bounce-in" style="animation-delay: 0.4s;">💰 Investors</div>
+            <img src="https://res.cloudinary.com/djslxbghy/image/upload/IMG_4551_e9bv2x.jpg" alt="Predora" class="large-logo animate-scale-in" style="width: 100px; height: 100px; border-radius: 24px;">
+            
+            <h2 class="gradient-text animate-fade-up delay-1" style="opacity: 0; margin-bottom: 1rem;">
+                Join the future
+            </h2>
+            
+            <p class="subtitle animate-fade-up delay-2" style="opacity: 0; margin-bottom: 3rem;">
+                We're building something special
+            </p>
+
+            <div class="grid-4" style="max-width: 700px; margin-bottom: 3rem;">
+                <div class="category-tag animate-scale-in delay-2" style="opacity: 0; justify-content: center;"><span>👩‍💻</span> Builders</div>
+                <div class="category-tag animate-scale-in delay-3" style="opacity: 0; justify-content: center;"><span>🎨</span> Designers</div>
+                <div class="category-tag animate-scale-in delay-4" style="opacity: 0; justify-content: center;"><span>📊</span> Growth</div>
+                <div class="category-tag animate-scale-in delay-5" style="opacity: 0; justify-content: center;"><span>💰</span> Investors</div>
             </div>
-            <div class="card max-w-lg mx-auto p-6 animate-in" style="animation-delay: 0.3s; background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.5); border-width: 2px;">
-                <p class="mono" style="font-size: 1.1rem; color: #38BDF8; font-weight: 700; margin: 0.5rem 0;">predora.io@gmail.com</p>
-                <p class="desc mt-3 mb-2">check us out:</p>
-                <p class="mono" style="font-size: 0.95rem; color: #818CF8; margin: 0;">predora-app.vercel.app</p>
-                <p class="desc mt-4" style="font-size: 0.85rem;">let's build the future together 🔥</p>
+
+            <div class="cta-card animate-fade-up delay-4" style="opacity: 0; max-width: 500px;">
+                <p class="desc" style="margin-bottom: 1rem;">Get in touch</p>
+                <a href="mailto:predora.io@gmail.com" class="email-link mono">predora.io@gmail.com</a>
+                
+                <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+                    <p class="desc" style="margin-bottom: 0.75rem;">Check us out</p>
+                    <a href="https://predora-app.vercel.app" target="_blank" class="mono" style="color: var(--accent); text-decoration: none; font-size: 1rem;">
+                        predora-app.vercel.app
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="counter">
-        <span id="current-slide">1</span> / <span id="total-slides">9</span>
-    </div>
-    <div class="btn-nav">
-        <button onclick="previousSlide()">← prev</button>
-        <button onclick="nextSlide()">next →</button>
+    <div class="nav-controls">
+        <button class="nav-btn" onclick="previousSlide()">
+            <span>←</span> Prev
+        </button>
+        <button class="nav-btn" onclick="nextSlide()">
+            Next <span>→</span>
+        </button>
     </div>
 
     <script>
         let currentSlide = 1;
         const totalSlides = 9;
 
+        function formatSlideNumber(num) {
+            return num.toString().padStart(2, '0');
+        }
+
         function updateSlide() {
             document.querySelectorAll('.slide-container').forEach(s => s.classList.remove('active'));
-            document.getElementById(`slide-${currentSlide}`).classList.add('active');
-            document.getElementById('current-slide').textContent = currentSlide;
+            const activeSlide = document.getElementById(`slide-${currentSlide}`);
+            activeSlide.classList.add('active');
             
+            document.getElementById('current-slide').textContent = formatSlideNumber(currentSlide);
+
             const progress = (currentSlide / totalSlides) * 100;
             document.getElementById('progress-bar').style.width = progress + '%';
+
+            activeSlide.querySelectorAll('[style*="opacity: 0"]').forEach((el, index) => {
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                }, 50);
+            });
         }
 
         function nextSlide() {
@@ -523,19 +1158,45 @@
 
         function toggleTheme() {
             document.body.classList.toggle('light-mode');
-            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+            localStorage.setItem('predora-theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         }
 
-        // Load saved theme
-        const savedTheme = localStorage.getItem('theme');
+        const savedTheme = localStorage.getItem('predora-theme');
         if (savedTheme === 'light') {
             document.body.classList.add('light-mode');
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight' || e.key === ' ') { nextSlide(); e.preventDefault(); }
-            if (e.key === 'ArrowLeft') previousSlide();
+            if (e.key === 'ArrowRight' || e.key === ' ') { 
+                nextSlide(); 
+                e.preventDefault(); 
+            }
+            if (e.key === 'ArrowLeft') {
+                previousSlide();
+            }
         });
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            if (touchEndX < touchStartX - swipeThreshold) {
+                nextSlide();
+            }
+            if (touchEndX > touchStartX + swipeThreshold) {
+                previousSlide();
+            }
+        }
 
         updateSlide();
     </script>
