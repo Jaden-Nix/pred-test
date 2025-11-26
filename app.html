@@ -13301,6 +13301,13 @@ ${historyText}`;
             markets.forEach(market => {
                 const displayName = market.createdByDisplayName || 'Anonymous';
                 
+                // Check if this is a multi-option market
+                if (market.marketType === 'multi' && market.options && market.options.length > 0) {
+                    // MULTI-OPTION MARKET - hide from main feed for now (they don't have YES/NO display)
+                    return; // Skip multi-option markets in the main feed
+                }
+                
+                // BINARY YES/NO MARKET
                 // Calculate percentage changes
                 const yesChange = calculatePercentageChange(market.yesPercent || 0);
                 const noChange = calculatePercentageChange(market.noPercent || 0);
