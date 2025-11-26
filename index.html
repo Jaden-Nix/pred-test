@@ -330,41 +330,402 @@
         </div>
     </section>
 
-    <!-- Tech Stack / Feature Grid -->
+    <!-- Stats Section -->
+    <section class="py-20 relative z-10 border-y border-white/5 bg-black/20">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                <div class="space-y-2">
+                    <div class="text-4xl md:text-5xl font-bold gradient-text">4</div>
+                    <p class="text-gray-400 text-sm uppercase tracking-wider">AI Agents</p>
+                </div>
+                <div class="space-y-2">
+                    <div class="text-4xl md:text-5xl font-bold gradient-text">90%</div>
+                    <p class="text-gray-400 text-sm uppercase tracking-wider">Auto-Resolution</p>
+                </div>
+                <div class="space-y-2">
+                    <div class="text-4xl md:text-5xl font-bold gradient-text">5</div>
+                    <p class="text-gray-400 text-sm uppercase tracking-wider">Safety Layers</p>
+                </div>
+                <div class="space-y-2">
+                    <div class="text-4xl md:text-5xl font-bold gradient-text">24/7</div>
+                    <p class="text-gray-400 text-sm uppercase tracking-wider">Oracle Active</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
     <section id="features" class="py-32 relative z-10">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-20">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-mono tracking-wider mb-6">
+                    CORE FEATURES
+                </div>
                 <h2 class="text-3xl md:text-5xl font-bold mb-6">Built Different.</h2>
                 <p class="text-gray-400 max-w-2xl mx-auto text-lg">We combined the best of DeFi, Generative AI, and Social Media to create a prediction market you'll actually use.</p>
             </div>
 
-            <div class="grid md:grid-cols-3 gap-8">
-                <!-- Card 1 -->
-                <div class="glass-card p-8 rounded-[32px]">
-                    <div class="w-14 h-14 bg-sky-500/10 rounded-2xl flex items-center justify-center text-sky-400 mb-8 border border-sky-500/20">
-                        <i data-lucide="mouse-pointer-2" class="w-7 h-7"></i>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Card 1: Quick Play -->
+                <div class="glass-card p-8 rounded-[32px] group">
+                    <div class="w-14 h-14 bg-sky-500/10 rounded-2xl flex items-center justify-center text-sky-400 mb-8 border border-sky-500/20 group-hover:scale-110 transition-transform">
+                        <i data-lucide="zap" class="w-7 h-7"></i>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">One-Tap Betting</h3>
-                    <p class="text-gray-400 leading-relaxed">Forget complex order books. Our "Quick Play" mode lets you tap through trending markets instantly. It's rapid-fire Alpha.</p>
+                    <h3 class="text-2xl font-bold mb-4">Quick Play Mode</h3>
+                    <p class="text-gray-400 leading-relaxed">Swipe through trending markets like a dating app. Tap YES or NO in seconds. Fast markets, fast results - perfect for rapid-fire predictions.</p>
+                    <div class="mt-6 flex items-center gap-2 text-sky-400 text-sm font-medium">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        <span>24-48 hour resolution</span>
+                    </div>
                 </div>
 
-                <!-- Card 2 -->
+                <!-- Card 2: AI Oracle -->
                 <div class="glass-card p-8 rounded-[32px] relative overflow-hidden group">
                     <div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <div class="w-14 h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-400 mb-8 border border-purple-500/20">
+                    <div class="w-14 h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-400 mb-8 border border-purple-500/20 group-hover:scale-110 transition-transform">
                         <i data-lucide="bot" class="w-7 h-7"></i>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">Gemini AI Oracle</h3>
-                    <p class="text-gray-400 leading-relaxed">Markets settle instantly. Our autonomous AI Judge verifies real-world outcomes via Google Search so you get paid fast.</p>
+                    <h3 class="text-2xl font-bold mb-4">Swarm AI Oracle</h3>
+                    <p class="text-gray-400 leading-relaxed">Four AI agents work together using Byzantine consensus to verify outcomes. Web search, multi-model scoring, and geometric median ensure accuracy.</p>
+                    <div class="mt-6 flex items-center gap-2 text-purple-400 text-sm font-medium">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        <span>Gemini + OpenAI powered</span>
+                    </div>
                 </div>
 
-                <!-- Card 3 -->
-                <div class="glass-card p-8 rounded-[32px]">
-                    <div class="w-14 h-14 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-400 mb-8 border border-green-500/20">
+                <!-- Card 3: Social Feed -->
+                <div class="glass-card p-8 rounded-[32px] group">
+                    <div class="w-14 h-14 bg-pink-500/10 rounded-2xl flex items-center justify-center text-pink-400 mb-8 border border-pink-500/20 group-hover:scale-110 transition-transform">
+                        <i data-lucide="message-circle" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Social Feed</h3>
+                    <p class="text-gray-400 leading-relaxed">Share your takes, react to predictions, and build your reputation. Our social layer turns prediction markets into a community experience.</p>
+                    <div class="mt-6 flex items-center gap-2 text-pink-400 text-sm font-medium">
+                        <i data-lucide="heart" class="w-4 h-4"></i>
+                        <span>React, comment, share</span>
+                    </div>
+                </div>
+
+                <!-- Card 4: Jury System -->
+                <div class="glass-card p-8 rounded-[32px] group">
+                    <div class="w-14 h-14 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-400 mb-8 border border-amber-500/20 group-hover:scale-110 transition-transform">
+                        <i data-lucide="gavel" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Jury Disputes</h3>
+                    <p class="text-gray-400 leading-relaxed">Disagree with the AI? Dispute the outcome. Top 5 leaderboard users become jurors with 24 hours to vote. Democracy meets decentralization.</p>
+                    <div class="mt-6 flex items-center gap-2 text-amber-400 text-sm font-medium">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span>5-juror consensus</span>
+                    </div>
+                </div>
+
+                <!-- Card 5: AI Guardrails -->
+                <div class="glass-card p-8 rounded-[32px] group">
+                    <div class="w-14 h-14 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-400 mb-8 border border-green-500/20 group-hover:scale-110 transition-transform">
                         <i data-lucide="shield-check" class="w-7 h-7"></i>
                     </div>
-                    <h3 class="text-2xl font-bold mb-4">No-Loss Pools</h3>
-                    <p class="text-gray-400 leading-relaxed">Scared to lose? Join a Fixed Pot. Winners split the yield, and everyone gets their principal back. Risk-free degening.</p>
+                    <h3 class="text-2xl font-bold mb-4">5-Layer Safety</h3>
+                    <p class="text-gray-400 leading-relaxed">Pre-filters, keyword blocklists, OpenAI moderation, toxicity scoring, and admin review. Every market and post passes through our AI guardrails.</p>
+                    <div class="mt-6 flex items-center gap-2 text-green-400 text-sm font-medium">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i>
+                        <span>Auto-moderated content</span>
+                    </div>
+                </div>
+
+                <!-- Card 6: AMM Pools -->
+                <div class="glass-card p-8 rounded-[32px] group">
+                    <div class="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400 mb-8 border border-indigo-500/20 group-hover:scale-110 transition-transform">
+                        <i data-lucide="coins" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">AMM Liquidity</h3>
+                    <p class="text-gray-400 leading-relaxed">Automated Market Maker pools ensure instant execution. See real-time pool liquidity, momentum indicators, and price changes on every market.</p>
+                    <div class="mt-6 flex items-center gap-2 text-indigo-400 text-sm font-medium">
+                        <i data-lucide="trending-up" class="w-4 h-4"></i>
+                        <span>Real-time pricing</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technology Section -->
+    <section id="tech" class="py-32 relative z-10 bg-gradient-to-b from-transparent via-purple-900/5 to-transparent">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-20">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-300 text-xs font-mono tracking-wider mb-6">
+                    TECH STACK
+                </div>
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">Powered by Giants.</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto text-lg">Enterprise-grade infrastructure meets cutting-edge AI. Here's what's under the hood.</p>
+            </div>
+
+            <!-- Tech Grid -->
+            <div class="grid md:grid-cols-2 gap-8 mb-16">
+                <!-- AI Stack -->
+                <div class="glass-panel rounded-[32px] p-8 md:p-10">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                            <i data-lucide="brain" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold">AI Layer</h3>
+                            <p class="text-gray-400 text-sm">Intelligence at every level</p>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-purple-500/30 transition-colors">
+                            <div class="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <span class="text-lg">G</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white mb-1">Google Gemini 2.0</h4>
+                                <p class="text-gray-400 text-sm">Primary oracle with web search grounding for real-time fact verification and market resolution.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-green-500/30 transition-colors">
+                            <div class="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="sparkles" class="w-5 h-5 text-green-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white mb-1">OpenAI GPT-4o</h4>
+                                <p class="text-gray-400 text-sm">Powers the Swarm agents, content moderation, and multi-model verification scoring.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-amber-500/30 transition-colors">
+                            <div class="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="shield" class="w-5 h-5 text-amber-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white mb-1">Byzantine Consensus</h4>
+                                <p class="text-gray-400 text-sm">4 independent AI agents vote on outcomes. Geometric median filters outliers for reliable results.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Infrastructure Stack -->
+                <div class="glass-panel rounded-[32px] p-8 md:p-10">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="w-12 h-12 bg-gradient-to-br from-sky-500 to-indigo-500 rounded-2xl flex items-center justify-center">
+                            <i data-lucide="server" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold">Infrastructure</h3>
+                            <p class="text-gray-400 text-sm">Scalable & serverless</p>
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-orange-500/30 transition-colors">
+                            <div class="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="flame" class="w-5 h-5 text-orange-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white mb-1">Firebase Firestore</h4>
+                                <p class="text-gray-400 text-sm">Real-time NoSQL database with automatic scaling. Handles markets, pledges, social posts, and more.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-yellow-500/30 transition-colors">
+                            <div class="w-10 h-10 bg-yellow-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="key" class="w-5 h-5 text-yellow-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white mb-1">Firebase Auth</h4>
+                                <p class="text-gray-400 text-sm">Email OTP authentication with custom tokens. Secure sessions and guest mode support.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-sky-500/30 transition-colors">
+                            <div class="w-10 h-10 bg-sky-500/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="code-2" class="w-5 h-5 text-sky-400"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white mb-1">Node.js + Express</h4>
+                                <p class="text-gray-400 text-sm">RESTful API backend with rate limiting, authentication middleware, and cron job support.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architecture Diagram -->
+            <div class="glass-panel rounded-[32px] p-8 md:p-12">
+                <h3 class="text-2xl font-bold text-center mb-10">How Markets Get Resolved</h3>
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
+                    <!-- Step 1 -->
+                    <div class="flex flex-col items-center text-center flex-1">
+                        <div class="w-16 h-16 bg-sky-500/20 rounded-2xl flex items-center justify-center text-sky-400 mb-4 border border-sky-500/30">
+                            <i data-lucide="calendar-check" class="w-8 h-8"></i>
+                        </div>
+                        <h4 class="font-bold mb-2">Resolution Date</h4>
+                        <p class="text-gray-400 text-sm">Market deadline triggers automated oracle</p>
+                    </div>
+                    
+                    <i data-lucide="chevron-right" class="hidden md:block w-6 h-6 text-gray-600"></i>
+                    <i data-lucide="chevron-down" class="block md:hidden w-6 h-6 text-gray-600"></i>
+                    
+                    <!-- Step 2 -->
+                    <div class="flex flex-col items-center text-center flex-1">
+                        <div class="w-16 h-16 bg-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400 mb-4 border border-purple-500/30">
+                            <i data-lucide="bot" class="w-8 h-8"></i>
+                        </div>
+                        <h4 class="font-bold mb-2">Swarm Analysis</h4>
+                        <p class="text-gray-400 text-sm">4 AI agents verify with web search</p>
+                    </div>
+                    
+                    <i data-lucide="chevron-right" class="hidden md:block w-6 h-6 text-gray-600"></i>
+                    <i data-lucide="chevron-down" class="block md:hidden w-6 h-6 text-gray-600"></i>
+                    
+                    <!-- Step 3 -->
+                    <div class="flex flex-col items-center text-center flex-1">
+                        <div class="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center text-green-400 mb-4 border border-green-500/30">
+                            <i data-lucide="check-circle" class="w-8 h-8"></i>
+                        </div>
+                        <h4 class="font-bold mb-2">Consensus</h4>
+                        <p class="text-gray-400 text-sm">90%+ confidence = auto-resolve</p>
+                    </div>
+                    
+                    <i data-lucide="chevron-right" class="hidden md:block w-6 h-6 text-gray-600"></i>
+                    <i data-lucide="chevron-down" class="block md:hidden w-6 h-6 text-gray-600"></i>
+                    
+                    <!-- Step 4 -->
+                    <div class="flex flex-col items-center text-center flex-1">
+                        <div class="w-16 h-16 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400 mb-4 border border-amber-500/30">
+                            <i data-lucide="banknote" class="w-8 h-8"></i>
+                        </div>
+                        <h4 class="font-bold mb-2">Instant Payout</h4>
+                        <p class="text-gray-400 text-sm">Winners receive funds immediately</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roadmap Section -->
+    <section id="roadmap" class="py-32 relative z-10">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-20">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 text-green-300 text-xs font-mono tracking-wider mb-6">
+                    ROADMAP
+                </div>
+                <h2 class="text-3xl md:text-5xl font-bold mb-6">The Journey Ahead.</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto text-lg">From hackathon prototype to the future of decentralized prediction markets.</p>
+            </div>
+
+            <!-- Timeline -->
+            <div class="relative">
+                <!-- Timeline Line -->
+                <div class="absolute left-4 md:left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-sky-500 via-purple-500 to-green-500 md:-translate-x-0.5"></div>
+
+                <!-- Phase 1 -->
+                <div class="relative flex flex-col md:flex-row gap-8 mb-16">
+                    <div class="md:w-1/2 md:text-right md:pr-16">
+                        <div class="glass-card p-8 rounded-[24px] inline-block text-left md:text-right">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold mb-4">
+                                <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                COMPLETED
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">Phase 1: Genesis</h3>
+                            <p class="text-gray-400 mb-4">Q4 2024</p>
+                            <ul class="space-y-2 text-gray-300">
+                                <li class="flex items-center gap-2 md:flex-row-reverse"><i data-lucide="check" class="w-4 h-4 text-green-400"></i> Core prediction market engine</li>
+                                <li class="flex items-center gap-2 md:flex-row-reverse"><i data-lucide="check" class="w-4 h-4 text-green-400"></i> Gemini AI Oracle integration</li>
+                                <li class="flex items-center gap-2 md:flex-row-reverse"><i data-lucide="check" class="w-4 h-4 text-green-400"></i> Quick Play swipe interface</li>
+                                <li class="flex items-center gap-2 md:flex-row-reverse"><i data-lucide="check" class="w-4 h-4 text-green-400"></i> Email OTP authentication</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="absolute left-4 md:left-1/2 w-4 h-4 bg-green-500 rounded-full border-4 border-[#050505] -translate-x-1.5 md:-translate-x-2 shadow-[0_0_20px_rgba(34,197,94,0.5)]"></div>
+                    <div class="md:w-1/2"></div>
+                </div>
+
+                <!-- Phase 2 -->
+                <div class="relative flex flex-col md:flex-row gap-8 mb-16">
+                    <div class="md:w-1/2"></div>
+                    <div class="absolute left-4 md:left-1/2 w-4 h-4 bg-green-500 rounded-full border-4 border-[#050505] -translate-x-1.5 md:-translate-x-2 shadow-[0_0_20px_rgba(34,197,94,0.5)]"></div>
+                    <div class="md:w-1/2 md:pl-16">
+                        <div class="glass-card p-8 rounded-[24px]">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold mb-4">
+                                <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                COMPLETED
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">Phase 2: Social Layer</h3>
+                            <p class="text-gray-400 mb-4">Q1 2025</p>
+                            <ul class="space-y-2 text-gray-300">
+                                <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-green-400"></i> Social feed with reactions</li>
+                                <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-green-400"></i> Swarm AI (4-agent consensus)</li>
+                                <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-green-400"></i> 5-layer content moderation</li>
+                                <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-green-400"></i> Jury dispute system</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 3 -->
+                <div class="relative flex flex-col md:flex-row gap-8 mb-16">
+                    <div class="md:w-1/2 md:text-right md:pr-16">
+                        <div class="glass-card p-8 rounded-[24px] inline-block text-left md:text-right border-sky-500/30">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/20 text-sky-400 text-xs font-bold mb-4 animate-pulse">
+                                <span class="relative flex h-2 w-2">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                                </span>
+                                IN PROGRESS
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">Phase 3: Web3 Integration</h3>
+                            <p class="text-gray-400 mb-4">Q2 2025</p>
+                            <ul class="space-y-2 text-gray-300">
+                                <li class="flex items-center gap-2 md:flex-row-reverse"><i data-lucide="circle" class="w-4 h-4 text-sky-400"></i> Wallet connect support</li>
+                                <li class="flex items-center gap-2 md:flex-row-reverse"><i data-lucide="circle" class="w-4 h-4 text-sky-400"></i> On-chain market settlement</li>
+                                <li class="flex items-center gap-2 md:flex-row-reverse"><i data-lucide="circle" class="w-4 h-4 text-sky-400"></i> Token-gated markets</li>
+                                <li class="flex items-center gap-2 md:flex-row-reverse"><i data-lucide="circle" class="w-4 h-4 text-sky-400"></i> NFT achievements</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="absolute left-4 md:left-1/2 w-4 h-4 bg-sky-500 rounded-full border-4 border-[#050505] -translate-x-1.5 md:-translate-x-2 shadow-[0_0_20px_rgba(56,189,248,0.5)] animate-pulse"></div>
+                    <div class="md:w-1/2"></div>
+                </div>
+
+                <!-- Phase 4 -->
+                <div class="relative flex flex-col md:flex-row gap-8">
+                    <div class="md:w-1/2"></div>
+                    <div class="absolute left-4 md:left-1/2 w-4 h-4 bg-gray-600 rounded-full border-4 border-[#050505] -translate-x-1.5 md:-translate-x-2"></div>
+                    <div class="md:w-1/2 md:pl-16">
+                        <div class="glass-card p-8 rounded-[24px] opacity-70">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-500/20 text-gray-400 text-xs font-bold mb-4">
+                                UPCOMING
+                            </div>
+                            <h3 class="text-2xl font-bold mb-3">Phase 4: Scale</h3>
+                            <p class="text-gray-400 mb-4">Q3-Q4 2025</p>
+                            <ul class="space-y-2 text-gray-400">
+                                <li class="flex items-center gap-2"><i data-lucide="circle" class="w-4 h-4"></i> Mobile apps (iOS & Android)</li>
+                                <li class="flex items-center gap-2"><i data-lucide="circle" class="w-4 h-4"></i> API for developers</li>
+                                <li class="flex items-center gap-2"><i data-lucide="circle" class="w-4 h-4"></i> Enterprise partnerships</li>
+                                <li class="flex items-center gap-2"><i data-lucide="circle" class="w-4 h-4"></i> Governance token launch</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-32 relative z-10">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <div class="glass-panel rounded-[48px] p-12 md:p-16 relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-purple-500/10 to-pink-500/10"></div>
+                <div class="relative">
+                    <h2 class="text-3xl md:text-5xl font-bold mb-6">Ready to Predict the Future?</h2>
+                    <p class="text-gray-400 text-lg mb-10 max-w-xl mx-auto">Join thousands of predictors already using AI-powered markets. No wallet required to start.</p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <a href="/app.html" class="inline-flex items-center justify-center px-10 py-4 text-lg font-bold text-black bg-white rounded-2xl hover:bg-sky-50 transition-all shadow-[0_0_50px_-10px_rgba(255,255,255,0.5)] hover:scale-105 active:scale-95">
+                            Launch App
+                            <i data-lucide="arrow-right" class="w-5 h-5 ml-2"></i>
+                        </a>
+                        <a href="https://youtu.be/6wzJkZcmDA0?si=ouKuFGotpul4kgHn" class="inline-flex items-center justify-center px-10 py-4 text-lg font-bold text-white bg-white/10 border border-white/20 rounded-2xl hover:bg-white/20 transition-all backdrop-blur-sm">
+                            <i data-lucide="play" class="w-5 h-5 mr-2"></i>
+                            Watch Demo
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
