@@ -85,22 +85,24 @@
 
         :root.light-mode,
         body.light-mode {
-            /* Light Mode - Luminous & Airy */
-            --bg-primary: #F5F7FB;
+            /* Light Mode - Luminous & Beautiful 🌟 */
+            --bg-primary: linear-gradient(180deg, #F0F4FF 0%, #E8EFFF 50%, #F5F8FF 100%);
             --bg-secondary: linear-gradient(135deg, #FFFFFF 0%, #EDF3FF 100%);
-            --bg-panel: #E8EEFF;
-            --border-color: #CBD5F5;
+            --bg-panel: linear-gradient(145deg, #FFFFFF 0%, #F7FAFF 100%);
+            --border-color: #C3D4F5;
             --text-primary: #0F172A;
             --text-secondary: #475569;
             --text-tertiary: #64748B;
-            --nav-bg: rgba(255, 255, 255, 0.85);
-            --nav-border: rgba(227, 235, 255, 0.7);
-            --shadow-ambient: rgba(255, 255, 255, 0.6);
-            --shadow-drop: rgba(157, 180, 255, 0.2);
+            --nav-bg: rgba(255, 255, 255, 0.92);
+            --nav-border: rgba(195, 212, 245, 0.8);
+            --shadow-ambient: rgba(99, 139, 255, 0.08);
+            --shadow-drop: rgba(99, 139, 255, 0.15);
+            --shadow-hover: rgba(99, 139, 255, 0.25);
             --accent-gradient-start: #5CC6FF;
             --accent-gradient-end: #7B8CFF;
             --accent-coral: #F26D85;
             --muted-fill: #E2E8F8;
+            --card-glow: rgba(92, 198, 255, 0.2);
         }
 
         body {
@@ -161,14 +163,27 @@
                 border-radius: 1rem; /* 16px */
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
                 padding: 1.25rem; /* 20px */
-                transition: all 0.3s ease;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
 
             :root.light-mode .ui-panel,
             body.light-mode .ui-panel {
                 background: var(--bg-panel);
-                box-shadow: 0 -6px 20px var(--shadow-ambient), 0 8px 25px var(--shadow-drop);
-                border-color: var(--border-color);
+                box-shadow: 
+                    0 2px 8px var(--shadow-ambient),
+                    0 8px 24px var(--shadow-drop),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+                border: 1px solid rgba(195, 212, 245, 0.6);
+            }
+            
+            :root.light-mode .ui-panel:hover,
+            body.light-mode .ui-panel:hover {
+                box-shadow: 
+                    0 4px 12px var(--shadow-ambient),
+                    0 12px 32px var(--shadow-hover),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+                border-color: rgba(92, 198, 255, 0.3);
+                transform: translateY(-2px);
             }
 
         /* --- NAVIGATION VISIBILITY --- */
@@ -679,6 +694,62 @@
         
         .hot-indicator {
             animation: hot-market-pulse 1s ease-in-out infinite;
+        }
+        
+        /* === MARKET NOTIFICATION BADGES === */
+        .market-notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            box-shadow: 
+                0 0 0 3px rgba(0, 0, 0, 0.9),
+                0 4px 12px rgba(245, 158, 11, 0.5);
+            z-index: 10;
+            animation: badge-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        :root.light-mode .market-notification-badge,
+        body.light-mode .market-notification-badge {
+            box-shadow: 
+                0 0 0 3px rgba(255, 255, 255, 0.95),
+                0 4px 16px rgba(245, 158, 11, 0.4);
+        }
+        
+        @keyframes badge-pop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .market-notification-dot {
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            border-radius: 50%;
+            animation: notification-pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes notification-pulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            }
         }
         
         /* === ENHANCED UI PANEL HOVER === */
