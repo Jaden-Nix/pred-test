@@ -560,28 +560,78 @@ async function autoResolveMarkets() {
                     
                     for (const pledgeSnap of pledgeSnaps.docs) {
                         const pledge = pledgeSnap.data();
-                        if (pledge.prediction === outcome) {
+                        // CRITICAL FIX: Use pledge.pick (the canonical field stored in pledges)
+                        if (pledge.pick === outcome) {
                             winners.push(pledge);
                             totalWinnings += pledge.amount || 0;
                         }
                     }
                     
-                    if (winners.length > 0 && totalWinnings > 0) {
-                        const poolTotal = market.totalPool || (market.yesAmount || 0) + (market.noAmount || 0);
-                        const winningsPerUser = poolTotal / winners.length;
+                    // Process each pledge independently - simpler and more accurate
+                    const allPledges = pledgeSnaps.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const poolTotal = market.totalPool || (market.yesAmount || 0) + (market.noAmount || 0);
+                    const winningsPerPledge = winners.length > 0 ? poolTotal / winners.length : 0;
+                    
+                    // Use batch writes for atomicity
+                    const batch = db.batch();
+                    const userStatsMap = new Map(); // Track cumulative stats per user for final update
+                    
+                    // First pass: Calculate stats per user across all their pledges
+                    for (const pledge of allPledges) {
+                        const userId = pledge.userId;
+                        const isWinner = pledge.pick === outcome;
                         
-                        for (const winner of winners) {
-                            const userRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(winner.userId);
-                            const userSnap = await userRef.get();
-                            if (userSnap.exists) {
-                                const userData = userSnap.data();
-                                await userRef.update({
-                                    balance: (userData.balance || 0) + winningsPerUser,
-                                    xp: (userData.xp || 0) + 50
-                                });
-                            }
+                        if (!userStatsMap.has(userId)) {
+                            userStatsMap.set(userId, { wins: 0, losses: 0, profit: 0 });
+                        }
+                        
+                        const userStats = userStatsMap.get(userId);
+                        if (isWinner) {
+                            userStats.wins++;
+                            userStats.profit += winningsPerPledge;
+                        } else {
+                            userStats.losses++;
                         }
                     }
+                    
+                    // Second pass: Apply batch updates for each user
+                    for (const [userId, stats] of userStatsMap) {
+                        const userRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(userId);
+                        const publicUserRef = db.collection(`artifacts/${APP_ID}/public/data/leaderboard`).doc(userId);
+                        const userSnap = await userRef.get();
+                        
+                        if (userSnap.exists) {
+                            const userData = userSnap.data();
+                            const currentStreak = userData.streak || 0;
+                            const hasMoreWins = stats.wins > stats.losses;
+                            
+                            // Build incremental updates
+                            const updates = {
+                                xp: admin.firestore.FieldValue.increment(hasMoreWins ? 50 : 10),
+                                totalWins: admin.firestore.FieldValue.increment(stats.wins),
+                                totalLosses: admin.firestore.FieldValue.increment(stats.losses),
+                                totalProfit: admin.firestore.FieldValue.increment(stats.profit)
+                            };
+                            
+                            // Update balance and streak
+                            if (stats.profit > 0) {
+                                updates.balance = admin.firestore.FieldValue.increment(stats.profit);
+                            }
+                            updates.streak = hasMoreWins ? currentStreak + 1 : 0;
+                            
+                            // Batch update
+                            batch.update(userRef, updates);
+                            
+                            // Public leaderboard (exclude balance)
+                            const publicUpdates = { ...updates };
+                            delete publicUpdates.balance;
+                            batch.set(publicUserRef, publicUpdates, { merge: true });
+                        }
+                    }
+                    
+                    // Commit atomically
+                    await batch.commit();
+                    console.log(`✅ ORACLE: Updated stats for ${userStatsMap.size} users on market ${marketId}`);
                 } catch (payoutError) {
                     console.error(`ORACLE: Payout failed for ${marketId}:`, payoutError.message);
                 }

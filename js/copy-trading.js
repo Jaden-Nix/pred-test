@@ -183,19 +183,8 @@ async function getTopTraders() {
 
 // Fallback traders (only used if Firebase fails)
 function getFallbackTraders() {
-    return [
-        {
-            id: 'demo_trader_1',
-            name: 'Demo User 1',
-            avatar: '👤',
-            stats: {
-                winRate: 0,
-                totalWins: 0,
-                streak: 0,
-                totalProfit: 0
-            }
-        }
-    ];
+    // Return empty array - we'll show a helpful empty state instead
+    return [];
 }
 
 // Get random avatar emoji
@@ -268,6 +257,22 @@ async function renderCopyTradingPanel() {
             <!-- Top Traders -->
             <div class="ui-panel p-6 rounded-2xl">
                 <h3 class="text-lg font-bold text-white mb-4">🏆 Top Traders</h3>
+                ${topTraders.length === 0 ? `
+                    <div class="text-center py-12">
+                        <div class="text-6xl mb-4">📊</div>
+                        <h4 class="text-xl font-bold text-white mb-2">No Traders Yet</h4>
+                        <p class="text-gray-400 mb-6">Be the first to make predictions and climb the leaderboard!</p>
+                        <div class="bg-gradient-to-r from-sky-500/10 to-purple-500/10 border border-sky-500/30 rounded-xl p-4 text-sm text-gray-300">
+                            <p class="mb-2">💡 <strong>How to appear here:</strong></p>
+                            <ol class="text-left list-decimal list-inside space-y-1 ml-4">
+                                <li>Place predictions on markets</li>
+                                <li>Build your win rate and track record</li>
+                                <li>Rank among the top 5 traders</li>
+                                <li>Get followed by other users!</li>
+                            </ol>
+                        </div>
+                    </div>
+                ` : `
                 <div class="space-y-3">
                     ${topTraders.map((trader, index) => {
                         const isFollowing = followedTraders.find(t => t.id === trader.id);
@@ -305,6 +310,7 @@ async function renderCopyTradingPanel() {
                         `;
                     }).join('')}
                 </div>
+                `}
             </div>
             
             <!-- Info Card -->
