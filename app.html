@@ -6183,7 +6183,13 @@
                 } else if (e.target.classList.contains('edit-comment-btn')) {
                     const commentDiv = e.target.closest('[data-user-id]');
                     const authorId = commentDiv?.dataset.userId;
-                    const content = e.target.dataset.content;
+                    const contentEncoded = e.target.dataset.contentEncoded;
+                    let content = '';
+                    try {
+                        content = decodeURIComponent(atob(contentEncoded || ''));
+                    } catch (e) {
+                        console.error('Failed to decode comment content');
+                    }
                     editComment(e.target.dataset.postId, e.target.dataset.commentId, authorId, content);
                 } else if (e.target.classList.contains('delete-comment-btn')) {
                     const commentDiv = e.target.closest('[data-user-id]');
@@ -6244,15 +6250,32 @@
                     const isOwner = c.userId === currentUserId;
                     const escapedDisplayName = escapeHtml(c.displayName);
                     const escapedContent = escapeHtml(c.content);
-                    const safeAvatarUrl = (c.avatarUrl || LOGO_URL).startsWith('http') ? c.avatarUrl || LOGO_URL : LOGO_URL;
+                    const escapedUserId = escapeHtml(c.userId);
                     const escapedCommentId = escapeHtml(c.commentId);
+                    
+                    // Safely validate and escape avatar URL
+                    let safeAvatarUrl = LOGO_URL;
+                    if (c.avatarUrl && typeof c.avatarUrl === 'string') {
+                        try {
+                            const url = new URL(c.avatarUrl);
+                            if (url.protocol === 'http:' || url.protocol === 'https:') {
+                                safeAvatarUrl = escapeHtml(c.avatarUrl);
+                            }
+                        } catch (e) {
+                            safeAvatarUrl = LOGO_URL;
+                        }
+                    }
+                    
                     const replyBtn = `<button class="text-sky-400 hover:text-sky-300 text-xs reply-btn" data-post-id="${postId}" data-comment-id="${escapedCommentId}" data-display-name="${escapeHtml(c.displayName)}">Reply</button>`;
                     const menuId = `comment-menu-${escapedCommentId}`;
-                    const menuBtn = isOwner ? `<div class="relative"><button class="text-gray-400 hover:text-gray-200 text-xs px-2 comment-menu-btn transition-colors" data-menu-id="${menuId}" title="Options">•••</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-10 min-w-32"><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white edit-comment-btn transition-colors border-b border-gray-700" data-post-id="${postId}" data-comment-id="${escapedCommentId}" data-content="">Edit</button><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-red-400 delete-comment-btn transition-colors" data-post-id="${postId}" data-comment-id="${escapedCommentId}">Delete</button></div></div>` : '';
+                    
+                    // Store original content in a data attribute for edit functionality (base64 encoded to avoid injection)
+                    const contentForEdit = btoa(encodeURIComponent(c.content || ''));
+                    const menuBtn = isOwner ? `<div class="relative"><button class="text-gray-400 hover:text-gray-200 text-xs px-2 comment-menu-btn transition-colors" data-menu-id="${menuId}" title="Options">•••</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-10 min-w-32"><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white edit-comment-btn transition-colors border-b border-gray-700" data-post-id="${postId}" data-comment-id="${escapedCommentId}" data-content-encoded="${contentForEdit}">Edit</button><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-red-400 delete-comment-btn transition-colors" data-post-id="${postId}" data-comment-id="${escapedCommentId}">Delete</button></div></div>` : '';
                     const timeStr = getRelativeTime(c.timestamp);
                     
-                    // Simple threaded structure with proper escaping
-                    let html = `<div class="flex gap-2 text-sm mb-3 ${isReply ? 'ml-8 pl-3 border-l-2 border-sky-500/30' : ''}" data-comment-id="${escapedCommentId}" data-user-id="${escapeHtml(c.userId)}">`;
+                    // Build comment with proper structure
+                    let html = `<div class="flex gap-2 text-sm mb-3 ${isReply ? 'ml-8 pl-3 border-l-2 border-sky-500/30' : ''}" data-comment-id="${escapedCommentId}" data-user-id="${escapedUserId}">`;
                     html += `<img src="${safeAvatarUrl}" class="w-6 h-6 rounded-full flex-shrink-0" alt="Avatar">`;
                     html += '<div class="flex-1">';
                     html += '<div class="flex items-start justify-between">';
@@ -6262,7 +6285,7 @@
                     html += `<p class="text-gray-300">${escapedContent}</p>`;
                     html += `<div class="flex gap-1 mt-1">${replyBtn}</div>`;
                     
-                    // Render replies with indentation
+                    // Render replies in nested container
                     const replies = repliesMap[c.commentId] || [];
                     if (replies.length > 0) {
                         html += '<div class="mt-2">';

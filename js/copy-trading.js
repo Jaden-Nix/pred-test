@@ -184,8 +184,12 @@ async function getTopTraders() {
 
 // Fallback traders (only used if Firebase fails)
 function getFallbackTraders() {
-    // Return empty array - we'll show a helpful empty state instead
-    return [];
+    // Return a special marker to indicate configuration issue
+    return [{
+        id: 'config-error',
+        isConfigError: true,
+        message: 'Copy trading requires proper APP_ID configuration'
+    }];
 }
 
 // Get random avatar emoji
@@ -258,7 +262,21 @@ async function renderCopyTradingPanel() {
             <!-- Top Traders -->
             <div class="ui-panel p-6 rounded-2xl">
                 <h3 class="text-lg font-bold text-white mb-4">🏆 Top Traders</h3>
-                ${topTraders.length === 0 ? `
+                ${topTraders.length > 0 && topTraders[0].isConfigError ? `
+                    <div class="text-center py-12">
+                        <div class="text-6xl mb-4">⚠️</div>
+                        <h4 class="text-xl font-bold text-orange-400 mb-2">Configuration Issue</h4>
+                        <p class="text-gray-400 mb-6">${topTraders[0].message}</p>
+                        <div class="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/30 rounded-xl p-4 text-sm text-gray-300">
+                            <p class="mb-2">⚙️ <strong>To fix this:</strong></p>
+                            <ol class="text-left list-decimal list-inside space-y-1 ml-4">
+                                <li>Ensure APP_ID is properly initialized in your app</li>
+                                <li>Check Firebase configuration</li>
+                                <li>Contact support if the issue persists</li>
+                            </ol>
+                        </div>
+                    </div>
+                ` : topTraders.length === 0 ? `
                     <div class="text-center py-12">
                         <div class="text-6xl mb-4">📊</div>
                         <h4 class="text-xl font-bold text-white mb-2">No Traders Yet</h4>
@@ -275,7 +293,7 @@ async function renderCopyTradingPanel() {
                     </div>
                 ` : `
                 <div class="space-y-3">
-                    ${topTraders.map((trader, index) => {
+                    ${topTraders.filter(t => !t.isConfigError).map((trader, index) => {
                         const isFollowing = followedTraders.find(t => t.id === trader.id);
                         const rank = index + 1;
                         const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
