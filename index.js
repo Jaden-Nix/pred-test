@@ -1885,6 +1885,23 @@ app.post('/api/social/comment', requireAuth, requireFirebase, async (req, res) =
     const storedUserId = userId || req.user.uid;
     
     try {
+        // Run guardrails on comment content
+        const preFilter = preFilterContent(content, 500);
+        if (preFilter.blocked) {
+            return res.status(400).json({ error: preFilter.reason, blocked: true });
+        }
+        
+        const blocklist = checkBlocklist(content);
+        if (blocklist.blocked) {
+            return res.status(400).json({ error: blocklist.reason, blocked: true });
+        }
+        
+        // Rate limit per user
+        const rateLimit = checkRateLimit(storedUserId, req.ip, 'comment');
+        if (!rateLimit.allowed) {
+            return res.status(429).json({ error: rateLimit.reason, rateLimited: true });
+        }
+        
         const commentRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts/${postId}/comments`);
         
         await commentRef.add({
