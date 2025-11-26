@@ -10973,9 +10973,9 @@ ${historyText}`;
 
                     // Update the public leaderboard score
                     const publicProfileRef = doc(db, 'artifacts', APP_ID, 'public', 'data', PUBLIC_LEADERBOARD_COLLECTION, pledge.userId);
-                    batch.update(publicProfileRef, {
+                    batch.set(publicProfileRef, {
                         xp: increment(xpChange)
-                    });
+                    }, { merge: true });
 
                     if (isWinner) winnersPaid++;
                 }
