@@ -45,9 +45,9 @@
         }
 
         body.light-mode {
-            --bg-dark: #fafafa;
-            --bg-card: rgba(0, 0, 0, 0.02);
-            --border: rgba(0, 0, 0, 0.06);
+            --bg-dark: #e8f4f8;
+            --bg-card: rgba(99, 102, 241, 0.04);
+            --border: rgba(99, 102, 241, 0.1);
             --text-primary: #0f172a;
             --text-secondary: #475569;
             --text-muted: #64748b;
@@ -66,9 +66,9 @@
 
         body.light-mode .bg-mesh {
             background: 
-                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.08), transparent),
-                radial-gradient(ellipse 60% 40% at 100% 50%, rgba(168, 85, 247, 0.05), transparent),
-                radial-gradient(ellipse 50% 50% at 0% 80%, rgba(34, 211, 238, 0.04), transparent);
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.12), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 50%, rgba(168, 85, 247, 0.08), transparent),
+                radial-gradient(ellipse 50% 50% at 0% 80%, rgba(34, 211, 238, 0.06), transparent);
         }
 
         @keyframes fadeUp {
@@ -283,7 +283,7 @@
             bottom: 2rem;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 50;
+            z-index: 1000;
             display: flex;
             gap: 0.75rem;
             align-items: center;
@@ -315,7 +315,7 @@
             position: fixed;
             top: 2rem;
             right: 6rem;
-            z-index: 50;
+            z-index: 1000;
             font-size: 0.875rem;
             color: var(--text-muted);
             font-weight: 500;
@@ -327,7 +327,7 @@
             left: 0;
             height: 3px;
             background: linear-gradient(90deg, var(--primary), var(--accent), var(--accent-2));
-            z-index: 100;
+            z-index: 1000;
             transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -335,7 +335,7 @@
             position: fixed;
             top: 2rem;
             right: 2rem;
-            z-index: 50;
+            z-index: 1000;
             width: 48px;
             height: 28px;
             background: var(--bg-card);
@@ -372,7 +372,7 @@
             position: fixed;
             top: 1.5rem;
             left: 1.5rem;
-            z-index: 50;
+            z-index: 1000;
             display: flex;
             align-items: center;
             gap: 1rem;
@@ -921,7 +921,7 @@
                     <div class="roadmap-item">
                         <div class="roadmap-dot completed">✓</div>
                         <div>
-                            <h3>Q4 2024: Genesis</h3>
+                            <h3>Q1 2025: Genesis</h3>
                             <p class="desc" style="margin-top: 0.5rem;">Core markets, Gemini Oracle, Quick Play, Email OTP authentication</p>
                         </div>
                     </div>
@@ -931,27 +931,27 @@
                     <div class="roadmap-item">
                         <div class="roadmap-dot completed">✓</div>
                         <div>
-                            <h3>Q1 2025: Social Layer</h3>
+                            <h3>Q2 2025: Social Layer</h3>
                             <p class="desc" style="margin-top: 0.5rem;">Feed system, Swarm AI, 5-layer safety, Jury disputes</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="card card-accent animate-slide-right delay-4" style="opacity: 0;">
+                <div class="card animate-slide-right delay-4" style="opacity: 0;">
                     <div class="roadmap-item">
-                        <div class="roadmap-dot current">🚀</div>
+                        <div class="roadmap-dot completed">✓</div>
                         <div>
-                            <h3 style="color: var(--primary-light);">Q2 2025: Web3 Integration</h3>
+                            <h3>Q3 2025: Web3 Integration</h3>
                             <p class="desc" style="margin-top: 0.5rem;">Wallet connect, On-chain settlement, Token-gated markets, NFTs</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="card animate-slide-right delay-5" style="opacity: 0;">
+                <div class="card card-accent animate-slide-right delay-5" style="opacity: 0;">
                     <div class="roadmap-item">
-                        <div class="roadmap-dot">⭐</div>
+                        <div class="roadmap-dot current">🚀</div>
                         <div>
-                            <h3>Q3-Q4 2025: Scale</h3>
+                            <h3 style="color: var(--primary-light);">Q4 2025: Scale & Expand</h3>
                             <p class="desc" style="margin-top: 0.5rem;">Mobile apps, Developer API, Enterprise tier, Governance token</p>
                         </div>
                     </div>
