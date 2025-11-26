@@ -13667,50 +13667,8 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
             }
         }, 2000);
 
-        // 3. Achievement Toast System
-        const achievements = [
-            { title: 'First Win', icon: '🎉', description: 'Won your first market!' },
-            { title: 'Hot Streak', icon: '🔥', description: '5 correct predictions in a row!' },
-            { title: 'Early Bird', icon: '🐦', description: 'Predicted before market got hot!' },
-            { title: 'Whale Move', icon: '🐋', description: 'Placed a $100+ bet!' },
-            { title: 'Social Butterfly', icon: '🦋', description: '10 comments posted!' },
-            { title: 'Market Maker', icon: '✨', description: 'Created 5 markets!' }
-        ];
-
-        function showAchievementToast() {
-            const achievement = achievements[Math.floor(Math.random() * achievements.length)];
-            const toast = document.createElement('div');
-            toast.className = 'fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 achievement-badge';
-            toast.innerHTML = `
-                <div class="glass-panel p-6 rounded-3xl border-2 border-yellow-500/50 shadow-2xl max-w-sm bg-gradient-to-br from-yellow-500/20 to-orange-500/10 badge-glow">
-                    <div class="flex items-center gap-4">
-                        <div class="text-5xl">${achievement.icon}</div>
-                        <div>
-                            <h4 class="text-lg font-bold text-white mb-1">🎊 Achievement Unlocked!</h4>
-                            <p class="text-base font-semibold text-yellow-400">${achievement.title}</p>
-                            <p class="text-sm text-gray-300">${achievement.description}</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(toast);
-
-            // Add confetti
-            createConfetti();
-
-            // Remove after 5 seconds
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 500);
-            }, 5000);
-        }
-
-        // Trigger random achievements
-        setTimeout(() => {
-            if (Math.random() > 0.5) {
-                showAchievementToast();
-            }
-        }, 15000);
+        // 3. Achievement System - DISABLED (fake random achievements removed)
+        // Real achievements would track actual user milestones from Firebase
 
         // 4. Confetti System
         function createConfetti() {
@@ -13761,13 +13719,8 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
             }, 3000);
         }
 
-        // Simulate typing indicators occasionally
-        setInterval(() => {
-            if (Math.random() > 0.7 && document.getElementById('social-feed-container')) {
-                const users = ['Alice', 'Bob', 'Carol', 'Dave', 'Eve'];
-                showTypingIndicator(users[Math.floor(Math.random() * users.length)]);
-            }
-        }, 20000);
+        // DISABLED: Fake typing indicators removed
+        // Real typing indicators would track actual user typing events via Firebase realtime listeners
 
         // 6. Live Reaction Counter with Animation
         function animateReactionCount(element) {
@@ -13778,25 +13731,8 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
             }, 500);
         }
 
-        // Simulate live reaction updates
-        setInterval(() => {
-            const reactionElements = document.querySelectorAll('[id*="reaction-count"]');
-            if (reactionElements.length > 0 && Math.random() > 0.6) {
-                const randomElement = reactionElements[Math.floor(Math.random() * reactionElements.length)];
-                const currentCount = parseInt(randomElement.textContent) || 0;
-                randomElement.textContent = currentCount + 1;
-                animateReactionCount(randomElement);
-                
-                // Add spark effect
-                const spark = document.createElement('div');
-                spark.className = 'reaction-spark absolute text-yellow-400 text-2xl pointer-events-none';
-                spark.innerHTML = '✨';
-                spark.style.left = randomElement.offsetLeft + 'px';
-                spark.style.top = randomElement.offsetTop + 'px';
-                randomElement.parentElement?.appendChild(spark);
-                setTimeout(() => spark.remove(), 600);
-            }
-        }, 8000);
+        // DISABLED: Fake reaction updates removed
+        // Real reactions would be tracked in Firebase and updated via listeners
 
         // 7. Mini Leaderboard in Feed
         function addMiniLeaderboard() {
@@ -13902,12 +13838,8 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
             }, 30000);
         }
 
-        // Simulate activity badges
-        setTimeout(() => {
-            if (Math.random() > 0.5) {
-                addActivityBadge('social-feed-screen');
-            }
-        }, 10000);
+        // DISABLED: Fake activity badges removed
+        // Real activity notifications would be triggered by actual events
 
         // 12. Streak Flame Animation Enhancement
         function enhanceStreakDisplay() {
