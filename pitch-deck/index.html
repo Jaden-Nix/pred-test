@@ -3,536 +3,334 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Predora | The Future of Prediction</title>
-
-    <!-- Fonts -->
+    <title>Predora - AI-Native Prediction Markets</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
-        /* Base Setup */
-        body { 
-            margin: 0; 
-            min-height: 100vh; 
-            background-color: #030712; /* Very dark slate */
-            font-family: 'Inter', sans-serif;
-            color: #f8fafc;
-            overflow: hidden; /* Keep main window fixed */
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Outfit', sans-serif;
-        }
-
-        /* Ambient Background */
-        .ambient-light {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            pointer-events: none;
-            z-index: -1;
-            background: 
-                radial-gradient(circle at 15% 50%, rgba(79, 70, 229, 0.15), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(236, 72, 153, 0.15), transparent 25%);
-            filter: blur(60px);
-        }
-
-        /* Glass Styling */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        .text-gradient-brand {
-            background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Slide Logic - FIXED SCROLLING & PADDING */
-        .slide {
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            transform: translateY(20px) scale(0.99);
-            transition: opacity 0.5s ease, transform 0.5s ease;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            /* Critical Fixes: */
-            padding-top: 6rem;    /* Space for progress bar */
-            padding-bottom: 10rem; /* HUGE space for bottom nav */
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-            overflow-y: auto;     /* Enable vertical scrolling */
-            height: 100%;
-            width: 100%;
-        }
-
-        @media (min-width: 768px) {
-            .slide { 
-                padding-left: 4rem;
-                padding-right: 4rem;
-            }
-        }
-
-        .slide.active {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            pointer-events: auto;
-            z-index: 10;
-        }
-
-        /* Custom Scrollbar */
-        .slide::-webkit-scrollbar {
-            width: 6px;
-        }
-        .slide::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .slide::-webkit-scrollbar-thumb {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-        }
-
-        .hover-glow:hover {
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
-            border-color: rgba(99, 102, 241, 0.5);
-        }
+        * { font-family: 'Outfit', sans-serif; }
+        .mono { font-family: 'Space Grotesk', monospace; }
+        body { background: #050505; color: #fff; overflow-x: hidden; }
+        .gradient-text { background: linear-gradient(to right, #38BDF8, #818CF8, #C084FC); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .slide { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 4rem 2rem; position: relative; overflow: hidden; }
+        .slide::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.1), transparent 70%); pointer-events: none; }
+        .slide > * { position: relative; z-10; }
+        .slide-content { max-width: 1000px; width: 100%; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; padding: 2rem; backdrop-filter: blur(10px); transition: all 0.3s; }
+        .card:hover { border-color: rgba(56, 189, 248, 0.5); transform: translateY(-5px); box-shadow: 0 20px 40px rgba(56, 189, 248, 0.1); }
+        .btn-nav { position: fixed; bottom: 4rem; right: 2rem; z-index: 50; display: flex; gap: 1rem; }
+        .btn-nav button { padding: 0.75rem 1.5rem; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.5); border-radius: 0.5rem; color: #38BDF8; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .btn-nav button:hover { background: rgba(56, 189, 248, 0.3); }
+        .slide-counter { position: fixed; top: 2rem; right: 2rem; z-index: 50; mono; font-size: 0.9rem; color: #666; }
+        h1 { font-size: 3.5rem; font-weight: 800; margin: 1rem 0; }
+        h2 { font-size: 2.5rem; font-weight: 800; margin: 1rem 0; }
+        h3 { font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0; }
+        .stat { text-align: center; }
+        .stat-num { font-size: 3rem; font-weight: 800; color: #38BDF8; }
+        .stat-label { color: #999; font-size: 0.9rem; }
+        .feature-icon { font-size: 2.5rem; margin-bottom: 1rem; }
     </style>
 </head>
 <body>
-
-    <div class="ambient-light"></div>
-
-    <div id="app" class="w-full h-screen relative flex flex-col">
-
-        <!-- Progress Bar -->
-        <div class="w-full h-1 bg-white/5 absolute top-0 z-50">
-            <div id="progress-bar" class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500" style="width: 0%"></div>
-        </div>
-
-        <!-- Slides Container -->
-        <div id="slide-container" class="flex-1 relative w-full max-w-[1600px] mx-auto h-full">
-            <!-- Slides injected here -->
-        </div>
-
-        <!-- Fixed Controls (Bottom) -->
-        <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs flex justify-center pointer-events-none">
-            <div class="glass-panel rounded-full px-6 py-3 flex items-center gap-6 bg-black/60 pointer-events-auto shadow-2xl border-white/10">
-                <span id="slide-counter" class="text-slate-400 text-sm font-mono w-12 text-center">1 / 12</span>
-
-                <div class="h-6 w-px bg-white/10"></div>
-
-                <div class="flex gap-2">
-                    <button id="prev-btn" class="p-2 rounded-full hover:bg-white/10 transition-colors text-white disabled:opacity-30">
-                        <i data-lucide="chevron-left"></i>
-                    </button>
-                    <button id="next-btn" class="p-2 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 transition-all hover:scale-105 active:scale-95">
-                        <i data-lucide="chevron-right"></i>
-                    </button>
+    <!-- SLIDE 1: Title -->
+    <div class="slide" id="slide-1">
+        <div class="slide-content text-center">
+            <div style="font-size: 4rem; margin-bottom: 2rem;">🎯</div>
+            <h1 class="gradient-text">Predora</h1>
+            <p class="text-2xl text-gray-300 mb-4">Where Opinions Have Liquidity</p>
+            <p class="text-lg text-gray-400 mb-8">The first AI-Native prediction market. Tap to bet, chat to earn, and let Gemini settle the score.</p>
+            <div class="flex justify-center gap-4">
+                <div class="stat">
+                    <div class="stat-num">4</div>
+                    <div class="stat-label">AI Agents</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-num">90%</div>
+                    <div class="stat-label">Auto-Resolution</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-num">24/7</div>
+                    <div class="stat-label">Oracle Active</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // 🛠️ CONFIG
-        const CONTACT_INFO = {
-            name: "Jaden Samm",
-            role: "CEO & Team Lead",
-            email: "predora.io@gmail.com",
-            handle: "@Predora_HQ"
-        };
-
-        const SLIDE_IMAGES = {
-            cover: "https://res.cloudinary.com/djslxbghy/image/upload/IMG_4551_e9bv2x.jpg",
-            appMockup1: "https://res.cloudinary.com/djslxbghy/image/upload/IMG_5272_qngdvs.jpg",
-            uxDemo: "https://res.cloudinary.com/djslxbghy/image/upload/IMG_5172_bvweki.jpg", 
-            appMockup2: "https://res.cloudinary.com/djslxbghy/image/upload/IMG_5174_koybqk.jpg",
-            engineDiagram: "https://placehold.co/800x600/0f172a/ffffff?text=Engine+Architecture",
-            viralLoop: "https://res.cloudinary.com/djslxbghy/image/upload/IMG_5190_cr1au6.jpg",
-            thankYou: "https://res.cloudinary.com/djslxbghy/image/upload/IMG_4551_e9bv2x.jpg"
-        };
-
-        // Helpers
-        function getIcon(name, size = 24, className = "") {
-            return `<i data-lucide="${name}" class="${className}" style="width: ${size}px; height: ${size}px;"></i>`;
-        }
-
-        const Card = (icon, title, desc, colorClass = "text-indigo-400") => `
-            <div class="glass-panel p-6 rounded-2xl hover-glow transition-all duration-300 h-full flex flex-col">
-                <div class="mb-4 p-3 bg-white/5 rounded-xl w-fit ${colorClass}">
-                    ${getIcon(icon, 28)}
+    <!-- SLIDE 2: The Problem -->
+    <div class="slide" id="slide-2" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);">
+        <div class="slide-content">
+            <h2 class="gradient-text mb-8">The Problem</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>❌ Prediction markets are complex</h3>
+                    <p class="text-gray-400 mt-2">Order books, liquidity pools, gas fees—average users never get started.</p>
                 </div>
-                <h3 class="text-xl font-bold text-white mb-2 font-outfit">${title}</h3>
-                <p class="text-slate-400 text-sm leading-relaxed">${desc}</p>
+                <div class="card">
+                    <h3>❌ No instant settlement</h3>
+                    <p class="text-gray-400 mt-2">Disputes take weeks. Manual resolution is slow, centralized, prone to error.</p>
+                </div>
+                <div class="card">
+                    <h3>❌ Zero social layer</h3>
+                    <p class="text-gray-400 mt-2">Markets are anonymous. No community, no reputation, no network effects.</p>
+                </div>
+                <div class="card">
+                    <h3>❌ No content safety</h3>
+                    <p class="text-gray-400 mt-2">Scams, spam, and illegal markets flourish with no guardrails.</p>
+                </div>
             </div>
-        `;
+        </div>
+    </div>
 
-        const Badge = (text) => `
-            <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-indigo-300 text-xs font-bold tracking-wide uppercase backdrop-blur-sm">
-                ${text}
-            </span>
-        `;
+    <!-- SLIDE 3: Our Solution -->
+    <div class="slide" id="slide-3">
+        <div class="slide-content">
+            <h2 class="gradient-text mb-8">Our Solution: Predora</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>One-Tap Betting</h3>
+                    <p class="text-gray-400 mt-2">Swipe through markets like TikTok. Tap YES or NO. Done in 2 seconds.</p>
+                </div>
+                <div class="card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Swarm AI Oracle</h3>
+                    <p class="text-gray-400 mt-2">4 AI agents vote with Byzantine consensus. 90% auto-resolve in 30 minutes.</p>
+                </div>
+                <div class="card">
+                    <div class="feature-icon">👥</div>
+                    <h3>Social Feed</h3>
+                    <p class="text-gray-400 mt-2">Share takes, build reputation, earn leaderboard rewards. Community-first.</p>
+                </div>
+                <div class="card">
+                    <div class="feature-icon">⚖️</div>
+                    <h3>Jury Disputes</h3>
+                    <p class="text-gray-400 mt-2">Disagree? Top 5 users vote. Democracy + decentralization.</p>
+                </div>
+                <div class="card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>5-Layer Safety</h3>
+                    <p class="text-gray-400 mt-2">Pre-filters → Keyword blocklist → OpenAI → Toxicity scoring → Admin review.</p>
+                </div>
+                <div class="card">
+                    <div class="feature-icon">💰</div>
+                    <h3>AMM Liquidity</h3>
+                    <p class="text-gray-400 mt-2">Instant execution. Real-time pricing. No slippage, no waiting.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        // --- SLIDES ---
-        const slides = [
-            // 1. Cover
-            () => `
-                <div class="w-full max-w-5xl mx-auto my-auto flex flex-col justify-center items-center text-center relative z-10">
-                    ${Badge('Pitch Deck 2.0')}
-                    <h1 class="mt-8 text-6xl md:text-9xl font-extrabold tracking-tight text-white mb-6">
-                        Predora<span class="text-indigo-500">.</span>
-                    </h1>
-                    <p class="text-2xl md:text-4xl text-slate-400 font-light mb-12 max-w-2xl mx-auto">
-                        Where Opinions Have <span class="text-indigo-400 italic font-serif">Liquidity</span>
-                    </p>
-                    <div class="flex flex-wrap justify-center gap-4 md:gap-8 mb-16">
-                        <div class="flex items-center gap-2 text-slate-300 glass-panel px-4 py-2 rounded-full">
-                            ${getIcon('shield', 18, 'text-emerald-400')} <span class="font-medium">No-Loss Engine</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-slate-300 glass-panel px-4 py-2 rounded-full">
-                            ${getIcon('zap', 18, 'text-yellow-400')} <span class="font-medium">Gas-less</span>
-                        </div>
-                        <div class="flex items-center gap-2 text-slate-300 glass-panel px-4 py-2 rounded-full">
-                            ${getIcon('cpu', 18, 'text-purple-400')} <span class="font-medium">AI Oracle</span>
-                        </div>
-                    </div>
-                    <div class="text-slate-500 text-sm mt-auto pt-12 pb-4">
-                        <p class="font-bold text-slate-300 mb-1">${CONTACT_INFO.name}</p>
-                        <p>${CONTACT_INFO.email}</p>
-                    </div>
-                </div>
-            `,
-            // 2. The Problem
-            () => `
-                <div class="w-full max-w-7xl mx-auto my-auto flex flex-col justify-center">
-                    <div class="mb-12 text-center md:text-left">
-                         <h2 class="text-4xl md:text-6xl font-bold text-white mb-4">Prediction Markets are <br/><span class="text-gradient-brand">Broken for Normies.</span></h2>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        ${Card('alert-triangle', 'Too Risky', 'Winner-take-all = 100% loss possible. New users quit instantly.', 'text-red-400')}
-                        ${Card('bar-chart-2', 'Too Complex', 'Feels like trading on technical DEXes. Gas fees kill fun.', 'text-orange-400')}
-                        ${Card('clock', 'Too Slow', 'Oracle delays of 24-48h kill the dopamine loop.', 'text-yellow-400')}
-                        ${Card('users', 'Anti-Social', 'Zero community. Just numbers on a screen. No virality.', 'text-blue-400')}
-                    </div>
-                </div>
-            `,
-            // 3. The Solution (Uses appMockup1)
-            () => `
-                <div class="w-full max-w-7xl mx-auto my-auto flex flex-col justify-center">
-                    <div class="flex items-center gap-4 mb-12">
-                        <div class="p-4 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-500/20">
-                            ${getIcon('sparkles', 32, 'text-white')}
-                        </div>
-                        <h2 class="text-4xl md:text-6xl font-bold text-white">Simple. Social. Safe.</h2>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
-                        <div class="space-y-8 text-left lg:text-right order-2 lg:order-1">
-                            <div><h3 class="text-2xl font-bold text-indigo-400 mb-2">Simple</h3><p class="text-slate-400">Tinder-style Quick Play feed. AI-Assisted market creation.</p></div>
-                            <div><h3 class="text-2xl font-bold text-emerald-400 mb-2">Safe</h3><p class="text-slate-400">No-Loss Markets for risk-free onboarding.</p></div>
-                        </div>
-                        <div class="order-1 lg:order-2 relative mx-auto w-64 aspect-[9/19] bg-slate-900 rounded-[3rem] border-8 border-slate-800 shadow-2xl overflow-hidden flex items-center justify-center group hover:scale-105 transition-transform duration-500">
-                             <img src="${SLIDE_IMAGES.appMockup1}" class="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity" />
-                             <div class="relative z-10 flex flex-col items-center">
-                                ${getIcon('smartphone', 48, 'text-white mb-2')}
-                                <span class="text-xs font-bold uppercase tracking-widest text-white">Mobile First</span>
-                             </div>
-                        </div>
-                        <div class="space-y-8 order-3">
-                             <div><h3 class="text-2xl font-bold text-yellow-400 mb-2">Fast & Cheap</h3><p class="text-slate-400">Pledge Pool batches 20+ bets into 1 transaction.</p></div>
-                            <div><h3 class="text-2xl font-bold text-pink-400 mb-2">Viral</h3><p class="text-slate-400">Shareable win cards. XP-based play for free.</p></div>
-                        </div>
-                    </div>
-                </div>
-            `,
-            // 4. Validation
-            () => `
-                <div class="w-full max-w-5xl mx-auto my-auto flex flex-col justify-center">
-                    <h2 class="text-4xl font-bold text-white mb-2">We Built What You Asked For</h2>
-                    <p class="text-indigo-400 font-mono mb-12 text-lg">Solving 4/5 of the YZi Labs Challenges</p>
-                    <div class="grid gap-4 w-full">
-                        ${[
-                            {l: 'AI Oracles', t: 'Built: Realtime search & verifiable URLs.', c:'text-emerald-400'},
-                            {l: 'Gas-less UX', t: 'Built: Pledge Pool batching.', c:'text-emerald-400'},
-                            {l: 'Liquidity', t: 'Built: Concentrated liquidity vault.', c:'text-emerald-400'},
-                            {l: 'Disputes', t: 'Built: Jury System (Human-in-loop).', c:'text-emerald-400'},
-                            {l: 'Sybil', t: 'In Progress: Gitcoin + XP Identity.', c:'text-yellow-400'}
-                        ].map(i => `
-                            <div class="glass-panel p-4 rounded-xl flex items-center gap-4">
-                                ${getIcon(i.c.includes('yellow') ? 'clock' : 'check-circle-2', 24, i.c)}
-                                <div class="flex flex-col md:flex-row md:items-center md:gap-2">
-                                    <span class="font-bold text-white text-lg">${i.l}</span>
-                                    <span class="hidden md:inline text-slate-600">|</span>
-                                    <span class="text-slate-400">${i.t}</span>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `,
-            // 5. Engines
-            () => `
-                <div class="w-full max-w-6xl mx-auto my-auto flex flex-col justify-center">
-                    <h2 class="text-4xl md:text-5xl font-bold text-white mb-12 text-center">Two Engines. One App.</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="glass-panel p-8 rounded-3xl border-t-4 border-red-500 flex flex-col hover:-translate-y-2 transition-transform duration-500">
-                            <div class="flex items-center gap-4 mb-6">
-                                <div class="p-3 bg-red-500/20 rounded-lg text-red-400">${getIcon('target', 32)}</div>
-                                <h3 class="text-3xl font-bold text-white">For Degens</h3>
-                            </div>
-                            <ul class="space-y-4 text-lg text-slate-300">
-                                <li class="flex gap-3">${getIcon('check', 20, 'text-red-500')} High Upside (100x)</li>
-                                <li class="flex gap-3">${getIcon('check', 20, 'text-red-500')} Classic AMM Markets</li>
-                                <li class="flex gap-3">${getIcon('check', 20, 'text-red-500')} Pro-Trader Tools</li>
-                            </ul>
-                        </div>
-                        <div class="glass-panel p-8 rounded-3xl border-t-4 border-emerald-500 flex flex-col hover:-translate-y-2 transition-transform duration-500 relative overflow-hidden">
-                            <div class="absolute top-0 right-0 -mr-10 -mt-10 opacity-10">${getIcon('shield', 200, 'text-emerald-500')}</div>
-                            <div class="flex items-center gap-4 mb-6 relative z-10">
-                                <div class="p-3 bg-emerald-500/20 rounded-lg text-emerald-400">${getIcon('shield', 32)}</div>
-                                <h3 class="text-3xl font-bold text-white">For Normies</h3>
-                            </div>
-                            <ul class="space-y-4 text-lg text-slate-300 relative z-10">
-                                <li class="flex gap-3">${getIcon('check', 20, 'text-emerald-500')} <span class="text-white font-bold">No-Loss</span> Onboarding</li>
-                                <li class="flex gap-3">${getIcon('check', 20, 'text-emerald-500')} Stakes go to Yield Vault</li>
-                                <li class="flex gap-3">${getIcon('check', 20, 'text-emerald-500')} Losers get 100% back</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            `,
-            // 6. UX Demo (Uses uxDemo)
-            () => `
-                <div class="w-full max-w-7xl mx-auto my-auto flex flex-col justify-center">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                         <div class="relative group order-2 lg:order-1">
-                            <div class="absolute -inset-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl blur-lg opacity-30 group-hover:opacity-50 transition duration-1000"></div>
-                            <!-- UPDATED: Uses uxDemo here -->
-                            <img src="${SLIDE_IMAGES.uxDemo}" class="relative rounded-2xl border border-white/10 w-full shadow-2xl" />
-                        </div>
-                        <div class="order-1 lg:order-2">
-                            ${Badge('UX Strategy')}
-                            <h2 class="text-4xl md:text-5xl font-bold text-white mt-6 mb-6">Gas-less. <br/>Frictionless.</h2>
-                            <p class="text-xl text-indigo-300 mb-8">Built for GenZ. Feels like TikTok, not DeFi.</p>
-                            <div class="space-y-8">
-                                <div><h4 class="text-white font-bold text-xl mb-2">Quick Play Feed</h4><p class="text-slate-400">Swipe-style interaction. 20 predictions in 30 seconds.</p></div>
-                                <div><h4 class="text-white font-bold text-xl mb-2">Pledge Pool (Cart)</h4><p class="text-slate-400">Bets stack up as drafts. Sign once at the end. Gas is essentially zero.</p></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `,
-            // 7. Analytics
-            () => `
-                 <div class="w-full max-w-7xl mx-auto my-auto flex flex-col justify-center">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                        <div>
-                            <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">Smart Tools for Smart Money.</h2>
-                            <div class="space-y-4 mt-8">
-                                ${Card('trending-up', 'TVL Flows', 'Spot smart money moments instantly.', 'text-blue-400')}
-                                ${Card('history', 'Time Machine', 'Rewind market history to find the edge.', 'text-purple-400')}
-                                ${Card('users', 'Social Sentiment', 'Crowd vs. Your Network analysis.', 'text-pink-400')}
-                            </div>
-                        </div>
-                        <div class="glass-panel p-4 rounded-2xl">
-                            <img src="${SLIDE_IMAGES.appMockup2}" class="rounded-lg w-full opacity-90" />
-                        </div>
-                    </div>
-                </div>
-            `,
-            // 8. Social Network
-            () => `
-                <div class="w-full max-w-6xl mx-auto my-auto flex flex-col justify-center text-center">
-                    <h2 class="text-4xl md:text-6xl font-bold text-white mb-4">A Prediction <span class="text-gradient-brand">Social Network</span></h2>
-                    <p class="text-slate-400 text-xl mb-16 max-w-2xl mx-auto">Not just a tool. A place to build reputation.</p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div class="glass-panel p-8 rounded-3xl hover:-translate-y-2 transition-transform">
-                            <div class="w-20 h-20 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-400">
-                                ${getIcon('users', 40)}
-                            </div>
-                            <h3 class="text-2xl font-bold text-white mb-3">Social Graph</h3>
-                            <p class="text-slate-400">Follow top forecasters. View stats and heatmaps.</p>
-                        </div>
-                        <div class="glass-panel p-8 rounded-3xl hover:-translate-y-2 transition-transform border-t border-emerald-500/30">
-                            <div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-emerald-400">
-                                ${getIcon('message-square', 40)}
-                            </div>
-                            <h3 class="text-2xl font-bold text-white mb-3">Stake-to-Chat</h3>
-                            <p class="text-slate-400">Zero spam. Only people with skin in the game can talk.</p>
-                        </div>
-                        <div class="glass-panel p-8 rounded-3xl hover:-translate-y-2 transition-transform">
-                            <div class="w-20 h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6 text-purple-400">
-                                ${getIcon('award', 40)}
-                            </div>
-                            <h3 class="text-2xl font-bold text-white mb-3">XP System</h3>
-                            <p class="text-slate-400">Play for free. Build rep. Simulate markets without risk.</p>
-                        </div>
-                    </div>
-                </div>
-            `,
-            // 9. AI Engine
-            () => `
-                <div class="w-full max-w-7xl mx-auto my-auto flex flex-col justify-center">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                        <div class="glass-panel p-8 rounded-3xl border border-white/10 bg-black/40">
-                             <div class="space-y-6">
-                                <div class="flex items-center justify-between text-slate-400 text-sm"><span>INPUT</span><span>OUTPUT</span></div>
-                                <div class="h-px bg-white/10 w-full"></div>
-                                <div class="flex items-center gap-4">
-                                    <div class="w-12 h-12 rounded bg-slate-800 flex items-center justify-center">${getIcon('search', 20)}</div>
-                                    <div class="flex-1 h-2 bg-slate-800 rounded overflow-hidden"><div class="w-3/4 bg-indigo-500 h-full animate-pulse"></div></div>
-                                    <div class="w-12 h-12 rounded bg-indigo-900/50 border border-indigo-500/50 flex items-center justify-center text-indigo-400 font-bold">Odds</div>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <div class="w-12 h-12 rounded bg-slate-800 flex items-center justify-center">${getIcon('file-text', 20)}</div>
-                                    <div class="flex-1 h-2 bg-slate-800 rounded overflow-hidden"><div class="w-full bg-emerald-500 h-full animate-pulse"></div></div>
-                                    <div class="w-12 h-12 rounded bg-emerald-900/50 border border-emerald-500/50 flex items-center justify-center text-emerald-400 font-bold">Win</div>
-                                </div>
-                             </div>
-                        </div>
-                        <div>
-                            <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">AI & Trustless Engine</h2>
-                            <p class="text-xl text-indigo-300 mb-10">AI handles 90% of the heavy lifting.</p>
-                            <div class="space-y-8">
-                                <div class="flex gap-4"><div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">1</div><div><h4 class="text-white font-bold text-lg">AI Creation</h4><p class="text-slate-400">Auto-sets questions, dates, and odds.</p></div></div>
-                                <div class="flex gap-4"><div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">2</div><div><h4 class="text-white font-bold text-lg">AI Judge</h4><p class="text-slate-400">Instant settlement via web search verification.</p></div></div>
-                                <div class="flex gap-4"><div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0">3</div><div><h4 class="text-white font-bold text-lg">The Jury</h4><p class="text-slate-400">Decentralized dispute resolution layer.</p></div></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `,
-            // 10. Viral Loop
-            () => `
-                <div class="w-full max-w-7xl mx-auto my-auto flex flex-col justify-center">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                        <div>
-                            <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">The "I WON" Loop</h2>
-                            <p class="text-xl text-indigo-300 mb-8 italic">"People trust social proof more than ads."</p>
-                            <div class="glass-panel p-6 rounded-xl">
-                                <ul class="space-y-4 text-slate-300">
-                                    <li class="flex items-center gap-3">${getIcon('check', 20, 'text-indigo-400')} Auto-generated Dynamic Win Cards</li>
-                                    <li class="flex items-center gap-3">${getIcon('check', 20, 'text-indigo-400')} Stats, Emojis & PFP baked in</li>
-                                    <li class="flex items-center gap-3">${getIcon('check', 20, 'text-indigo-400')} 1-Click Share to X / Twitter</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="relative flex justify-center">
-                            <div class="relative w-72 aspect-[9/16] bg-black rounded-2xl border border-slate-800 shadow-2xl rotate-6 hover:rotate-0 transition-all duration-500 z-10 overflow-hidden">
-                                <img src="${SLIDE_IMAGES.viralLoop}" class="w-full h-full object-cover" />
-                            </div>
-                             <div class="absolute w-72 aspect-[9/16] bg-indigo-600/20 rounded-2xl -rotate-6 z-0 scale-90 blur-sm"></div>
-                        </div>
-                    </div>
-                </div>
-            `,
-            // 11. Roadmap
-            () => `
-                <div class="w-full max-w-4xl mx-auto my-auto flex flex-col pt-12 pb-12">
-                    <h2 class="text-4xl font-bold text-white mb-8">Vision & Roadmap</h2>
-                    <div class="grid gap-4">
-                        ${[
-                            { q: "Q1 2026", t: "The Foundation", d: "Full Next.js refactor, Gitcoin Passport, XP System." },
-                            { q: "Q2 2026", t: "BNB Chain Launch", d: "Pledge Pool on BNB, Venus Integration, Ecosystem Partnerships." },
-                            { q: "Q3 2026", t: "XP Ecosystem", d: "Tasks-to-Earn, Reputation Multipliers, Governance." },
-                            { q: "Q4 2026", t: "Multi-Chain", d: "Base + Arbitrum. Social 2.0: Copy-trading." },
-                            { q: "Q1 2027", t: "AI Intelligence", d: "Prediction suggestions, Personal Alpha Feed." },
-                        ].map(i => `
-                            <div class="glass-panel p-6 rounded-xl flex gap-6 hover:bg-white/5 transition-colors group">
-                                <div class="w-20 shrink-0 pt-1">
-                                    <span class="text-indigo-400 font-bold font-mono text-sm">${i.q}</span>
-                                </div>
-                                <div>
-                                    <h4 class="text-white font-bold text-lg group-hover:text-indigo-300 transition-colors">${i.t}</h4>
-                                    <p class="text-slate-400 text-sm mt-1">${i.d}</p>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `,
-            // 12. Thank You
-            () => `
-                <div class="w-full max-w-4xl mx-auto my-auto flex flex-col justify-center items-center text-center">
-                    <div class="w-40 h-40 rounded-full p-1 bg-gradient-to-br from-indigo-500 to-purple-600 shadow-2xl mb-8">
-                        <img src="${SLIDE_IMAGES.thankYou}" class="w-full h-full rounded-full object-cover border-4 border-slate-900" />
-                    </div>
-                    <h2 class="text-5xl md:text-7xl font-bold text-white mb-4">Thank You</h2>
-                    <p class="text-2xl text-indigo-300 mb-12">Where Opinions Have Liquidity.</p>
-                    <div class="flex flex-col md:flex-row gap-4 md:gap-8">
-                        <a href="https://predora-app.vercel.app" class="glass-panel px-8 py-4 rounded-full flex items-center gap-3 hover:bg-white/10 transition-colors text-white">
-                            ${getIcon('globe', 20)} predora-app.vercel.app
-                        </a>
-                        <a href="#" class="glass-panel px-8 py-4 rounded-full flex items-center gap-3 hover:bg-white/10 transition-colors text-white">
-                            ${getIcon('twitter', 20)} ${CONTACT_INFO.handle}
-                        </a>
-                        <a href="mailto:${CONTACT_INFO.email}" class="glass-panel px-8 py-4 rounded-full flex items-center gap-3 hover:bg-white/10 transition-colors text-white">
-                            ${getIcon('mail', 20)} ${CONTACT_INFO.email}
-                        </a>
-                    </div>
-                </div>
-            `
-        ];
+    <!-- SLIDE 4: Market Categories -->
+    <div class="slide" id="slide-4" style="background: linear-gradient(135deg, rgba(212, 70, 239, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);">
+        <div class="slide-content">
+            <h2 class="gradient-text mb-8">Market Categories</h2>
+            <div class="grid-2">
+                <div class="card">💰 Crypto</div>
+                <div class="card">🏈 Sports</div>
+                <div class="card">🏛️ Politics</div>
+                <div class="card">💼 Finance</div>
+                <div class="card">💻 Tech</div>
+                <div class="card">🎬 Entertainment</div>
+                <div class="card">🌐 Social</div>
+                <div class="card">⭐ Influencers</div>
+                <div class="card">🎨 Creators</div>
+                <div class="card">💬 Gossip</div>
+                <div class="card">🎓 Campus</div>
+                <div class="card">🎮 Gaming</div>
+            </div>
+            <p class="text-center text-gray-400 mt-8">From crypto volatility to celebrity drama. Every category. Every interest.</p>
+        </div>
+    </div>
 
-        // LOGIC
-        let currentIndex = 0;
-        const container = document.getElementById('slide-container');
-        const progressBar = document.getElementById('progress-bar');
-        const counter = document.getElementById('slide-counter');
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
+    <!-- SLIDE 5: Tech Stack -->
+    <div class="slide" id="slide-5">
+        <div class="slide-content">
+            <h2 class="gradient-text mb-8">Powered by Giants</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3 class="text-sky-400">🧠 AI Layer</h3>
+                    <ul class="text-gray-400 mt-4 space-y-2">
+                        <li>✓ Google Gemini 2.0 (Primary Oracle)</li>
+                        <li>✓ OpenAI GPT-4o (Swarm Agents)</li>
+                        <li>✓ Byzantine Consensus</li>
+                        <li>✓ Web Search Grounding</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3 class="text-indigo-400">🏗️ Infrastructure</h3>
+                    <ul class="text-gray-400 mt-4 space-y-2">
+                        <li>✓ Firebase Firestore (Real-time DB)</li>
+                        <li>✓ Firebase Auth (Email OTP)</li>
+                        <li>✓ Node.js + Express API</li>
+                        <li>✓ SendGrid (Email Service)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card mt-6" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3);">
+                <h3>Market Resolution Flow</h3>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem; text-align: center; font-size: 0.9rem;">
+                    <div>📅 Resolution Date</div>
+                    <div>→</div>
+                    <div>🤖 Swarm Analysis</div>
+                    <div>→</div>
+                    <div>✅ 90% Confidence</div>
+                    <div>→</div>
+                    <div>💸 Instant Payout</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        function renderSlide() {
-            container.innerHTML = '';
+    <!-- SLIDE 6: Roadmap -->
+    <div class="slide" id="slide-6" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);">
+        <div class="slide-content">
+            <h2 class="gradient-text mb-8">Our Roadmap</h2>
+            <div style="space-y: 2rem;">
+                <div class="card mb-4">
+                    <div style="display: flex; gap: 2rem; align-items: center;">
+                        <div style="flex: 0 0 auto;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; margin-right: 1rem;"></span>
+                            <strong>Q4 2024: Genesis</strong>
+                        </div>
+                        <div class="text-gray-400 flex-1">Core markets • Gemini Oracle • Quick Play • Email OTP</div>
+                    </div>
+                </div>
+                <div class="card mb-4">
+                    <div style="display: flex; gap: 2rem; align-items: center;">
+                        <div style="flex: 0 0 auto;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; margin-right: 1rem;"></span>
+                            <strong>Q1 2025: Social Layer</strong>
+                        </div>
+                        <div class="text-gray-400 flex-1">Social feed • Swarm AI • 5-layer safety • Jury disputes</div>
+                    </div>
+                </div>
+                <div class="card mb-4">
+                    <div style="display: flex; gap: 2rem; align-items: center;">
+                        <div style="flex: 0 0 auto;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #38BDF8; border-radius: 50%; margin-right: 1rem;"></span>
+                            <strong style="color: #38BDF8;">Q2 2025: Web3 Integration (In Progress)</strong>
+                        </div>
+                        <div class="text-gray-400 flex-1">Wallet connect • On-chain settlement • Token-gated markets • NFT achievements</div>
+                    </div>
+                </div>
+                <div class="card mb-4">
+                    <div style="display: flex; gap: 2rem; align-items: center;">
+                        <div style="flex: 0 0 auto;">
+                            <span style="display: inline-block; width: 12px; height: 12px; background: #6b7280; border-radius: 50%; margin-right: 1rem;"></span>
+                            <strong>Q3-Q4 2025: Scale</strong>
+                        </div>
+                        <div class="text-gray-400 flex-1">Mobile apps • Developer API • Enterprise partnerships • Governance token</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            const slideEl = document.createElement('div');
-            slideEl.className = 'slide';
-            slideEl.innerHTML = slides[currentIndex]();
+    <!-- SLIDE 7: The Big Dreams (Rational) -->
+    <div class="slide" id="slide-7">
+        <div class="slide-content">
+            <h2 class="gradient-text mb-8">Our Vision</h2>
+            <div class="card" style="background: rgba(212, 70, 239, 0.1); border-color: rgba(212, 70, 239, 0.3);">
+                <h3 class="text-2xl mb-6">What We're Building</h3>
+                <div class="space-y-4 text-gray-300">
+                    <p>🎯 <strong>1M Active Users by 2026</strong> - Make prediction markets as easy as social media. Tap, tap, done.</p>
+                    <p>💰 <strong>$100M TVL</strong> - Become the most liquid prediction platform. Real money, real markets, real outcomes.</p>
+                    <p>🌍 <strong>Global Governance</strong> - Let users vote on market categories, features, and platform rules. True DAO.</p>
+                    <p>🔗 <strong>Multi-Chain Expansion</strong> - Launch on Ethereum, Arbitrum, Polygon, Base. Omnichain liquidity.</p>
+                    <p>📱 <strong>Mobile-First Dominance</strong> - iOS & Android apps with push notifications. Predict on the go, anywhere, anytime.</p>
+                    <p>🤖 <strong>AI-Powered Insights</strong> - ML models predict market movements. Help users make smarter bets.</p>
+                    <p>🏆 <strong>Influencer Economy</strong> - Creator partnerships. Sponsored markets. Revenue share. Turn prediction into career.</p>
+                </div>
+            </div>
+            <div class="text-center mt-8 text-gray-400 text-sm">
+                <p>Bold? Yes. Impossible? No. We're executing daily.</p>
+            </div>
+        </div>
+    </div>
 
-            container.appendChild(slideEl);
+    <!-- SLIDE 8: Why Now -->
+    <div class="slide" id="slide-8" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);">
+        <div class="slide-content">
+            <h2 class="gradient-text mb-8">Why Now?</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3>📈 Market Ready</h3>
+                    <p class="text-gray-400 mt-2">Gen Z loves prediction markets. $6B+ annual volume. Mass market timing is NOW.</p>
+                </div>
+                <div class="card">
+                    <h3>🤖 AI Maturity</h3>
+                    <p class="text-gray-400 mt-2">Gemini 2.0 + GPT-4o make autonomous oracles possible. We built it first.</p>
+                </div>
+                <div class="card">
+                    <h3>📱 Mobile Dominance</h3>
+                    <p class="text-gray-400 mt-2">Prediction betting fits mobile. Quick Play is TikTok for trading. Perfect product-market fit.</p>
+                </div>
+                <div class="card">
+                    <h3>🔓 Web3 Boom</h3>
+                    <p class="text-gray-400 mt-2">Crypto users want decentralized prediction markets. We're filling the gap.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            lucide.createIcons();
+    <!-- SLIDE 9: Call to Action -->
+    <div class="slide" id="slide-9">
+        <div class="slide-content text-center">
+            <h2 class="gradient-text mb-6">Join Us</h2>
+            <p class="text-xl text-gray-300 mb-8">We're looking for:</p>
+            <div class="grid-2 mb-12">
+                <div class="card">👩‍💻 Technical Builders</div>
+                <div class="card">🎨 Product Designers</div>
+                <div class="card">📊 Growth Marketers</div>
+                <div class="card">💼 Investors & Advisors</div>
+            </div>
+            <p class="text-lg text-gray-400 mb-8">Let's build the future of prediction markets together.</p>
+            <div style="padding: 2rem; background: rgba(56, 189, 248, 0.1); border: 2px solid rgba(56, 189, 248, 0.3); border-radius: 1rem;">
+                <p class="mono text-sm">hello@predora.ai</p>
+                <p class="mono text-sm">predora.ai</p>
+            </div>
+        </div>
+    </div>
 
-            // Reflow triggers transition
-            void slideEl.offsetWidth; 
-            slideEl.classList.add('active');
+    <!-- Navigation -->
+    <div class="btn-nav">
+        <button onclick="previousSlide()">← Prev</button>
+        <button onclick="nextSlide()">Next →</button>
+    </div>
+    <div class="slide-counter"><span id="current-slide">1</span> / <span id="total-slides">9</span></div>
 
-            const progress = ((currentIndex + 1) / slides.length) * 100;
-            progressBar.style.width = `${progress}%`;
-            counter.textContent = `${currentIndex + 1} / ${slides.length}`;
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 9;
 
-            prevBtn.disabled = currentIndex === 0;
-            nextBtn.disabled = currentIndex === slides.length - 1;
-            prevBtn.style.opacity = currentIndex === 0 ? '0.3' : '1';
-            nextBtn.style.opacity = currentIndex === slides.length - 1 ? '0.3' : '1';
+        function updateSlide() {
+            document.querySelectorAll('.slide').forEach(s => s.style.display = 'none');
+            document.getElementById(`slide-${currentSlide}`).style.display = 'flex';
+            document.getElementById('current-slide').textContent = currentSlide;
         }
 
-        function next() { if(currentIndex < slides.length - 1) { currentIndex++; renderSlide(); } }
-        function prev() { if(currentIndex > 0) { currentIndex--; renderSlide(); } }
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
 
-        prevBtn.onclick = prev;
-        nextBtn.onclick = next;
+        function previousSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
         document.addEventListener('keydown', (e) => {
-            if(e.key === 'ArrowRight' || e.key === ' ') next();
-            if(e.key === 'ArrowLeft') prev();
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
         });
 
-        renderSlide();
-
+        updateSlide();
     </script>
 </body>
 </html>
