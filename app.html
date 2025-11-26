@@ -10830,7 +10830,7 @@ ${historyText}`;
          */
         window.resolveMarket = async (marketId, winningOutcome) => {
             showLoadingOverlay(true, `Resolving as ${winningOutcome}...`);
-            const { doc, getDoc, updateDoc, collection, query, where, getDocs, writeBatch, increment } = window.firebase.firestore;
+            const { doc, getDoc, updateDoc, collection, query, where, getDocs, writeBatch, increment, serverTimestamp } = window.firebase.firestore;
 
             try {
                 // 1. Determine if it's a Standard or Quick Play Market
