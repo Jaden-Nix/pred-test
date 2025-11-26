@@ -2226,19 +2226,38 @@ app.get('/api/admin/safety-stats', requireAdmin, requireFirebase, async (req, re
         const resolvedSnapshot = await reportsRef.where('status', '==', 'resolved').count().get();
         
         const logsSnapshot = await logsRef.get();
+        let safeCount = 0;
+        let blockedCount = 0;
         const byReason = {};
         
         logsSnapshot.forEach(doc => {
             const data = doc.data();
+            
+            // Count blocked content
+            if (data.action === 'content_blocked') {
+                blockedCount++;
+                const tier = data.tier || 'RED';
+                byReason[tier] = (byReason[tier] || 0) + 1;
+            }
+            
+            // Count moderated content (both safe and blocked via Gemini)
             if (data.action === 'content_moderated' && data.result) {
                 const tier = data.result.tier || 'UNKNOWN';
                 byReason[tier] = (byReason[tier] || 0) + 1;
+                if (tier === 'GREEN') {
+                    safeCount++;
+                } else if (tier === 'RED') {
+                    blockedCount++;
+                }
             }
         });
         
         const stats = {
+            safe: safeCount,
+            blocked: blockedCount,
             pending: pendingSnapshot.data().count,
             resolved: resolvedSnapshot.data().count,
+            reports: pendingSnapshot.data().count,
             moderationStats: byReason,
             totalReports: pendingSnapshot.data().count + resolvedSnapshot.data().count,
             timestamp: new Date().toISOString()
