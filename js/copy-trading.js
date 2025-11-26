@@ -374,32 +374,32 @@ async function renderCopyTradingPanel() {
                 <div class="flex items-start gap-4">
                     <div class="text-4xl">💡</div>
                     <div class="flex-1">
-                        <h4 class="font-bold text-white text-lg mb-3">How Copy Trading Works</h4>
+                        <h4 class="font-bold text-white text-lg mb-3 px-1">How Copy Trading Works</h4>
                         <div class="grid sm:grid-cols-2 gap-3 text-sm text-gray-300">
-                            <div class="flex items-start gap-2 p-3 bg-white/5 rounded-lg border border-white/10">
-                                <span class="text-lg">📊</span>
-                                <div>
+                            <div class="flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                                <span class="text-lg flex-shrink-0">📊</span>
+                                <div class="min-w-0">
                                     <p class="font-semibold text-sky-300">Real Stats</p>
                                     <p class="text-xs text-gray-400 mt-1">All data from actual user predictions</p>
                                 </div>
                             </div>
-                            <div class="flex items-start gap-2 p-3 bg-white/5 rounded-lg border border-white/10">
-                                <span class="text-lg">🎯</span>
-                                <div>
+                            <div class="flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                                <span class="text-lg flex-shrink-0">🎯</span>
+                                <div class="min-w-0">
                                     <p class="font-semibold text-green-300">Win Rates</p>
                                     <p class="text-xs text-gray-400 mt-1">Calculated from prediction history</p>
                                 </div>
                             </div>
-                            <div class="flex items-start gap-2 p-3 bg-white/5 rounded-lg border border-white/10">
-                                <span class="text-lg">✨</span>
-                                <div>
+                            <div class="flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                                <span class="text-lg flex-shrink-0">✨</span>
+                                <div class="min-w-0">
                                     <p class="font-semibold text-purple-300">Follow Traders</p>
                                     <p class="text-xs text-gray-400 mt-1">Track successful predictors</p>
                                 </div>
                             </div>
-                            <div class="flex items-start gap-2 p-3 bg-white/5 rounded-lg border border-white/10">
-                                <span class="text-lg">🔄</span>
-                                <div>
+                            <div class="flex items-start gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                                <span class="text-lg flex-shrink-0">🔄</span>
+                                <div class="min-w-0">
                                     <p class="font-semibold text-indigo-300">Auto-Copy</p>
                                     <p class="text-xs text-gray-400 mt-1">Automatically match their bets</p>
                                 </div>
