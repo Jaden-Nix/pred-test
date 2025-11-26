@@ -5004,7 +5004,7 @@
                         const stake = doc.data();
                         // Filter by userId on client side (handles different formats/casing)
                         if (stake.userId && stake.userId.toLowerCase() === currentUserId.toLowerCase()) {
-                            userStakesCache[stake.marketId] = stake.selectedStance;
+                            userStakesCache[stake.marketId?.toLowerCase()] = stake.selectedStance;
                             console.log('📍 Stake cached:', {
                                 marketId: stake.marketId,
                                 selectedStance: stake.selectedStance,
@@ -5125,14 +5125,14 @@
                             let marketHtml = '';
                             if (post.attachedMarket) {
                                 // Check if user has staked OR if this is the post author's market with a stance
-                                const userHasStake = userStakesCache[post.attachedMarket.id];
+                                const userHasStake = userStakesCache[post.attachedMarket.id?.toLowerCase()];
                                 const isAuthorWithStance = post.userId?.toLowerCase() === currentUserId?.toLowerCase() && post.attachedMarket.stance;
                                 const hasStake = userHasStake || isAuthorWithStance;
                                 const stakeLabel = hasStake ? `<span class="text-green-400 font-semibold">Skin in game</span>` : `<span class="text-gray-400">No stake</span>`;
                                 console.log('📊 Market Stake Check:', {
                                     marketId: post.attachedMarket.id,
                                     marketTitle: post.attachedMarket.title,
-                                    userStakesCache: userStakesCache[post.attachedMarket.id],
+                                    userStakesCache: userStakesCache[post.attachedMarket.id?.toLowerCase()],
                                     postUserId: post.userId,
                                     currentUserId: currentUserId,
                                     isAuthorWithStance: isAuthorWithStance,
