@@ -1831,6 +1831,64 @@ app.post('/api/social/create-post', requireAuth, requireFirebase, async (req, re
     const userId = req.user.uid;
     
     try {
+        // Content required check
+        if (!content || content.trim().length === 0) {
+            return res.status(400).json({ error: 'Content is required' });
+        }
+
+        // Rate limiting check
+        const rateLimitCheck = checkRateLimit(userId, 'post');
+        if (!rateLimitCheck.allowed) {
+            return res.status(429).json({ error: rateLimitCheck.message });
+        }
+
+        // AI GUARDRAILS: Check content safety before creating post
+        const preFilter = preFilterContent(content, 500);
+        if (preFilter.blocked) {
+            await logSafetyEvent(db, APP_ID, {
+                userId,
+                action: 'content_blocked',
+                contentType: 'post',
+                reason: preFilter.reason,
+                violations: preFilter.violations || ['format'],
+                tier: 'RED',
+                ip: req.ip
+            });
+            return res.status(400).json({ 
+                error: preFilter.reason,
+                blocked: true 
+            });
+        }
+
+        // Full AI moderation check with error handling
+        let moderationResult;
+        try {
+            moderationResult = await moderateContent(content, 'post', geminiClient);
+            
+            // Log the moderation event
+            await logSafetyEvent(db, APP_ID, {
+                userId,
+                action: 'post_moderated',
+                contentType: 'post',
+                result: moderationResult,
+                ip: req.ip
+            });
+
+            // Block if confidence is too low
+            if (moderationResult.confidence < 50) {
+                return res.status(400).json({ 
+                    error: 'Your post contains potentially inappropriate content.',
+                    blocked: true,
+                    reason: moderationResult.reason
+                });
+            }
+        } catch (moderationError) {
+            console.warn('⚠️ AI moderation failed, falling back to prefilter-only:', moderationError.message);
+            // If AI moderation fails, we already passed prefilter, so allow with default score
+            moderationResult = { confidence: 75, reason: 'AI moderation unavailable' };
+        }
+
+        // Create the post
         const postRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts`);
         
         const newPost = await postRef.add({
@@ -1846,7 +1904,8 @@ app.post('/api/social/create-post', requireAuth, requireFirebase, async (req, re
             edited: false,
             editedAt: null,
             isFlexPost: false,
-            flexData: null
+            flexData: null,
+            moderationScore: moderationResult.confidence
         });
         
         // 📢 SEND NOTIFICATIONS to all followers of the post creator

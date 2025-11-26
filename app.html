@@ -8018,6 +8018,11 @@
             if (market.isResolved) {
                 throw new Error("Market is closed");
             }
+            
+            // Validate pick for binary markets
+            if (!isMultiOption && pick !== 'YES' && pick !== 'NO') {
+                throw new Error("Invalid pick. Must be YES or NO for binary markets.");
+            }
 
             // 3. --- MAIN LOGIC (NOW INSIDE A TRANSACTION) ---
             const balanceFieldToUpdate = getBalanceField(asset);
@@ -8097,6 +8102,12 @@
                             // BINARY AMM: YES/NO constant product formula
                             let yesPool = marketData.yesPool;
                             let noPool = marketData.noPool;
+                            
+                            // VALIDATION: Check if pool values exist and are valid (including Infinity check)
+                            if (!Number.isFinite(yesPool) || !Number.isFinite(noPool) || yesPool <= 0 || noPool <= 0) {
+                                throw new Error("Invalid market liquidity pools. This market cannot accept stakes.");
+                            }
+                            
                             const k = yesPool * noPool;
 
                             if (pick === 'YES') {
@@ -8128,6 +8139,12 @@
                     } else {
                         // Logic for No-Loss markets
                         const odds = pick === 'YES' ? marketData.yesPercent : marketData.noPercent;
+                        
+                        // VALIDATION: Check if odds are valid
+                        if (!Number.isFinite(odds) || odds <= 0 || odds > 100) {
+                            throw new Error("Invalid market odds. Cannot calculate payout.");
+                        }
+                        
                         potentialPayoutUsd = (amountInUsd / (odds / 100));
                         transaction.update(marketRef, { totalStakeVolume: increment(amountInUsd) });
                     }
