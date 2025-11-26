@@ -8373,10 +8373,12 @@
                         <div class="text-center">
                             <div class="text-3xl font-bold text-green-400">${parseFloat(yesPercent).toFixed(1)}%</div>
                             <div class="text-xs text-gray-400 uppercase tracking-wide">YES</div>
+                            <div class="text-xs font-semibold mt-1 text-gray-400">($${(yesPercent / 100).toFixed(2)})</div>
                         </div>
                         <div class="text-center">
                             <div class="text-3xl font-bold text-red-400">${parseFloat(noPercent).toFixed(1)}%</div>
                             <div class="text-xs text-gray-400 uppercase tracking-wide">NO</div>
+                            <div class="text-xs font-semibold mt-1 text-gray-400">($${(noPercent / 100).toFixed(2)})</div>
                         </div>
                     </div>
                 </div>
@@ -13353,17 +13355,17 @@ ${historyText}`;
                             </div>
                         </div>
                         
-                        <!-- Odds with Percentage Change -->
+                        <!-- Odds with Price Display -->
                         <div class="flex justify-around mb-5">
                             <div class="text-center">
                                 <div class="text-4xl font-bold text-green-400">${(market.yesPercent || 0).toFixed(1)}%</div>
                                 <div class="text-xs text-gray-400 mt-1">YES</div>
-                                <div class="text-xs font-semibold mt-1 ${yesChangeColor}">${yesArrow} ${Math.abs(yesChange).toFixed(1)}%</div>
+                                <div class="text-xs font-semibold mt-1 text-gray-400">($${((market.yesPercent || 0) / 100).toFixed(2)})</div>
                             </div>
                             <div class="text-center">
                                 <div class="text-4xl font-bold text-red-400">${(market.noPercent || 0).toFixed(1)}%</div>
                                 <div class="text-xs text-gray-400 mt-1">NO</div>
-                                <div class="text-xs font-semibold mt-1 ${noChangeColor}">${noArrow} ${Math.abs(noChange).toFixed(1)}%</div>
+                                <div class="text-xs font-semibold mt-1 text-gray-400">($${((market.noPercent || 0) / 100).toFixed(2)})</div>
                             </div>
                         </div>
                         
