@@ -5633,6 +5633,7 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                     body: JSON.stringify({
                         postId,
+                        userId: currentUserId,
                         displayName: userProfile?.displayName || currentUserId,
                         avatarUrl: userProfile?.photoURL || LOGO_URL,
                         content: content
@@ -5665,14 +5666,14 @@
         };
         
         window.editComment = async (postId, commentId, userId, currentContent) => {
-            if (firebaseUid !== userId) { showToast('Can only edit your own comments', 'error'); return; }
+            if (currentUserId !== userId) { showToast('Can only edit your own comments', 'error'); return; }
             const newContent = prompt('Edit your comment:', currentContent);
             if (!newContent || newContent.trim() === '' || newContent === currentContent) return;
             try {
                 const response = await fetch('/api/social/edit-comment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ postId, commentId, content: newContent.trim() })
+                    body: JSON.stringify({ postId, commentId, userId: currentUserId, content: newContent.trim() })
                 });
                 
                 if (!response.ok) throw new Error('Edit failed');
@@ -5685,13 +5686,13 @@
         };
 
         window.deleteComment = async (postId, commentId, authorId) => {
-            if (firebaseUid !== authorId) { showToast('Can only delete your own comments', 'error'); return; }
+            if (currentUserId !== authorId) { showToast('Can only delete your own comments', 'error'); return; }
             if (!confirm('Delete comment?')) return;
             try {
                 const response = await fetch('/api/social/delete-comment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ postId, commentId })
+                    body: JSON.stringify({ postId, commentId, userId: currentUserId })
                 });
                 
                 if (!response.ok) throw new Error('Delete failed');
