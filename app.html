@@ -9845,6 +9845,8 @@
 
                         if (typeof data === 'object') {
                             // SUCCESS! The AI used our function tool.
+                            console.log("✅ Filling form with AI data:", data);
+                            
                             document.getElementById('market-title-input').value = data.title;
                             document.getElementById('market-insight-input').value = data.insight;
                             dom.marketYesInput.value = data.yesPercent;
@@ -9870,8 +9872,10 @@
                             }
 
                             updatePreview();
+                            console.log("✅ Form filled successfully!");
                             showToast("AI filled the form! Review and publish.", "success");
                         } else {
+                            console.error("❌ AI returned non-object data:", data);
                             throw new Error("AI (Step 2) failed to return a valid form.");
                         }
 
