@@ -1,0 +1,182 @@
+# Predora - AI-Native Prediction Markets Platform
+
+## Overview
+
+Predora is a prediction markets platform that enables users to create markets, place bets, and have outcomes automatically resolved using AI-powered oracles. The platform emphasizes ease of use with a "tap-to-predict" interface and leverages AI for content moderation, market resolution, and user assistance. Built as an MVP/hackathon project, it prioritizes rapid development and simplicity over complex infrastructure.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+
+**Decision**: Vanilla HTML/CSS/JavaScript with Tailwind CSS via CDN  
+**Rationale**: No-framework approach enables rapid prototyping and minimal complexity for hackathon/MVP timeline. Eliminates build processes and tooling overhead.  
+**Alternatives Considered**: React/Vue frameworks were avoided to reduce setup complexity and bundle size  
+**Trade-offs**:
+- **Pros**: Zero build time, instant deployment, minimal dependencies, easy debugging
+- **Cons**: No component reusability, manual DOM manipulation, limited scalability for complex UIs
+
+**Key Pages**:
+- `index.html` - Landing page with modern gradient hero, mesh backgrounds, glassmorphism cards, 3D device mockup, and enhanced animations
+- `login.html` - Authentication entry point
+- `app.html` - Main application interface with live activity signals, gamification, and interactive features
+- `pitch-deck/index.html` - Presentation deck
+
+**Styling System**: Tailwind CSS with custom configuration  
+**Decision**: CDN-based Tailwind with inline config  
+**Features**: 
+- Custom glassmorphism effects and gradient animations
+- Pre-render theme script to prevent FOUC (Flash of Unstyled Content)
+- Light/dark mode with localStorage persistence
+- 300+ lines of enhanced CSS animations for micro-interactions
+- Activity signals, trending badges, reaction animations, achievement popups, and more
+
+**Interactive Features** (Added November 2025):
+- **Live Activity System**: Real-time toast notifications showing user actions (predictions, comments, wins, achievements)
+- **Trending Indicators**: Hot badges and momentum signals on popular markets
+- **Gamification**: Achievement popups with confetti, streak flames, badge unlocks
+- **Typing Indicators**: Animated "user is typing..." in comments section
+- **Live Reactions**: Animated reaction counters with spark effects
+- **Mini Leaderboards**: Top predictors displayed in social feed
+- **Price Flash Effects**: Visual feedback on market price changes
+- **Card Animations**: Smooth entrance and hover effects on all market cards
+- **Activity Badges**: Notification pings on navigation icons
+- **Visual Feedback**: Micro-interactions throughout the app for every user action
+
+**State Management**:
+- **Demo Users**: localStorage for persistent demo sessions
+- **Email Users**: sessionStorage for temporary sessions, fallback to localStorage
+- **Authentication Check**: Pre-render script prevents login screen flash
+
+### Backend Architecture
+
+**Technology Stack**: Node.js + Express with ES modules  
+**Decision**: Express.js middleware-based RESTful API  
+**Rationale**: Well-documented, simple to deploy, and sufficient for current scale requirements  
+**Pros**: Extensive ecosystem, straightforward routing, easy deployment  
+**Cons**: Less opinionated than frameworks like NestJS, requires manual structure
+
+**File Structure**:
+- `index.js` - Main server with all API routes and business logic
+- `ai-guardrails.js` - Multi-layer content moderation system
+- `swarm-verify-oracle.js` - Multi-agent AI verification for market resolution
+- `cron-job.js` - Scheduled task runner for automated market resolution
+
+**API Authentication**: Firebase Admin SDK  
+**Decision**: Firebase for user authentication and session management  
+**Rationale**: Industry-standard auth, built-in security, minimal backend code required
+
+### AI Integration Architecture
+
+**Primary AI Provider**: Google Gemini 2.5 Flash (free tier)  
+**Decision**: Single AI provider for all operations (content moderation, market resolution, chat assistant)  
+**Rationale**: Gemini's free tier offers generous quotas suitable for MVP; unified API reduces complexity  
+**Previous Architecture**: Originally used OpenAI, migrated to Gemini for cost optimization  
+**Use Cases**:
+1. Content moderation and safety filtering
+2. AI assistant chat interface
+3. Market outcome resolution
+
+**Swarm Verification System** (`swarm-verify-oracle.js`):  
+**Decision**: Multi-agent consensus system for high-stakes market resolutions  
+**Architecture**:
+- Parallel agent execution with timeout handling (12 seconds)
+- Geometric median aggregation for confidence scoring
+- Multi-dimensional scoring: factual accuracy (45%), consistency (25%), timestamp (20%), sentiment (10%)
+- Second-pass review for low-confidence decisions (<85% threshold)
+
+**Configuration**:
+- High confidence: >90% (auto-resolve)
+- Mid confidence: 85-90% (second review)
+- Low confidence: <50% (manual intervention)
+
+### Content Safety Architecture
+
+**Multi-Layer Moderation Pipeline** (`ai-guardrails.js`):
+
+**Layer 1 - Pre-filtering**: Keyword blocklist for immediate rejection  
+**Categories**: Financial manipulation, hate speech, violence, illegal activity, spam  
+**Decision**: Fast regex-based blocking before expensive AI calls  
+
+**Layer 2 - Rate Limiting**:
+- Markets: 5 per minute
+- Comments: 30 per minute  
+- Requests: 300 per hour
+**Rationale**: Prevent abuse and API quota exhaustion
+
+**Layer 3 - AI Moderation**: Gemini-based content analysis  
+**Thresholds**:
+- Auto-approve: >95% safety confidence
+- Manual review: 70-95% confidence
+- Block: <50% confidence
+**Decision**: Three-tier system balances automation with human oversight for edge cases
+
+**Event Logging**: Structured logging system tracks all safety decisions for audit and improvement
+
+### Email Integration
+
+**Provider**: SendGrid via Replit Connectors  
+**Decision**: Use Replit's connector system for credential management  
+**Implementation**: Dynamic credential fetching (no caching) to ensure fresh tokens  
+**Fallback**: Environment variable API key if connector unavailable  
+**Use Case**: User authentication via email verification
+
+### Task Scheduling
+
+**Solution**: Node-cron + Replit Scheduled Deployment  
+**Decision**: Separate cron job file (`cron-job.js`) that calls server endpoint  
+**Architecture**: 
+- Cron job runs on schedule
+- Makes HTTP POST to `/api/run-jobs` with secret key authentication
+- Server processes market resolutions and poll auto-closures
+**Rationale**: Decouples scheduling from server runtime; allows server restarts without losing schedules
+
+## External Dependencies
+
+### Third-Party APIs
+
+1. **Google Gemini API** (`@google/generative-ai`)
+   - Purpose: All AI operations (moderation, resolution, chat)
+   - Model: gemini-2.5-flash-preview-09-2025
+   - Tier: Free tier with generous quotas
+
+2. **Firebase** (`firebase`, `firebase-admin`)
+   - Purpose: User authentication and session management
+   - Services: Firebase Auth, Admin SDK for token verification
+
+3. **SendGrid** (`@sendgrid/mail`)
+   - Purpose: Email verification and notifications
+   - Integration: Replit Connectors + fallback to API key
+
+### NPM Packages
+
+- `express` - Web server framework
+- `cors` - Cross-origin resource sharing
+- `node-fetch` - HTTP client for API calls
+- `node-cron` - Task scheduling
+- `openai` - Legacy dependency (now unused, can be removed)
+
+### Frontend Dependencies (CDN)
+
+- Tailwind CSS - Utility-first styling framework
+- Lucide Icons - Icon library
+- Google Fonts - Outfit, Space Grotesk, Inter, JetBrains Mono
+
+### Environment Variables Required
+
+- `GEMINI_API_KEY` - Google AI API key
+- `CRON_SECRET` - Secret key for scheduled job authentication
+- `ADMIN_SECRET` - Admin API authentication
+- `SENDGRID_API_KEY` - Email service API key (fallback)
+- `REPLIT_CONNECTORS_HOSTNAME` - Replit connector endpoint
+- `REPL_IDENTITY` - Replit identity token
+- Firebase credentials (handled by Firebase Admin SDK)
+
+### Hosting Platform
+
+**Platform**: Replit  
+**Rationale**: Zero-config deployment, built-in connectors, scheduled tasks, environment management  
+**Deployment**: Automatic on git push, no build step required
