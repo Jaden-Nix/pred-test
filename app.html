@@ -7821,7 +7821,33 @@
                     if (currentMarket.marketStructure === 'multi-option' && currentMarket.options) {
                         // Hide binary odds, show multi-option display
                         document.getElementById('binary-odds-display').classList.add('hidden');
-                        renderMultiOptionDisplay(currentMarket.options);
+                        
+                        // Calculate odds from optionAmounts (AMM formula)
+                        const optionAmounts = currentMarket.optionAmounts || {};
+                        const totalPoolSum = Object.values(optionAmounts).reduce((sum, amt) => sum + (amt || 0), 0);
+                        
+                        const optionsWithOdds = currentMarket.options.map(option => {
+                            const amount = optionAmounts[option] || 0;
+                            let percentage = 0;
+                            
+                            if (totalPoolSum > 0) {
+                                percentage = ((amount / totalPoolSum) * 100).toFixed(1);
+                            } else {
+                                // Equal distribution if no pool data
+                                percentage = (100 / currentMarket.options.length).toFixed(1);
+                            }
+                            
+                            // Clamp to [0, 100] range
+                            percentage = Math.min(100, Math.max(0, parseFloat(percentage)));
+                            
+                            return {
+                                id: option,
+                                label: option,
+                                odds: percentage
+                            };
+                        });
+                        
+                        renderMultiOptionDisplay(optionsWithOdds);
                     } else {
                         // Show binary odds, hide multi-option
                         document.getElementById('binary-odds-display').classList.remove('hidden');
@@ -7917,7 +7943,32 @@
 
                             // 3. Update the UI elements IN REAL TIME
                             if (currentMarket.marketStructure === 'multi-option' && currentMarket.options) {
-                                renderMultiOptionDisplay(currentMarket.options);
+                                // Calculate odds from optionAmounts (AMM formula)
+                                const optionAmounts = currentMarket.optionAmounts || {};
+                                const totalPoolSum = Object.values(optionAmounts).reduce((sum, amt) => sum + (amt || 0), 0);
+                                
+                                const optionsWithOdds = currentMarket.options.map(option => {
+                                    const amount = optionAmounts[option] || 0;
+                                    let percentage = 0;
+                                    
+                                    if (totalPoolSum > 0) {
+                                        percentage = ((amount / totalPoolSum) * 100).toFixed(1);
+                                    } else {
+                                        // Equal distribution if no pool data
+                                        percentage = (100 / currentMarket.options.length).toFixed(1);
+                                    }
+                                    
+                                    // Clamp to [0, 100] range
+                                    percentage = Math.min(100, Math.max(0, parseFloat(percentage)));
+                                    
+                                    return {
+                                        id: option,
+                                        label: option,
+                                        odds: percentage
+                                    };
+                                });
+                                
+                                renderMultiOptionDisplay(optionsWithOdds);
                             } else {
                                 const yesPercent = currentMarket.yesPercent || 50;
                                 const noPercent = currentMarket.noPercent || 50;
