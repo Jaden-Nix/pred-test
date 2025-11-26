@@ -981,6 +981,7 @@ async function createDailyMarkets() {
 - Entertainment: Awards, releases, celebrity events, streaming hits
 - Tech: Product launches, company announcements, AI developments
 - Politics: Elections, legislation, political events
+- Gaming: Esports, game releases, gaming tournaments, streaming
 - Social: Trends, influencers, social movements, cultural events
 - Other: Weather, news, viral trends
 
@@ -990,13 +991,13 @@ RULES:
 1. Use ONLY real market data provided for crypto - NO hallucinated numbers
 2. Create realistic targets considering all available data
 3. Make predictions that are plausible but exciting
-4. DIVERSITY: Cover at least 3+ different categories (crypto, sports, entertainment, tech, politics)
+4. DIVERSITY: Cover at least 3+ different categories (crypto, sports, entertainment, tech, politics, gaming)
 5. Mix binary YES/NO AND multi-option questions (3-4 outcomes)
 6. Balance between different timeframes
 
 Return ONLY a JSON array with objects containing:
 - title: specific, time-bound prediction question
-- category: Crypto/Tech/Finance/Sports/Entertainment/Politics/Social/Other
+- category: Crypto/Tech/Finance/Sports/Entertainment/Politics/Gaming/Social/Other
 - description: short analysis explaining why this matters
 - confidence: HIGH/MEDIUM/LOW
 - type: binary (YES/NO) or multi (3-4 options)
@@ -1156,6 +1157,7 @@ EXPERTISE:
 - Intraday crypto volatility and momentum
 - Real-time sports events and games
 - Entertainment news and trending topics
+- Gaming/Esports tournaments and events
 - Market catalysts and news events
 - Statistical probability of moves
 - Risk/reward optimization
@@ -1164,13 +1166,13 @@ RULES:
 1. Use ONLY the real market data provided for crypto
 2. Price targets must be realistic for 24-48h timeframes
 3. Consider daily volatility when setting targets
-4. DIVERSITY: Include crypto, sports, and entertainment quick plays
+4. DIVERSITY: Include crypto, sports, entertainment, and gaming quick plays
 5. Focus on HIGH-PROBABILITY + HIGH-INTEREST events
 6. Create events happening Nov 26-27, 2025
 
 Return ONLY a JSON array with:
 - title: specific, short-term prediction
-- category: Crypto/Tech/Finance/Sports/Entertainment
+- category: Crypto/Tech/Finance/Sports/Entertainment/Gaming
 - duration: 24h/48h
 - type: binary or multi
 - options: [for multi only] array of outcomes
