@@ -917,6 +917,7 @@ async function createDailyMarkets() {
 - Entertainment: Awards, releases, celebrity events, streaming hits
 - Tech: Product launches, company announcements, AI developments
 - Politics: Elections, legislation, political events
+- Social: Trends, influencers, social movements, cultural events
 - Other: Weather, news, viral trends
 
 Generate 5 HOTTEST, MOST TRADABLE prediction market questions across DIVERSE CATEGORIES.
@@ -931,7 +932,7 @@ RULES:
 
 Return ONLY a JSON array with objects containing:
 - title: specific, time-bound prediction question
-- category: Crypto/Tech/Finance/Sports/Entertainment/Politics/Other
+- category: Crypto/Tech/Finance/Sports/Entertainment/Politics/Social/Other
 - description: short analysis explaining why this matters
 - confidence: HIGH/MEDIUM/LOW
 - type: binary (YES/NO) or multi (3-4 options)
