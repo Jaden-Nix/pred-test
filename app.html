@@ -6014,16 +6014,17 @@
                 });
                 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Failed to create post');
+                    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('❌ Post creation failed:', response.status, error);
+                    throw new Error(error.error || `Failed to create post (${response.status})`);
                 }
                 
                 showToast('Post created!', 'success');
                 closeCreatePost();
                 loadSocialFeed();
             } catch (error) {
-                showToast('Failed to create post', 'error');
-                console.error(error);
+                console.error('❌ Post creation error:', error.message || error);
+                showToast(error.message || 'Failed to create post', 'error');
             } finally {
                 const btn = document.getElementById('submit-post-btn');
                 if (btn) btn.disabled = false;
