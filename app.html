@@ -13595,100 +13595,77 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
          * ========================================
          */
 
-        // 1. Live Activity Notification System
-        const liveActivities = [
-            { user: 'Sarah', action: 'predicted YES on', market: 'BTC $100k', icon: '📈', color: 'green' },
-            { user: 'Mike', action: 'commented on', market: 'US Elections', icon: '💬', color: 'blue' },
-            { user: 'Alex', action: 'predicted NO on', market: 'ETH Merge', icon: '📉', color: 'red' },
-            { user: 'Emma', action: 'won', market: 'NFL Finals', icon: '🎉', color: 'purple' },
-            { user: 'Chris', action: 'created', market: 'Tesla Stock', icon: '✨', color: 'sky' },
-            { user: 'Julia', action: 'upvoted', market: 'AI Trends', icon: '👍', color: 'amber' },
-            { user: 'David', action: 'achieved 5-day streak', market: '', icon: '🔥', color: 'orange' },
-            { user: 'Lisa', action: 'unlocked badge', market: 'Early Adopter', icon: '🏆', color: 'yellow' }
-        ];
+        // 1. Live Activity Notification System - REAL DATA ONLY
+        // Initialize as enabled
+        window.liveActivityEnabled = true;
 
-        function showLiveActivity() {
-            const activity = liveActivities[Math.floor(Math.random() * liveActivities.length)];
-            const toast = document.createElement('div');
+        // DISABLED - Only show real activities from users you follow
+        // No more fake random messages!
+
+        // 2. Smart Trending & Momentum System - REAL DATA ONLY
+        async function addSmartBadges() {
+            if (!window.liveActivityEnabled || !appSettings.animationsEnabled) return;
+
+            const marketCards = document.querySelectorAll('.ui-panel[data-market-id]');
             
-            // Map colors to explicit Tailwind classes
-            const borderColors = {
-                green: 'border-green-500/30',
-                blue: 'border-blue-500/30',
-                red: 'border-red-500/30',
-                purple: 'border-purple-500/30',
-                sky: 'border-sky-500/30',
-                amber: 'border-amber-500/30',
-                orange: 'border-orange-500/30',
-                yellow: 'border-yellow-500/30'
-            };
-            
-            toast.className = `fixed top-24 right-6 z-50 glass-panel p-4 rounded-2xl border ${borderColors[activity.color] || 'border-sky-500/30'} shadow-lg max-w-xs transform translate-x-full transition-transform duration-500`;
-            toast.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <div class="activity-indicator text-2xl">${activity.icon}</div>
-                    <div class="flex-1">
-                        <p class="text-sm font-semibold text-white">${activity.user} ${activity.action}</p>
-                        ${activity.market ? `<p class="text-xs text-gray-400">${activity.market}</p>` : ''}
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(toast);
+            for (const card of marketCards) {
+                const marketId = card.getAttribute('data-market-id');
+                if (!marketId) continue;
 
-            // Slide in
-            setTimeout(() => {
-                toast.style.transform = 'translateX(0)';
-            }, 100);
+                try {
+                    // Get real engagement metrics from Firebase
+                    const marketRef = db.collection('markets').doc(marketId);
+                    const [marketSnap, commentsSnap, stakesSnap] = await Promise.all([
+                        marketRef.get(),
+                        db.collection('markets').doc(marketId).collection('comments').get(),
+                        db.collection('stakes').where('marketId', '==', marketId).get()
+                    ]);
 
-            // Slide out after 4 seconds
-            setTimeout(() => {
-                toast.style.transform = 'translateX(400px)';
-                setTimeout(() => toast.remove(), 500);
-            }, 4000);
-        }
+                    const commentCount = commentsSnap.size;
+                    const stakeCount = stakesSnap.size;
+                    const totalEngagement = commentCount + stakeCount;
 
-        // Show random activity every 8-15 seconds
-        setInterval(() => {
-            if (Math.random() > 0.3) { // 70% chance to show
-                showLiveActivity();
-            }
-        }, 10000);
-
-        // 2. Trending Market Badge System
-        function addTrendingBadges() {
-            const marketCards = document.querySelectorAll('.ui-panel');
-            marketCards.forEach((card, index) => {
-                // Add trending badge to random markets
-                if (Math.random() > 0.7 && !card.querySelector('.trending-badge-label')) {
-                    const badge = document.createElement('div');
-                    badge.className = 'trending-badge-label absolute top-3 right-3 px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-full text-xs font-bold text-white shadow-lg hot-indicator z-10';
-                    badge.innerHTML = '🔥 HOT';
-                    
-                    // Find the card header or add to the card
-                    if (card.querySelector('h3, h2')) {
+                    // HOT badge: Only if engagement is high (10+ interactions)
+                    if (totalEngagement >= 10 && !card.querySelector('.trending-badge-label')) {
+                        const badge = document.createElement('div');
+                        badge.className = 'trending-badge-label absolute top-3 right-3 px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 dark:from-orange-500 dark:to-red-500 rounded-full text-xs font-bold text-white shadow-lg hot-indicator z-10';
+                        badge.innerHTML = `🔥 ${totalEngagement} active`;
                         card.style.position = 'relative';
                         card.appendChild(badge);
                     }
-                }
 
-                // Add momentum indicators to some markets
-                if (Math.random() > 0.6 && !card.querySelector('.momentum-indicator')) {
-                    const direction = Math.random() > 0.5 ? 'up' : 'down';
-                    const badge = document.createElement('div');
-                    badge.className = `momentum-indicator inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${direction === 'up' ? 'momentum-up text-green-900' : 'momentum-down text-red-900'}`;
-                    badge.innerHTML = direction === 'up' ? '↗️ +15% momentum' : '↘️ -12% momentum';
-                    
-                    // Try to insert after title
-                    const title = card.querySelector('h3, h2');
-                    if (title) {
-                        title.insertAdjacentElement('afterend', badge);
+                    // Momentum: Calculate from actual price changes
+                    if (marketSnap.exists) {
+                        const marketData = marketSnap.data();
+                        const currentOdds = marketData.oddsYES || 50;
+                        const previousOdds = marketData.previousOddsYES || currentOdds;
+                        const change = currentOdds - previousOdds;
+
+                        // Only show momentum if there's a real change >= 5%
+                        if (Math.abs(change) >= 5 && !card.querySelector('.momentum-indicator')) {
+                            const direction = change > 0 ? 'up' : 'down';
+                            const badge = document.createElement('div');
+                            badge.className = `momentum-indicator inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${direction === 'up' ? 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-400'}`;
+                            badge.innerHTML = direction === 'up' ? `↗️ +${Math.round(change)}%` : `↘️ ${Math.round(change)}%`;
+                            
+                            const title = card.querySelector('h3, h2');
+                            if (title) {
+                                title.insertAdjacentElement('afterend', badge);
+                            }
+                        }
                     }
+                } catch (error) {
+                    // Silently fail for individual cards
                 }
-            });
+            }
         }
 
-        // Add trending badges after markets load
-        setTimeout(addTrendingBadges, 2000);
+        // Add smart badges after markets load (only if enabled)
+        setTimeout(() => {
+            if (window.liveActivityEnabled && appSettings.animationsEnabled) {
+                addSmartBadges();
+            }
+        }, 2000);
 
         // 3. Achievement Toast System
         const achievements = [
@@ -13999,30 +13976,8 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
             }
         };
 
-        // Show activity nudges periodically
-        setInterval(() => {
-            if (Math.random() > 0.7 && window.showActivityNudge) {
-                const nudges = [
-                    "3 friends just joined a trending market—check it out!",
-                    "Market odds shifted +8% in the last 10 minutes ⚡",
-                    "You're close to unlocking the Hot Streak badge! 🔥",
-                    "A top trader just made a prediction. Want to copy?"
-                ];
-                const randomNudge = nudges[Math.floor(Math.random() * nudges.length)];
-                showActivityNudge(randomNudge);
-            }
-        }, 25000);
-
-        // Trigger breaking news cards occasionally
-        setTimeout(() => {
-            if (Math.random() > 0.6 && window.showBreakingCard) {
-                showBreakingCard(
-                    'Market Flipped!',
-                    'The "BTC $100k" market just flipped from NO to YES in the last hour! 🚨',
-                    'alert'
-                );
-            }
-        }, 30000);
+        // DISABLED: No more fake activity nudges or random breaking news
+        // All features now use REAL data from Firebase only
 
         console.log('🚀 All modular features loaded!');
         console.log('👆 Swipe-to-stake: READY');
@@ -14083,18 +14038,15 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
             saveSettings();
             
             if (!enabled) {
-                // Stop all animations
-                document.querySelectorAll('[class*="animate"]').forEach(el => {
-                    el.style.animation = 'none';
-                });
-                console.log('🔇 Animations disabled');
+                console.log('🔇 Live animations disabled - stopping activity toasts and badges');
+                // Disable live activity interval
+                window.liveActivityEnabled = false;
             } else {
-                console.log('✨ Animations enabled');
-                // Reload page to re-enable animations
-                setTimeout(() => window.location.reload(), 500);
+                console.log('✨ Live animations enabled');
+                window.liveActivityEnabled = true;
+                // Reload to re-enable animations
+                setTimeout(() => window.location.reload(), 300);
             }
-            
-            showToast(enabled ? 'Animations enabled' : 'Animations disabled', 'info');
         }
 
         // Toggle feed filter
@@ -14103,7 +14055,6 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
             saveSettings();
             
             console.log(enabled ? '🎯 Feed filter: Only followed users' : '🌍 Feed filter: All users');
-            showToast(enabled ? 'Feed shows only followed users' : 'Feed shows all users', 'info');
             
             // Refresh social feed if it's active
             const socialFeed = document.getElementById('social-feed-screen');
@@ -14118,7 +14069,6 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
             saveSettings();
             
             console.log(enabled ? '🔔 Notifications enabled' : '🔕 Notifications disabled');
-            showToast(enabled ? 'Notifications enabled' : 'Notifications disabled', 'info');
         }
 
         // Add a notification
