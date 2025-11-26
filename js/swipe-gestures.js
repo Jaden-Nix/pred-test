@@ -148,10 +148,10 @@ class SwipeGestureHandler {
         }
 
         // Trigger the existing quick play stake logic
-        if (typeof window.handleQuickPlayStake === 'function') {
-            window.handleQuickPlayStake(direction);
+        if (typeof window.handleQuickPlay === 'function') {
+            window.handleQuickPlay(direction.toLowerCase());
         } else {
-            console.log('Quick play stake handler not available yet');
+            console.log('Quick play handler not available yet');
         }
 
         // Show success animation
