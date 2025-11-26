@@ -10,7 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### November 26, 2025 - Multi-Option Market Fixes & Mobile UX
+### November 26, 2025 - Multi-Option Market Fixes & Mobile UX Improvements
 - **Fixed multi-option display bug**: Options were showing as "undefined" because odds weren't being calculated from optionAmounts
   - Implemented proper odds calculation by summing all optionAmounts values and computing percentages
   - Added equal distribution fallback (100 / options.length) when no pool data exists
@@ -27,6 +27,13 @@ Preferred communication style: Simple, everyday language.
   - Copy Trading remains accessible via desktop navigation AND Profile screen sidebar
   - Added "Copy Trading" quick access panel in Profile for easy mobile access
   - Prioritizes mobile-first swipe-style betting experience while keeping all features accessible
+- **Fixed Quick Play card sizing**: Added max-width constraint to prevent cards from stretching too large on wide screens
+  - Cards now maintain consistent 672px max width, centered on screen
+  - Improves visual consistency across all screen sizes
+- **Fixed comment UX issue**: Comments now stay open after posting
+  - Previously, posting a comment would reload the entire social feed and close all comment sections
+  - Implemented state preservation to keep comment sections open when feed updates
+  - Users can now see their comment appear immediately without losing their position in the feed
 
 ## System Architecture
 
