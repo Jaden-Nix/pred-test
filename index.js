@@ -2629,6 +2629,38 @@ app.get('/api/health', (req, res) => {
 });
 
 // =============================================================================
+// CLEANUP BROKEN MARKETS (runs once on startup)
+// =============================================================================
+async function cleanupBrokenMarkets() {
+    console.log('🧹 Cleaning up markets with 0 liquidity...');
+    try {
+        // Clean standard markets with totalPool = 0
+        const standardSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/standard_markets`)
+            .where('totalPool', '==', 0).get();
+        let standardDeleted = 0;
+        for (const doc of standardSnapshot.docs) {
+            await doc.ref.delete();
+            standardDeleted++;
+        }
+        
+        // Clean quick play markets with totalPool = 0
+        const quickPlaySnapshot = await db.collection(`artifacts/${APP_ID}/public/data/quick_play_markets`)
+            .where('totalPool', '==', 0).get();
+        let quickPlayDeleted = 0;
+        for (const doc of quickPlaySnapshot.docs) {
+            await doc.ref.delete();
+            quickPlayDeleted++;
+        }
+        
+        if (standardDeleted > 0 || quickPlayDeleted > 0) {
+            console.log(`✅ Cleanup complete: ${standardDeleted} standard + ${quickPlayDeleted} quick play markets deleted`);
+        }
+    } catch (error) {
+        console.warn('⚠️ Cleanup encountered an issue (non-blocking):', error.message);
+    }
+}
+
+// =============================================================================
 // AUTOMATED ORACLE CRON SCHEDULING
 // =============================================================================
 // Run oracle jobs every 5 minutes to auto-resolve markets and quick polls
@@ -2646,6 +2678,9 @@ cron.schedule('*/5 * * * *', async () => {
 });
 
 console.log('⏰ Oracle cron scheduler initialized (runs every 5 minutes)');
+
+// Run cleanup once on startup
+cleanupBrokenMarkets();
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Predora Backend Server is live on port ${PORT}`);
