@@ -123,11 +123,103 @@ function formatDate(timestamp) {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-// Place bet function
-async function placeBet(marketId, pick) {
-    console.log('Placing bet:', marketId, pick);
-    // Implementation depends on existing Firebase logic
-    // This will be wired up to the existing betting system
+// Place bet function - used by copy trading and manual clicks
+async function placeBet(marketId, pick, amount = 10) {
+    console.log('💰 placeBet called:', { marketId, pick, amount });
+    
+    // Check if user is authenticated
+    if (!window.currentUserId) {
+        console.warn('❌ User not authenticated, cannot place bet');
+        if (window.showToast) {
+            window.showToast('Please sign in to place bets', 'error');
+        }
+        return false;
+    }
+    
+    // Check if it's a guest user
+    if (window.isGuestMode && !window.isDemoAccount) {
+        console.warn('❌ Guest mode, cannot place bet');
+        if (window.showToast) {
+            window.showToast('Sign in to place bets', 'info');
+        }
+        return false;
+    }
+    
+    try {
+        // Find the market in the allStandardMarkets array
+        let market = allStandardMarkets.find(m => m.id === marketId);
+        
+        // If not in standard markets, try to fetch from Firebase
+        if (!market && window.db) {
+            console.log('📊 Market not in cache, fetching from Firebase...');
+            const { doc, getDoc } = window.firebase.firestore;
+            const APP_ID = window.APP_ID;
+            const STANDARD_MARKETS_COLLECTION = 'standard_markets';
+            const marketRef = doc(window.db, 'artifacts', APP_ID, 'public', 'data', STANDARD_MARKETS_COLLECTION, marketId);
+            const marketSnap = await getDoc(marketRef);
+            
+            if (marketSnap.exists()) {
+                market = { id: marketSnap.id, ...marketSnap.data() };
+                console.log('✅ Market fetched from Firebase');
+            } else {
+                throw new Error('Market not found');
+            }
+        }
+        
+        if (!market) {
+            throw new Error(`Market ${marketId} not found`);
+        }
+        
+        if (market.isResolved) {
+            console.warn('❌ Market is already resolved');
+            if (window.showToast) {
+                window.showToast('This market is closed', 'warning');
+            }
+            return false;
+        }
+        
+        // Set the global market context needed by stakeMarket()
+        window.currentMarketId = marketId;
+        window.currentMarket = market;
+        
+        // Set the stake amount in the input field
+        const stakeAmountInput = document.getElementById('stake-amount-input');
+        if (stakeAmountInput) {
+            stakeAmountInput.value = amount;
+        } else {
+            console.warn('⚠️ stake-amount-input not found in DOM');
+        }
+        
+        // Set the asset selector to default to balance/USD
+        const stakeAssetSelect = document.getElementById('stake-asset-select');
+        if (stakeAssetSelect) {
+            // Select the first available option (usually balance/USD)
+            if (stakeAssetSelect.options.length > 0) {
+                stakeAssetSelect.value = stakeAssetSelect.options[0].value;
+            } else {
+                // If no options, manually add a default option
+                stakeAssetSelect.innerHTML = '<option value="balance">Balance (USD)</option>';
+                stakeAssetSelect.value = 'balance';
+            }
+            console.log('📊 Asset selector set to:', stakeAssetSelect.value);
+        } else {
+            console.warn('⚠️ stake-asset-select not found in DOM');
+        }
+        
+        // Call the existing stakeMarket function
+        console.log('📊 Calling stakeMarket with pick:', pick);
+        await window.stakeMarket(pick);
+        
+        console.log('✅ Bet placed successfully');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Error placing bet:', error);
+        if (window.showToast) {
+            window.showToast(`Failed to place bet: ${error.message}`, 'error');
+        }
+        return false;
+    }
 }
 
 // Notification polling interval reference
