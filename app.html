@@ -6547,11 +6547,20 @@
         };
 
         window.selectMarket = (market) => {
-            attachedMarket = market;
+            // Check if user has staked in this market and populate stance automatically
+            const marketIdLower = market.id?.toLowerCase();
+            const userStance = userStakesCache[marketIdLower] || '';
+            
+            attachedMarket = {
+                ...market,
+                stance: userStance // Auto-populate stance from user's current stake
+            };
+            
             const display = document.getElementById('attached-market-display');
             const title = document.getElementById('attached-market-title');
             if (display && title) {
-                title.textContent = market.title;
+                const stanceIndicator = userStance ? ` (You: ${userStance})` : '';
+                title.textContent = market.title + stanceIndicator;
                 display.classList.remove('hidden');
             }
             closeMarketSearch();
@@ -10352,7 +10361,7 @@ ${historyText}`;
          * Filter market resolution by search term
          */
         function filterMarketResolution(searchTerm) {
-            const markets = document.querySelectorAll('#admin-resolution-screen .ui-panel');
+            const markets = document.querySelectorAll('#resolution-list .ui-panel, #quick-play-resolution-list .ui-panel');
             markets.forEach(market => {
                 const title = market.querySelector('p')?.textContent.toLowerCase() || '';
                 if (title.includes(searchTerm.toLowerCase())) {
@@ -10377,9 +10386,8 @@ ${historyText}`;
          * Filter quick play resolution by search term
          */
         function filterQuickPlayResolution(searchTerm) {
-            const listContainer = document.getElementById('admin-qp-resolution-list');
-            if (!listContainer) return;
-            const quickPlays = listContainer.querySelectorAll('.ui-panel');
+            // Search in both possible containers
+            const quickPlays = document.querySelectorAll('#admin-qp-resolution-list .ui-panel, #quick-play-resolution-list .ui-panel');
             quickPlays.forEach(qp => {
                 const title = qp.querySelector('p')?.textContent.toLowerCase() || '';
                 if (title.includes(searchTerm.toLowerCase())) {
@@ -10404,7 +10412,7 @@ ${historyText}`;
          * Filter polls by search term
          */
         function filterPollSearch(searchTerm) {
-            const polls = document.querySelectorAll('#admin-quickpoll-screen .ui-panel');
+            const polls = document.querySelectorAll('#polls-resolution-list .ui-panel');
             polls.forEach(poll => {
                 const title = poll.querySelector('p')?.textContent.toLowerCase() || '';
                 if (title.includes(searchTerm.toLowerCase())) {
