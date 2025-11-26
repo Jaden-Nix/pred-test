@@ -1871,14 +1871,14 @@ app.post('/api/social/react', requireAuth, requireFirebase, async (req, res) => 
 });
 
 app.post('/api/social/comment', requireAuth, requireFirebase, async (req, res) => {
-    const { postId, displayName, avatarUrl, content } = req.body;
-    const userId = req.user.uid;
+    const { postId, userId, displayName, avatarUrl, content } = req.body;
+    const storedUserId = userId || req.user.uid;
     
     try {
         const commentRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts/${postId}/comments`);
         
         await commentRef.add({
-            userId,
+            userId: storedUserId,
             displayName,
             avatarUrl,
             content,
@@ -1966,8 +1966,7 @@ app.post('/api/social/edit-post', requireAuth, requireFirebase, async (req, res)
 });
 
 app.post('/api/social/delete-comment', requireAuth, requireFirebase, async (req, res) => {
-    const { postId, commentId } = req.body;
-    const userId = req.user.uid;
+    const { postId, commentId, userId } = req.body;
     
     try {
         const commentRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts/${postId}/comments`).doc(commentId);
@@ -1996,8 +1995,7 @@ app.post('/api/social/delete-comment', requireAuth, requireFirebase, async (req,
 });
 
 app.post('/api/social/edit-comment', requireAuth, requireFirebase, async (req, res) => {
-    const { postId, commentId, content } = req.body;
-    const userId = req.user.uid;
+    const { postId, commentId, userId, content } = req.body;
     
     try {
         const commentRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts/${postId}/comments`).doc(commentId);
