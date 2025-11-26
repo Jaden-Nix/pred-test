@@ -8,6 +8,21 @@ Predora is a prediction markets platform that enables users to create markets, p
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+### November 26, 2025 - Multi-Option Market Fixes
+- **Fixed multi-option display bug**: Options were showing as "undefined" because odds weren't being calculated from optionAmounts
+  - Implemented proper odds calculation by summing all optionAmounts values and computing percentages
+  - Added equal distribution fallback (100 / options.length) when no pool data exists
+  - Added clamping to ensure odds stay within [0, 100] range
+- **Fixed multi-option staking**: Adapted staking logic to work with backend data format
+  - Backend stores options as string arrays `["Team A", "Team B"]` with `optionAmounts: {"Team A": 5000}`
+  - Updated AMM logic to normalize optionAmounts (ensure all options have entries) before computing odds
+  - Added guards against division by zero and invalid payout calculations
+- **Fixed Gaming category**: Added "Gaming" to both oracle AI prompts (standard + quick play)
+  - Oracle now properly categorizes esports, game releases, gaming tournaments as "Gaming" instead of "Entertainment" or "Other"
+  - Gaming markets now appear correctly when clicking the Gaming filter
+
 ## System Architecture
 
 ### Frontend Architecture
