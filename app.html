@@ -5442,8 +5442,9 @@
 
         /**
          * Main navigation function. Hides all screens and shows the one with the matching ID.
+         * EXPORTED IMMEDIATELY for early availability
          */
-        window.showScreen = (screenId, forceOverride = false) => {
+        function showScreen(screenId, forceOverride = false) {
             if (!screenId) return;
             
             // Protect admin screens from being redirected away unless explicitly allowed
@@ -5488,10 +5489,12 @@
 
 
             // Loop over all screens and toggle their visibility
-            dom.screens.forEach(screen => {
-                screen.classList.toggle('screen-active', screen.id === screenId);
-                screen.classList.toggle('screen-inactive', screen.id !== screenId);
-            });
+            if (dom.screens) {
+                dom.screens.forEach(screen => {
+                    screen.classList.toggle('screen-active', screen.id === screenId);
+                    screen.classList.toggle('screen-inactive', screen.id !== screenId);
+                });
+            }
 
             currentScreenId = screenId;
             window.scrollTo(0, 0); // Scroll to top on new screen
@@ -5517,6 +5520,9 @@
             }
             updateNavStyles();
         }
+        
+        // Export showScreen IMMEDIATELY after definition
+        window.showScreen = showScreen;
 
         /**
          * Alias for returning to the home screen.
@@ -13998,6 +14004,8 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
     <script src="js/swipe-gestures.js"></script>
     <script src="js/copy-trading.js"></script>
     <script src="js/nav-icons.js"></script>
+    <script src="js/onboarding.js"></script>
+    <script src="js/ai-mentor.js"></script>
 
     <!-- Initialize New Features -->
     <script>
@@ -14308,6 +14316,40 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
         }, 5000);
 
     </script>
+    
+    <!-- Floating AI Mentor Button -->
+    <button 
+        onclick="startMentor()" 
+        id="ai-mentor-fab"
+        class="fixed bottom-24 right-6 z-40 w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all duration-300 group"
+        style="animation: fab-pulse 2.5s infinite;"
+        title="AI Market Mentor"
+    >
+        <div class="relative">
+            <span class="text-3xl">🤖</span>
+            <div class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+        </div>
+        <div class="absolute -top-2 -right-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Ask AI Mentor
+        </div>
+    </button>
+    
+    <!-- Initialize Onboarding for New Users -->
+    <script>
+        // Trigger onboarding after app loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (typeof window.startOnboarding === 'function' && window.shouldShowOnboarding()) {
+                    console.log('🎓 Starting onboarding for new user...');
+                    window.startOnboarding();
+                }
+            }, 2000); // Wait 2s for app to fully load
+        });
+        
+        console.log('🎓 Onboarding system loaded!');
+        console.log('🤖 AI Market Mentor loaded!');
+    </script>
+    
     </div>
 </body>
 </html>
