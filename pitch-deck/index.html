@@ -2,313 +2,410 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Predora - AI-Native Prediction Markets</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Predora - Where Your Takes Have VALUE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
         * { font-family: 'Outfit', sans-serif; }
         .mono { font-family: 'Space Grotesk', monospace; }
-        body { background: #050505; color: #fff; overflow-x: hidden; }
-        .gradient-text { background: linear-gradient(to right, #38BDF8, #818CF8, #C084FC); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .slide { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 4rem 2rem; position: relative; overflow: hidden; }
-        .slide::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.1), transparent 70%); pointer-events: none; }
-        .slide > * { position: relative; z-10; }
-        .slide-content { max-width: 1000px; width: 100%; }
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
-        .card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1rem; padding: 2rem; backdrop-filter: blur(10px); transition: all 0.3s; }
-        .card:hover { border-color: rgba(56, 189, 248, 0.5); transform: translateY(-5px); box-shadow: 0 20px 40px rgba(56, 189, 248, 0.1); }
-        .btn-nav { position: fixed; bottom: 4rem; right: 2rem; z-index: 50; display: flex; gap: 1rem; }
-        .btn-nav button { padding: 0.75rem 1.5rem; background: rgba(56, 189, 248, 0.2); border: 1px solid rgba(56, 189, 248, 0.5); border-radius: 0.5rem; color: #38BDF8; cursor: pointer; font-weight: 600; transition: all 0.3s; }
-        .btn-nav button:hover { background: rgba(56, 189, 248, 0.3); }
-        .slide-counter { position: fixed; top: 2rem; right: 2rem; z-index: 50; mono; font-size: 0.9rem; color: #666; }
-        h1 { font-size: 3.5rem; font-weight: 800; margin: 1rem 0; }
-        h2 { font-size: 2.5rem; font-weight: 800; margin: 1rem 0; }
-        h3 { font-size: 1.5rem; font-weight: 700; margin: 0.5rem 0; }
-        .stat { text-align: center; }
-        .stat-num { font-size: 3rem; font-weight: 800; color: #38BDF8; }
-        .stat-label { color: #999; font-size: 0.9rem; }
-        .feature-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+        html, body { margin: 0; padding: 0; width: 100%; overflow: hidden; }
+        body { 
+            background: #0a0a0a; 
+            color: #fff; 
+            position: fixed;
+            height: 100vh;
+        }
+
+        @keyframes pulse-glow { 
+            0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.6); }
+        }
+        @keyframes float-up {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slide-in-left {
+            0% { transform: translateX(-100px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slide-in-right {
+            0% { transform: translateX(100px); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes bounce-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes shimmer {
+            0% { background-position: -1000px 0; }
+            100% { background-position: 1000px 0; }
+        }
+
+        .animate-in { animation: float-up 0.6s ease-out; }
+        .animate-pulse-glow { animation: pulse-glow 2s infinite; }
+        .animate-slide-left { animation: slide-in-left 0.7s ease-out; }
+        .animate-slide-right { animation: slide-in-right 0.7s ease-out; }
+        .animate-bounce-in { animation: bounce-in 0.5s ease-out; }
+
+        .gradient-text { background: linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .gradient-bg { background: linear-gradient(135deg, #38BDF8, #818CF8, #C084FC); }
+        .glass { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); }
+        
+        .container { width: 100%; height: 100%; position: fixed; top: 0; left: 0; }
+        .slide-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; overflow-y: auto; }
+        .slide-container.active { opacity: 1; pointer-events: auto; z-index: 10; }
+        .slide-content { min-height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
+        
+        @media (max-width: 768px) {
+            .slide-content { padding: 1.5rem; justify-content: flex-start; padding-top: 5rem; }
+            h1 { font-size: 2.5rem !important; }
+            h2 { font-size: 1.8rem !important; }
+            .grid-3 { grid-template-columns: 1fr !important; }
+        }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+        
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        .card { glass; padding: 1.5rem; border-radius: 1rem; transition: all 0.3s; cursor: pointer; }
+        .card:hover { transform: translateY(-8px); border-color: rgba(56, 189, 248, 0.5); box-shadow: 0 20px 40px rgba(56, 189, 248, 0.15); }
+        
+        .btn { padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 700; cursor: pointer; transition: all 0.3s; border: none; }
+        .btn-primary { background: linear-gradient(135deg, #38BDF8, #818CF8); color: #000; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(56, 189, 248, 0.3); }
+        .btn-nav { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; gap: 1rem; }
+        .btn-nav button { padding: 0.75rem 1.25rem; glass; color: #38BDF8; font-weight: 700; border-radius: 0.5rem; cursor: pointer; transition: all 0.3s; border: none; }
+        .btn-nav button:hover { background: rgba(56, 189, 248, 0.2); }
+        
+        .counter { position: fixed; top: 2rem; right: 2rem; z-index: 50; font-size: 0.9rem; color: #666; mono; }
+        
+        h1 { font-size: 4rem; font-weight: 900; line-height: 1.1; margin: 0; }
+        h2 { font-size: 3rem; font-weight: 800; margin: 1rem 0; }
+        h3 { font-size: 1.25rem; font-weight: 700; }
+        
+        .subtitle { font-size: 1.3rem; color: #bbb; margin: 1rem 0; }
+        .desc { color: #999; font-size: 0.95rem; line-height: 1.5; }
+        
+        .badge { display: inline-block; glass; padding: 0.5rem 1rem; border-radius: 2rem; font-size: 0.85rem; font-weight: 600; margin: 0.5rem; }
+        .emoji { font-size: 3rem; margin: 1rem 0; display: block; }
+
+        .progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #38BDF8, #818CF8, #C084FC); z-index: 100; transition: width 0.5s ease; }
     </style>
 </head>
 <body>
+    <div class="progress-bar" id="progress-bar"></div>
+
     <!-- SLIDE 1: Title -->
-    <div class="slide" id="slide-1">
-        <div class="slide-content text-center">
-            <div style="font-size: 4rem; margin-bottom: 2rem;">🎯</div>
-            <h1 class="gradient-text">Predora</h1>
-            <p class="text-2xl text-gray-300 mb-4">Where Opinions Have Liquidity</p>
-            <p class="text-lg text-gray-400 mb-8">The first AI-Native prediction market. Tap to bet, chat to earn, and let Gemini settle the score.</p>
-            <div class="flex justify-center gap-4">
-                <div class="stat">
-                    <div class="stat-num">4</div>
-                    <div class="stat-label">AI Agents</div>
+    <div class="slide-container active" id="slide-1">
+        <div class="slide-content">
+            <div class="emoji">🎯</div>
+            <h1 class="gradient-text animate-in">PREDORA</h1>
+            <p class="subtitle animate-in" style="animation-delay: 0.1s">YOUR TAKES HAVE VALUE</p>
+            <p class="desc max-w-md mx-auto animate-in" style="animation-delay: 0.2s">
+                Tap to bet. Chat to earn. Watch AI settle it in real-time. 💰
+            </p>
+            <div style="margin-top: 3rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+                <div class="animate-in" style="animation-delay: 0.3s;">
+                    <div style="font-size: 2.5rem; color: #38BDF8; font-weight: 900;">4</div>
+                    <div class="desc">AI Agents</div>
                 </div>
-                <div class="stat">
-                    <div class="stat-num">90%</div>
-                    <div class="stat-label">Auto-Resolution</div>
+                <div class="animate-in" style="animation-delay: 0.4s;">
+                    <div style="font-size: 2.5rem; color: #818CF8; font-weight: 900;">90%</div>
+                    <div class="desc">Auto-Resolved</div>
                 </div>
-                <div class="stat">
-                    <div class="stat-num">24/7</div>
-                    <div class="stat-label">Oracle Active</div>
+                <div class="animate-in" style="animation-delay: 0.5s;">
+                    <div style="font-size: 2.5rem; color: #C084FC; font-weight: 900;">$💰</div>
+                    <div class="desc">Real Money</div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- SLIDE 2: The Problem -->
-    <div class="slide" id="slide-2" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);">
+    <div class="slide-container" id="slide-2">
         <div class="slide-content">
-            <h2 class="gradient-text mb-8">The Problem</h2>
-            <div class="grid-2">
-                <div class="card">
-                    <h3>❌ Prediction markets are complex</h3>
-                    <p class="text-gray-400 mt-2">Order books, liquidity pools, gas fees—average users never get started.</p>
+            <h2 class="gradient-text mb-4 animate-in">why prediction markets are mid 😴</h2>
+            <div class="grid-2 max-w-4xl mx-auto">
+                <div class="card animate-slide-left" style="animation-delay: 0.1s;">
+                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">🤔</div>
+                    <h3>literally too complicated</h3>
+                    <p class="desc mt-2">Order books? Liquidity pools? Gas fees? Nobody gets it. Nobody cares.</p>
                 </div>
-                <div class="card">
-                    <h3>❌ No instant settlement</h3>
-                    <p class="text-gray-400 mt-2">Disputes take weeks. Manual resolution is slow, centralized, prone to error.</p>
+                <div class="card animate-slide-right" style="animation-delay: 0.1s;">
+                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">⏳</div>
+                    <h3>resolution is SLOW af</h3>
+                    <p class="desc mt-2">Waiting weeks for disputes? Manual review? We're not doing that. Ever.</p>
                 </div>
-                <div class="card">
-                    <h3>❌ Zero social layer</h3>
-                    <p class="text-gray-400 mt-2">Markets are anonymous. No community, no reputation, no network effects.</p>
+                <div class="card animate-slide-left" style="animation-delay: 0.2s;">
+                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">👻</div>
+                    <h3>zero community vibes</h3>
+                    <p class="desc mt-2">Markets are cold & anonymous. No flex. No reputation. No money moves.</p>
                 </div>
-                <div class="card">
-                    <h3>❌ No content safety</h3>
-                    <p class="text-gray-400 mt-2">Scams, spam, and illegal markets flourish with no guardrails.</p>
+                <div class="card animate-slide-right" style="animation-delay: 0.2s;">
+                    <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚩</div>
+                    <h3>no safety guardrails</h3>
+                    <p class="desc mt-2">Scams, spam, illegal stuff = just the way it is. Not anymore.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 3: Our Solution -->
-    <div class="slide" id="slide-3">
+    <!-- SLIDE 3: The Solution -->
+    <div class="slide-container" id="slide-3">
         <div class="slide-content">
-            <h2 class="gradient-text mb-8">Our Solution: Predora</h2>
-            <div class="grid-2">
-                <div class="card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>One-Tap Betting</h3>
-                    <p class="text-gray-400 mt-2">Swipe through markets like TikTok. Tap YES or NO. Done in 2 seconds.</p>
+            <h2 class="gradient-text mb-4 animate-in">enter: PREDORA 🚀</h2>
+            <p class="desc max-w-md mx-auto mb-6">we're flipping the script</p>
+            <div class="grid-3 max-w-5xl mx-auto">
+                <div class="card animate-bounce-in" style="animation-delay: 0s;">
+                    <div class="emoji">⚡</div>
+                    <h3>1-Tap Betting</h3>
+                    <p class="desc">Swipe → Tap YES/NO → Done. 2 seconds. That's it.</p>
                 </div>
-                <div class="card">
-                    <div class="feature-icon">🤖</div>
-                    <h3>Swarm AI Oracle</h3>
-                    <p class="text-gray-400 mt-2">4 AI agents vote with Byzantine consensus. 90% auto-resolve in 30 minutes.</p>
+                <div class="card animate-bounce-in" style="animation-delay: 0.1s;">
+                    <div class="emoji">🤖</div>
+                    <h3>Swarm Oracle</h3>
+                    <p class="desc">4 AI agents vote. Byzantine consensus. 90% auto-settled in 30 min.</p>
                 </div>
-                <div class="card">
-                    <div class="feature-icon">👥</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.2s;">
+                    <div class="emoji">👥</div>
                     <h3>Social Feed</h3>
-                    <p class="text-gray-400 mt-2">Share takes, build reputation, earn leaderboard rewards. Community-first.</p>
+                    <p class="desc">Drop takes. Build rep. Earn rewards. Flex the leaderboard.</p>
                 </div>
-                <div class="card">
-                    <div class="feature-icon">⚖️</div>
-                    <h3>Jury Disputes</h3>
-                    <p class="text-gray-400 mt-2">Disagree? Top 5 users vote. Democracy + decentralization.</p>
+                <div class="card animate-bounce-in" style="animation-delay: 0.3s;">
+                    <div class="emoji">🏛️</div>
+                    <h3>Jury Mode</h3>
+                    <p class="desc">Disagree? Top 5 vote. True democracy. No corporate BS.</p>
                 </div>
-                <div class="card">
-                    <div class="feature-icon">🛡️</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.4s;">
+                    <div class="emoji">🛡️</div>
                     <h3>5-Layer Safety</h3>
-                    <p class="text-gray-400 mt-2">Pre-filters → Keyword blocklist → OpenAI → Toxicity scoring → Admin review.</p>
+                    <p class="desc">Blocklists → AI + Human review → Spam detection → Safe AF.</p>
                 </div>
-                <div class="card">
-                    <div class="feature-icon">💰</div>
-                    <h3>AMM Liquidity</h3>
-                    <p class="text-gray-400 mt-2">Instant execution. Real-time pricing. No slippage, no waiting.</p>
+                <div class="card animate-bounce-in" style="animation-delay: 0.5s;">
+                    <div class="emoji">💸</div>
+                    <h3>Instant Liquidity</h3>
+                    <p class="desc">AMM = instant fills. No slippage. Real price discovery.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 4: Market Categories -->
-    <div class="slide" id="slide-4" style="background: linear-gradient(135deg, rgba(212, 70, 239, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);">
+    <!-- SLIDE 4: Categories -->
+    <div class="slide-container" id="slide-4">
         <div class="slide-content">
-            <h2 class="gradient-text mb-8">Market Categories</h2>
-            <div class="grid-2">
-                <div class="card">💰 Crypto</div>
-                <div class="card">🏈 Sports</div>
-                <div class="card">🏛️ Politics</div>
-                <div class="card">💼 Finance</div>
-                <div class="card">💻 Tech</div>
-                <div class="card">🎬 Entertainment</div>
-                <div class="card">🌐 Social</div>
-                <div class="card">⭐ Influencers</div>
-                <div class="card">🎨 Creators</div>
-                <div class="card">💬 Gossip</div>
-                <div class="card">🎓 Campus</div>
-                <div class="card">🎮 Gaming</div>
+            <h2 class="gradient-text mb-4 animate-in">12 category TAKEOVER 🌍</h2>
+            <div class="grid-3 max-w-5xl mx-auto" style="max-width: 600px;">
+                <div class="card animate-bounce-in" style="animation-delay: 0s;">💰 Crypto</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.05s;">🏈 Sports</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.1s;">🏛️ Politics</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.15s;">💼 Finance</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.2s;">💻 Tech</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.25s;">🎬 Entertainment</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.3s;">🌐 Social</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.35s;">⭐ Influencers</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.4s;">🎨 Creators</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.45s;">💬 Gossip</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.5s;">🎓 Campus</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.55s;">🎮 Gaming</div>
             </div>
-            <p class="text-center text-gray-400 mt-8">From crypto volatility to celebrity drama. Every category. Every interest.</p>
+            <p class="desc mt-8 max-w-md mx-auto">your vibe? we got it. your take? we'll settle it.</p>
         </div>
     </div>
 
-    <!-- SLIDE 5: Tech Stack -->
-    <div class="slide" id="slide-5">
+    <!-- SLIDE 5: The Tech -->
+    <div class="slide-container" id="slide-5">
         <div class="slide-content">
-            <h2 class="gradient-text mb-8">Powered by Giants</h2>
-            <div class="grid-2">
-                <div class="card">
-                    <h3 class="text-sky-400">🧠 AI Layer</h3>
-                    <ul class="text-gray-400 mt-4 space-y-2">
-                        <li>✓ Google Gemini 2.0 (Primary Oracle)</li>
-                        <li>✓ OpenAI GPT-4o (Swarm Agents)</li>
+            <h2 class="gradient-text mb-4 animate-in">powered by the TITANS 🔧</h2>
+            <div class="grid-2 max-w-4xl mx-auto">
+                <div class="card animate-slide-left" style="animation-delay: 0.1s;">
+                    <h3 style="color: #38BDF8;">🧠 AI Brain</h3>
+                    <ul class="text-left mt-3 space-y-2 desc">
+                        <li>✓ Google Gemini 2.0 (Primary)</li>
+                        <li>✓ OpenAI GPT-4o (Agents)</li>
                         <li>✓ Byzantine Consensus</li>
-                        <li>✓ Web Search Grounding</li>
+                        <li>✓ Real-time Web Search</li>
                     </ul>
                 </div>
-                <div class="card">
-                    <h3 class="text-indigo-400">🏗️ Infrastructure</h3>
-                    <ul class="text-gray-400 mt-4 space-y-2">
-                        <li>✓ Firebase Firestore (Real-time DB)</li>
-                        <li>✓ Firebase Auth (Email OTP)</li>
+                <div class="card animate-slide-right" style="animation-delay: 0.1s;">
+                    <h3 style="color: #818CF8;">⚙️ Infrastructure</h3>
+                    <ul class="text-left mt-3 space-y-2 desc">
+                        <li>✓ Firebase (Real-time DB)</li>
                         <li>✓ Node.js + Express API</li>
-                        <li>✓ SendGrid (Email Service)</li>
+                        <li>✓ SendGrid (Emails)</li>
+                        <li>✓ Auto-cron (every 5 min)</li>
                     </ul>
                 </div>
             </div>
-            <div class="card mt-6" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3);">
-                <h3>Market Resolution Flow</h3>
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem; text-align: center; font-size: 0.9rem;">
-                    <div>📅 Resolution Date</div>
+            <div class="card glass mt-6 max-w-2xl mx-auto animate-in">
+                <h3 style="color: #C084FC; margin-bottom: 1rem;">⚙️ Oracle Flow 🔄</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; text-align: center; font-size: 0.85rem;">
+                    <div>📅<br>Market<br>Expires</div>
                     <div>→</div>
-                    <div>🤖 Swarm Analysis</div>
+                    <div>🤖<br>Swarm<br>Analyzes</div>
                     <div>→</div>
-                    <div>✅ 90% Confidence</div>
+                    <div>✅<br>90%<br>Confident</div>
                     <div>→</div>
-                    <div>💸 Instant Payout</div>
+                    <div>💸<br>Instant<br>Payout</div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- SLIDE 6: Roadmap -->
-    <div class="slide" id="slide-6" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);">
+    <div class="slide-container" id="slide-6">
         <div class="slide-content">
-            <h2 class="gradient-text mb-8">Our Roadmap</h2>
-            <div style="space-y: 2rem;">
-                <div class="card mb-4">
-                    <div style="display: flex; gap: 2rem; align-items: center;">
-                        <div style="flex: 0 0 auto;">
-                            <span style="display: inline-block; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; margin-right: 1rem;"></span>
+            <h2 class="gradient-text mb-4 animate-in">the PLAN 🗺️</h2>
+            <div class="max-w-2xl mx-auto space-y-3">
+                <div class="card animate-slide-left" style="animation-delay: 0s;">
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <span style="font-size: 1.5rem;">✅</span>
+                        <div style="text-align: left; flex: 1;">
                             <strong>Q4 2024: Genesis</strong>
+                            <p class="desc" style="margin: 0.5rem 0 0;">Core markets • Gemini Oracle • Quick Play • Email OTP</p>
                         </div>
-                        <div class="text-gray-400 flex-1">Core markets • Gemini Oracle • Quick Play • Email OTP</div>
                     </div>
                 </div>
-                <div class="card mb-4">
-                    <div style="display: flex; gap: 2rem; align-items: center;">
-                        <div style="flex: 0 0 auto;">
-                            <span style="display: inline-block; width: 12px; height: 12px; background: #22c55e; border-radius: 50%; margin-right: 1rem;"></span>
+                <div class="card animate-slide-left" style="animation-delay: 0.1s;">
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <span style="font-size: 1.5rem;">✅</span>
+                        <div style="text-align: left; flex: 1;">
                             <strong>Q1 2025: Social Layer</strong>
+                            <p class="desc" style="margin: 0.5rem 0 0;">Feed • Swarm AI • 5-layer safety • Jury disputes</p>
                         </div>
-                        <div class="text-gray-400 flex-1">Social feed • Swarm AI • 5-layer safety • Jury disputes</div>
                     </div>
                 </div>
-                <div class="card mb-4">
-                    <div style="display: flex; gap: 2rem; align-items: center;">
-                        <div style="flex: 0 0 auto;">
-                            <span style="display: inline-block; width: 12px; height: 12px; background: #38BDF8; border-radius: 50%; margin-right: 1rem;"></span>
-                            <strong style="color: #38BDF8;">Q2 2025: Web3 Integration (In Progress)</strong>
+                <div class="card animate-slide-left" style="animation-delay: 0.2s;" style="border-color: #38BDF8;">
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <span style="font-size: 1.5rem; color: #38BDF8;">🚀</span>
+                        <div style="text-align: left; flex: 1;">
+                            <strong style="color: #38BDF8;">Q2 2025: Web3 Era</strong>
+                            <p class="desc" style="margin: 0.5rem 0 0;">Wallets • On-chain settlement • Token-gated • NFTs</p>
                         </div>
-                        <div class="text-gray-400 flex-1">Wallet connect • On-chain settlement • Token-gated markets • NFT achievements</div>
                     </div>
                 </div>
-                <div class="card mb-4">
-                    <div style="display: flex; gap: 2rem; align-items: center;">
-                        <div style="flex: 0 0 auto;">
-                            <span style="display: inline-block; width: 12px; height: 12px; background: #6b7280; border-radius: 50%; margin-right: 1rem;"></span>
+                <div class="card animate-slide-left" style="animation-delay: 0.3s;">
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <span style="font-size: 1.5rem;">⭐</span>
+                        <div style="text-align: left; flex: 1;">
                             <strong>Q3-Q4 2025: Scale</strong>
+                            <p class="desc" style="margin: 0.5rem 0 0;">Mobile apps • Developer API • Enterprise • Governance</p>
                         </div>
-                        <div class="text-gray-400 flex-1">Mobile apps • Developer API • Enterprise partnerships • Governance token</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 7: The Big Dreams (Rational) -->
-    <div class="slide" id="slide-7">
+    <!-- SLIDE 7: BIG DREAMS -->
+    <div class="slide-container" id="slide-7">
         <div class="slide-content">
-            <h2 class="gradient-text mb-8">Our Vision</h2>
-            <div class="card" style="background: rgba(212, 70, 239, 0.1); border-color: rgba(212, 70, 239, 0.3);">
-                <h3 class="text-2xl mb-6">What We're Building</h3>
-                <div class="space-y-4 text-gray-300">
-                    <p>🎯 <strong>1M Active Users by 2026</strong> - Make prediction markets as easy as social media. Tap, tap, done.</p>
-                    <p>💰 <strong>$100M TVL</strong> - Become the most liquid prediction platform. Real money, real markets, real outcomes.</p>
-                    <p>🌍 <strong>Global Governance</strong> - Let users vote on market categories, features, and platform rules. True DAO.</p>
-                    <p>🔗 <strong>Multi-Chain Expansion</strong> - Launch on Ethereum, Arbitrum, Polygon, Base. Omnichain liquidity.</p>
-                    <p>📱 <strong>Mobile-First Dominance</strong> - iOS & Android apps with push notifications. Predict on the go, anywhere, anytime.</p>
-                    <p>🤖 <strong>AI-Powered Insights</strong> - ML models predict market movements. Help users make smarter bets.</p>
-                    <p>🏆 <strong>Influencer Economy</strong> - Creator partnerships. Sponsored markets. Revenue share. Turn prediction into career.</p>
-                </div>
+            <h2 class="gradient-text mb-4 animate-in">BIG DREAMS 🌟 (but we'll hit 'em)</h2>
+            <div class="card glass max-w-2xl mx-auto space-y-3" style="background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3);">
+                <p class="desc animate-slide-left" style="animation-delay: 0s; text-align: left;">
+                    <strong style="color: #38BDF8;">🎯 1M Active Users by 2026</strong><br>
+                    Make prediction markets as easy as TikTok. Literally just tap.
+                </p>
+                <p class="desc animate-slide-left" style="animation-delay: 0.1s; text-align: left;">
+                    <strong style="color: #818CF8;">💰 $100M TVL</strong><br>
+                    Most liquid prediction platform ever. Real money, real outcomes.
+                </p>
+                <p class="desc animate-slide-left" style="animation-delay: 0.2s; text-align: left;">
+                    <strong style="color: #C084FC;">🌍 Global Governance</strong><br>
+                    Users vote on categories, features, rules. True DAO vibes.
+                </p>
+                <p class="desc animate-slide-left" style="animation-delay: 0.3s; text-align: left;">
+                    <strong style="color: #38BDF8;">📱 Mobile Dominance</strong><br>
+                    iOS & Android. Push notifications. Predict on the go, everywhere.
+                </p>
+                <p class="desc animate-slide-left" style="animation-delay: 0.4s; text-align: left;">
+                    <strong style="color: #818CF8;">🏆 Influencer Economy</strong><br>
+                    Creator partnerships. Sponsored markets. Revenue share. New career path.
+                </p>
+                <p class="desc animate-slide-left" style="animation-delay: 0.5s; text-align: left;">
+                    <strong style="color: #C084FC;">🔗 Multi-Chain Empire</strong><br>
+                    Ethereum, Arbitrum, Polygon, Base. Omnichain liquidity.
+                </p>
             </div>
-            <div class="text-center mt-8 text-gray-400 text-sm">
-                <p>Bold? Yes. Impossible? No. We're executing daily.</p>
-            </div>
+            <p class="desc mt-6">Bold? Yes. Impossible? No. We're executing DAILY. 💪</p>
         </div>
     </div>
 
-    <!-- SLIDE 8: Why Now -->
-    <div class="slide" id="slide-8" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);">
+    <!-- SLIDE 8: WHY NOW -->
+    <div class="slide-container" id="slide-8">
         <div class="slide-content">
-            <h2 class="gradient-text mb-8">Why Now?</h2>
-            <div class="grid-2">
-                <div class="card">
-                    <h3>📈 Market Ready</h3>
-                    <p class="text-gray-400 mt-2">Gen Z loves prediction markets. $6B+ annual volume. Mass market timing is NOW.</p>
+            <h2 class="gradient-text mb-4 animate-in">WHY RIGHT NOW? 🔥</h2>
+            <div class="grid-2 max-w-4xl mx-auto">
+                <div class="card animate-slide-left" style="animation-delay: 0s;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📈</div>
+                    <h3>Market READY</h3>
+                    <p class="desc mt-2">Gen Z loves prediction markets. $6B+ annual volume. Timing is NOW.</p>
                 </div>
-                <div class="card">
-                    <h3>🤖 AI Maturity</h3>
-                    <p class="text-gray-400 mt-2">Gemini 2.0 + GPT-4o make autonomous oracles possible. We built it first.</p>
+                <div class="card animate-slide-right" style="animation-delay: 0s;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤖</div>
+                    <h3>AI is HERE</h3>
+                    <p class="desc mt-2">Gemini 2.0 + GPT-4o make autonomous oracles possible. We built it first.</p>
                 </div>
-                <div class="card">
-                    <h3>📱 Mobile Dominance</h3>
-                    <p class="text-gray-400 mt-2">Prediction betting fits mobile. Quick Play is TikTok for trading. Perfect product-market fit.</p>
+                <div class="card animate-slide-left" style="animation-delay: 0.1s;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📱</div>
+                    <h3>Mobile Moment</h3>
+                    <p class="desc mt-2">Prediction betting = TikTok for trading. Perfect fit. Perfect timing.</p>
                 </div>
-                <div class="card">
-                    <h3>🔓 Web3 Boom</h3>
-                    <p class="text-gray-400 mt-2">Crypto users want decentralized prediction markets. We're filling the gap.</p>
+                <div class="card animate-slide-right" style="animation-delay: 0.1s;">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔓</div>
+                    <h3>Web3 Ready</h3>
+                    <p class="desc mt-2">Crypto users want decentralized prediction markets. We're solving it.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 9: Call to Action -->
-    <div class="slide" id="slide-9">
-        <div class="slide-content text-center">
-            <h2 class="gradient-text mb-6">Join Us</h2>
-            <p class="text-xl text-gray-300 mb-8">We're looking for:</p>
-            <div class="grid-2 mb-12">
-                <div class="card">👩‍💻 Technical Builders</div>
-                <div class="card">🎨 Product Designers</div>
-                <div class="card">📊 Growth Marketers</div>
-                <div class="card">💼 Investors & Advisors</div>
+    <!-- SLIDE 9: CTA -->
+    <div class="slide-container" id="slide-9">
+        <div class="slide-content">
+            <div class="emoji">🚀</div>
+            <h2 class="gradient-text mb-2 animate-in">JOIN THE MOVEMENT</h2>
+            <p class="subtitle animate-in" style="animation-delay: 0.1s;">we're hiring EVERYONE</p>
+            <div class="grid-2 max-w-2xl mx-auto mt-6 mb-8">
+                <div class="card animate-bounce-in" style="animation-delay: 0.1s;">👩‍💻 Builders</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.2s;">🎨 Designers</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.3s;">📊 Growth Hacks</div>
+                <div class="card animate-bounce-in" style="animation-delay: 0.4s;">💰 Investors</div>
             </div>
-            <p class="text-lg text-gray-400 mb-8">Let's build the future of prediction markets together.</p>
-            <div style="padding: 2rem; background: rgba(56, 189, 248, 0.1); border: 2px solid rgba(56, 189, 248, 0.3); border-radius: 1rem;">
-                <p class="mono text-sm">hello@predora.ai</p>
-                <p class="mono text-sm">predora.ai</p>
+            <div class="card glass max-w-lg mx-auto p-6 animate-in" style="animation-delay: 0.3s; background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.5); border-width: 2px;">
+                <p class="mono" style="font-size: 1.1rem; color: #38BDF8; font-weight: 700; margin: 0.5rem 0;">hello@predora.io</p>
+                <p class="desc mt-2">or catch us at:</p>
+                <p class="mono" style="font-size: 1rem; color: #818CF8; margin: 1rem 0;">predora-app.vercel.app</p>
+                <p class="desc mt-2" style="font-size: 0.85rem;">let's build the future of prediction markets together 🔥</p>
             </div>
         </div>
     </div>
 
-    <!-- Navigation -->
+    <div class="counter">
+        <span id="current-slide">1</span> / <span id="total-slides">9</span>
+    </div>
     <div class="btn-nav">
-        <button onclick="previousSlide()">← Prev</button>
-        <button onclick="nextSlide()">Next →</button>
+        <button onclick="previousSlide()">← prev</button>
+        <button onclick="nextSlide()">next →</button>
     </div>
-    <div class="slide-counter"><span id="current-slide">1</span> / <span id="total-slides">9</span></div>
 
     <script>
         let currentSlide = 1;
         const totalSlides = 9;
 
         function updateSlide() {
-            document.querySelectorAll('.slide').forEach(s => s.style.display = 'none');
-            document.getElementById(`slide-${currentSlide}`).style.display = 'flex';
+            document.querySelectorAll('.slide-container').forEach(s => s.classList.remove('active'));
+            document.getElementById(`slide-${currentSlide}`).classList.add('active');
             document.getElementById('current-slide').textContent = currentSlide;
+            
+            const progress = (currentSlide / totalSlides) * 100;
+            document.getElementById('progress-bar').style.width = progress + '%';
         }
 
         function nextSlide() {
@@ -326,7 +423,7 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowRight' || e.key === ' ') { nextSlide(); e.preventDefault(); }
             if (e.key === 'ArrowLeft') previousSlide();
         });
 
