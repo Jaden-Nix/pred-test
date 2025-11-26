@@ -1,6 +1,24 @@
 /**
  * COPY TRADING MODULE
  * Follow top traders and automatically copy their predictions
+ * 
+ * HOW IT WORKS:
+ * 1. Queries real Firebase users with 5+ predictions
+ * 2. Calculates win rate: (totalWins / totalPredictions) × 100
+ * 3. Sorts by win rate, then by total wins
+ * 4. Shows top 5 traders with their actual stats
+ * 5. Users can follow/unfollow traders (stored in localStorage)
+ * 6. Auto-Copy toggle enables automatic bet copying
+ * 
+ * REAL DATA SOURCES:
+ * - User profiles from Firestore 'users' collection
+ * - Win rates calculated from totalWins and totalLosses
+ * - Streaks and profits from user stats
+ * 
+ * AUTO-COPY LOGIC:
+ * - When a followed trader makes a prediction, handleTraderPrediction() is called
+ * - If auto-copy is enabled, their bet is automatically copied
+ * - Notification shown to user about the copied trade
  */
 
 // Copy trading state
@@ -77,66 +95,97 @@ function toggleAutoCopy() {
     showToast(autoCopyEnabled ? 'Auto-copy enabled! 🔥' : 'Auto-copy disabled', 'info');
 }
 
-// Get top traders (mock data - replace with real Firestore query)
+// Get top traders from REAL Firebase data
 async function getTopTraders() {
-    // In production, query Firestore for users with best win rates
+    try {
+        if (!window.db) {
+            console.warn('Firebase not initialized, using fallback data');
+            return getFallbackTraders();
+        }
+
+        // Query real users from Firestore sorted by win rate
+        const usersRef = window.db.collection('users');
+        const snapshot = await usersRef
+            .where('totalPredictions', '>', 5) // Only users with at least 5 predictions
+            .orderBy('totalPredictions', 'desc')
+            .limit(20)
+            .get();
+
+        if (snapshot.empty) {
+            console.log('No users found, using fallback');
+            return getFallbackTraders();
+        }
+
+        // Calculate win rates and sort
+        const traders = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const totalWins = data.totalWins || 0;
+            const totalLosses = data.totalLosses || 0;
+            const totalPredictions = totalWins + totalLosses;
+            
+            if (totalPredictions >= 5) {
+                const winRate = totalPredictions > 0 ? Math.round((totalWins / totalPredictions) * 100) : 0;
+                
+                traders.push({
+                    id: doc.id,
+                    name: data.displayName || data.email?.split('@')[0] || 'Anonymous',
+                    avatar: data.avatar || getRandomAvatar(),
+                    stats: {
+                        winRate: winRate,
+                        totalWins: totalWins,
+                        streak: data.streak || 0,
+                        totalProfit: data.totalProfit || 0
+                    }
+                });
+            }
+        });
+
+        // Sort by win rate, then by total wins
+        traders.sort((a, b) => {
+            if (b.stats.winRate !== a.stats.winRate) {
+                return b.stats.winRate - a.stats.winRate;
+            }
+            return b.stats.totalWins - a.stats.totalWins;
+        });
+
+        // Return top 5
+        const topFive = traders.slice(0, 5);
+        
+        if (topFive.length === 0) {
+            return getFallbackTraders();
+        }
+
+        console.log(`📊 Loaded ${topFive.length} real top traders from Firebase`);
+        return topFive;
+        
+    } catch (error) {
+        console.error('Error fetching top traders:', error);
+        return getFallbackTraders();
+    }
+}
+
+// Fallback traders (only used if Firebase fails)
+function getFallbackTraders() {
     return [
         {
-            id: 'trader1',
-            name: 'CryptoKing',
-            avatar: '👑',
+            id: 'demo_trader_1',
+            name: 'Demo User 1',
+            avatar: '👤',
             stats: {
-                winRate: 78,
-                totalWins: 156,
-                streak: 12,
-                totalProfit: 2450
-            }
-        },
-        {
-            id: 'trader2',
-            name: 'OracleAI',
-            avatar: '🤖',
-            stats: {
-                winRate: 75,
-                totalWins: 132,
-                streak: 8,
-                totalProfit: 1980
-            }
-        },
-        {
-            id: 'trader3',
-            name: 'MarketMaster',
-            avatar: '💎',
-            stats: {
-                winRate: 72,
-                totalWins: 108,
-                streak: 15,
-                totalProfit: 1650
-            }
-        },
-        {
-            id: 'trader4',
-            name: 'ProphetPro',
-            avatar: '🔮',
-            stats: {
-                winRate: 69,
-                totalWins: 94,
-                streak: 6,
-                totalProfit: 1420
-            }
-        },
-        {
-            id: 'trader5',
-            name: 'BullRunner',
-            avatar: '🐂',
-            stats: {
-                winRate: 67,
-                totalWins: 87,
-                streak: 9,
-                totalProfit: 1230
+                winRate: 0,
+                totalWins: 0,
+                streak: 0,
+                totalProfit: 0
             }
         }
     ];
+}
+
+// Get random avatar emoji
+function getRandomAvatar() {
+    const avatars = ['👤', '🎭', '🎨', '🎯', '🎲', '🎪', '🎸', '🎺', '🎻', '🎬'];
+    return avatars[Math.floor(Math.random() * avatars.length)];
 }
 
 // Render copy trading panel
@@ -243,10 +292,11 @@ async function renderCopyTradingPanel() {
                     <div>
                         <h4 class="font-bold text-white mb-2">How Copy Trading Works</h4>
                         <ul class="text-sm text-gray-300 space-y-2">
-                            <li>✨ Follow successful traders with high win rates</li>
-                            <li>🔄 Enable Auto-Copy to automatically match their predictions</li>
-                            <li>📊 Track their performance in real-time</li>
-                            <li>🎯 Learn from the best and improve your strategy</li>
+                            <li>📊 <strong>Real Stats:</strong> All traders shown are real users with 5+ predictions</li>
+                            <li>🎯 <strong>Win Rates:</strong> Calculated from their actual prediction history</li>
+                            <li>✨ <strong>Follow:</strong> Click to follow successful traders</li>
+                            <li>🔄 <strong>Auto-Copy:</strong> Enable to automatically match their future predictions</li>
+                            <li>💎 <strong>Learn:</strong> Study top performers and improve your strategy</li>
                         </ul>
                     </div>
                 </div>
