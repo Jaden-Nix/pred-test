@@ -4956,6 +4956,12 @@
          */
         window.logout = () => {
             console.log("Logging out...");
+            
+            // Stop notification polling
+            if (typeof window.stopNotificationPolling === 'function') {
+                window.stopNotificationPolling();
+            }
+            
             localStorage.removeItem('demoUserId');
             localStorage.removeItem('demoDisplayName');
             localStorage.removeItem('pledgePool');
@@ -6663,9 +6669,13 @@
                     // 2. Call the "Printer" function to render the full list
                     filterMarkets('All');
                     
-                    // 3. Fetch market notifications (from js/markets.js)
-                    if (typeof window.fetchMarketNotifications === 'function') {
+                    // 3. Fetch market notifications for authenticated users only
+                    if (window.currentUser && typeof window.fetchMarketNotifications === 'function') {
                         window.fetchMarketNotifications();
+                        // Start polling for updates
+                        if (typeof window.startNotificationPolling === 'function') {
+                            window.startNotificationPolling();
+                        }
                     } 
 
                 }, (error) => {

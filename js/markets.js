@@ -130,17 +130,32 @@ async function placeBet(marketId, pick) {
     // This will be wired up to the existing betting system
 }
 
+// Notification polling interval reference
+let notificationInterval = null;
+
 // Fetch market notifications from Firebase
 async function fetchMarketNotifications() {
     try {
+        // Check if user is authenticated and has a valid token
+        if (!window.currentUser) {
+            console.log('📊 Notification fetch skipped: No authenticated user');
+            return;
+        }
+        
+        const token = await window.currentUser.getIdToken();
+        if (!token || token === 'undefined') {
+            console.log('📊 Notification fetch skipped: Invalid token');
+            return;
+        }
+        
         const response = await fetch('/api/notifications', {
             headers: {
-                'Authorization': `Bearer ${await window.currentUser?.getIdToken()}`
+                'Authorization': `Bearer ${token}`
             }
         });
         
         if (!response.ok) {
-            console.log('No notifications available (user may not be authenticated)');
+            console.log('📊 Notification fetch skipped: API returned', response.status);
             return;
         }
         
@@ -161,15 +176,36 @@ async function fetchMarketNotifications() {
         renderMarkets();
         
     } catch (error) {
-        console.log('Notifications fetch skipped:', error.message);
+        console.log('📊 Notification fetch error:', error.message);
     }
 }
 
-// Auto-refresh notifications every 30 seconds
-setInterval(fetchMarketNotifications, 30000);
+// Start notification polling (only for authenticated users)
+function startNotificationPolling() {
+    if (notificationInterval) {
+        clearInterval(notificationInterval);
+    }
+    
+    // Only start polling if user is authenticated
+    if (window.currentUser) {
+        console.log('📊 Starting notification polling for authenticated user');
+        notificationInterval = setInterval(fetchMarketNotifications, 30000);
+    }
+}
+
+// Stop notification polling
+function stopNotificationPolling() {
+    if (notificationInterval) {
+        console.log('📊 Stopping notification polling');
+        clearInterval(notificationInterval);
+        notificationInterval = null;
+    }
+}
 
 // Export functions for use in app.html
 window.filterByCategory = filterByCategory;
 window.renderMarkets = renderMarkets;
 window.placeBet = placeBet;
 window.fetchMarketNotifications = fetchMarketNotifications;
+window.startNotificationPolling = startNotificationPolling;
+window.stopNotificationPolling = stopNotificationPolling;
