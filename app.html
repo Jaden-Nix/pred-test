@@ -5550,9 +5550,9 @@
                     const isRootComment = !c.parentCommentId;
                     const isOwner = c.userId === firebaseUid;
                     console.log(`Comment by ${c.displayName}: userId=${c.userId}, firebaseUid=${firebaseUid}, isOwner=${isOwner}`);
-                    const replyBtn = `<button onclick="replyToComment('${postId}', '${c.commentId}', '${c.displayName}')" class="text-sky-400 hover:text-sky-300 text-xs">Reply</button>`;
+                    const replyBtn = `<button class="text-sky-400 hover:text-sky-300 text-xs reply-btn" data-post-id="${postId}" data-comment-id="${c.commentId}" data-display-name="${c.displayName}">Reply</button>`;
                     const menuId = `comment-menu-${c.commentId}`;
-                    const menuBtn = isOwner ? `<div class="relative"><button onclick="toggleCommentMenu('${menuId}')" class="text-gray-400 hover:text-white text-xs px-2">⋯</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg z-10"><button onclick="editComment('${postId}', '${c.commentId}', '${c.userId}', '${c.content.replace(/'/g, "\\'")}')" class="block w-full text-left px-4 py-2 text-sm text-yellow-400 hover:bg-gray-700">✏️ Edit</button><button onclick="deleteComment('${postId}', '${c.commentId}', '${c.userId}')" class="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700">🗑️ Delete</button></div></div>` : '';
+                    const menuBtn = isOwner ? `<div class="relative"><button class="text-gray-400 hover:text-white text-xs px-2 comment-menu-btn" data-menu-id="${menuId}">⋯</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg z-10"><button class="block w-full text-left px-4 py-2 text-sm text-yellow-400 hover:bg-gray-700 edit-comment-btn" data-post-id="${postId}" data-comment-id="${c.commentId}" data-content="${c.content.replace(/"/g, '&quot;')}">✏️ Edit</button><button class="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 delete-comment-btn" data-post-id="${postId}" data-comment-id="${c.commentId}">🗑️ Delete</button></div></div>` : '';
                     const timeStr = getRelativeTime(c.timestamp);
                     const indent = c.parentCommentId ? 'ml-8 pl-3 border-l border-gray-600' : '';
                     html += `<div class="flex gap-2 text-sm ${indent}"><img src="${c.avatarUrl || LOGO_URL}" class="w-6 h-6 rounded-full flex-shrink-0"><div class="flex-1"><div class="flex items-start justify-between"><div><p class="font-semibold text-white text-xs">${c.displayName}<span class="text-gray-500 text-xs ml-1">· ${timeStr}</span></p></div>${menuBtn}</div><p class="text-gray-300">${c.content}</p><div class="flex gap-1 mt-1">${replyBtn}</div></div></div>`;
@@ -5564,6 +5564,21 @@
                     }
                 });
                 listEl.innerHTML = html;
+                
+                // Event delegation for comment buttons
+                listEl.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('comment-menu-btn')) {
+                        const menuId = e.target.dataset.menuId;
+                        const menu = document.getElementById(menuId);
+                        if (menu) menu.classList.toggle('hidden');
+                    } else if (e.target.classList.contains('reply-btn')) {
+                        replyToComment(e.target.dataset.postId, e.target.dataset.commentId, e.target.dataset.displayName);
+                    } else if (e.target.classList.contains('edit-comment-btn')) {
+                        editComment(e.target.dataset.postId, e.target.dataset.commentId, firebaseUid, e.target.dataset.content);
+                    } else if (e.target.classList.contains('delete-comment-btn')) {
+                        deleteComment(e.target.dataset.postId, e.target.dataset.commentId, firebaseUid);
+                    }
+                });
             } catch (e) { 
                 console.error('❌ Error loading comments:', e);
                 listEl.innerHTML = '<p class="text-red-400 text-xs text-center">Error loading comments</p>'; 
