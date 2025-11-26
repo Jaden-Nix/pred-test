@@ -10,7 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### November 26, 2025 - Multi-Option Market Fixes
+### November 26, 2025 - Multi-Option Market Fixes & Mobile UX
 - **Fixed multi-option display bug**: Options were showing as "undefined" because odds weren't being calculated from optionAmounts
   - Implemented proper odds calculation by summing all optionAmounts values and computing percentages
   - Added equal distribution fallback (100 / options.length) when no pool data exists
@@ -22,6 +22,10 @@ Preferred communication style: Simple, everyday language.
 - **Fixed Gaming category**: Added "Gaming" to both oracle AI prompts (standard + quick play)
   - Oracle now properly categorizes esports, game releases, gaming tournaments as "Gaming" instead of "Entertainment" or "Other"
   - Gaming markets now appear correctly when clicking the Gaming filter
+- **Mobile navigation update**: Replaced Copy Trading with Quick Play in mobile bottom nav
+  - Mobile users can now access Quick Play (pledge pool & quick polls) from bottom navigation
+  - Copy Trading remains accessible on desktop navigation
+  - Prioritizes mobile-first swipe-style betting experience
 
 ## System Architecture
 
