@@ -1888,11 +1888,29 @@ app.post('/api/social/comment', requireAuth, requireFirebase, async (req, res) =
         // Run guardrails on comment content
         const preFilter = preFilterContent(content, 500);
         if (preFilter.blocked) {
+            await logSafetyEvent(db, APP_ID, {
+                userId: storedUserId,
+                action: 'content_blocked',
+                contentType: 'comment',
+                reason: preFilter.reason,
+                violations: ['format'],
+                tier: 'RED',
+                ip: req.ip
+            });
             return res.status(400).json({ error: preFilter.reason, blocked: true });
         }
         
         const blocklist = checkBlocklist(content);
         if (blocklist.blocked) {
+            await logSafetyEvent(db, APP_ID, {
+                userId: storedUserId,
+                action: 'content_blocked',
+                contentType: 'comment',
+                reason: blocklist.reason,
+                violations: [blocklist.category],
+                tier: 'RED',
+                ip: req.ip
+            });
             return res.status(400).json({ error: blocklist.reason, blocked: true });
         }
         
