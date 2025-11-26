@@ -1042,7 +1042,7 @@ REQUIREMENTS:
 
                 // Handle both binary and multi-option markets
                 if (marketData.type === 'multi' && marketData.options && marketData.options.length > 0) {
-                    // Multi-option market
+                    // Multi-option market - NO yesPercent/noPercent (those are for binary markets only!)
                     const poolPerOption = 5000; // $5k per option
                     const optionAmounts = marketData.options.reduce((acc, opt) => {
                         acc[opt] = poolPerOption;
@@ -1061,12 +1061,9 @@ REQUIREMENTS:
                         resolutionDate: resolutionDate.toISOString().split('T')[0],
                         status: 'active',
                         marketType: 'multi',
+                        marketStructure: 'multi-option',
                         options: marketData.options,
                         optionAmounts: optionAmounts,
-                        yesPercent: 100 / marketData.options.length,
-                        noPercent: 100 / marketData.options.length,
-                        yesPool: totalPool / 2,
-                        noPool: totalPool / 2,
                         totalPool: totalPool,
                         totalStakeVolume: totalPool,
                         isMock: false
@@ -1196,7 +1193,7 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
                 
                 // Handle both binary and multi-option quick plays
                 if (marketData.type === 'multi' && marketData.options && marketData.options.length > 0) {
-                    // Multi-option quick play
+                    // Multi-option quick play - NO yesPercent/noPercent (those are for binary markets only!)
                     const poolPerOption = 5000;
                     const optionAmounts = marketData.options.reduce((acc, opt) => {
                         acc[opt] = poolPerOption;
@@ -1215,12 +1212,9 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
                         isResolved: false,
                         status: 'active',
                         marketType: 'multi',
+                        marketStructure: 'multi-option',
                         options: marketData.options,
                         optionAmounts: optionAmounts,
-                        yesPercent: 100 / marketData.options.length,
-                        noPercent: 100 / marketData.options.length,
-                        yesPool: totalPool / 2,
-                        noPool: totalPool / 2,
                         totalPool: totalPool,
                         totalStakeVolume: totalPool,
                         isMock: false
@@ -2847,12 +2841,31 @@ async function cleanupBrokenMarkets() {
             .where('isResolved', '==', false).get();
         let standardRepaired = 0;
         let standardDeleted = 0;
+        let multiOptionFixed = 0;
         
         for (const doc of standardSnapshot.docs) {
             const market = doc.data();
             const yesPool = market.yesPool ?? 0;
             const noPool = market.noPool ?? 0;
             const totalPool = market.totalPool ?? 0;
+            
+            // Fix multi-option markets that incorrectly have yesPercent/noPercent
+            if (market.marketType === 'multi' && (market.yesPercent !== undefined || market.noPercent !== undefined)) {
+                const updateData = {
+                    marketStructure: 'multi-option'
+                };
+                // Remove yesPercent, noPercent, yesPool, noPool from multi-option markets
+                await doc.ref.update({
+                    ...updateData,
+                    yesPercent: admin.firestore.FieldValue.delete(),
+                    noPercent: admin.firestore.FieldValue.delete(),
+                    yesPool: admin.firestore.FieldValue.delete(),
+                    noPool: admin.firestore.FieldValue.delete()
+                });
+                multiOptionFixed++;
+                console.log(`🔧 Fixed multi-option market (removed yesPercent/noPercent): ${market.title}`);
+                continue; // Skip to next market
+            }
             
             // Check if pools are invalid (0, NaN, undefined, or Infinity)
             const hasInvalidPools = !Number.isFinite(yesPool) || !Number.isFinite(noPool) || 
@@ -2896,6 +2909,23 @@ async function cleanupBrokenMarkets() {
             const noPool = market.noPool ?? 0;
             const totalPool = market.totalPool ?? 0;
             
+            // Fix multi-option quick plays that incorrectly have yesPercent/noPercent
+            if (market.marketType === 'multi' && (market.yesPercent !== undefined || market.noPercent !== undefined)) {
+                const updateData = {
+                    marketStructure: 'multi-option'
+                };
+                await doc.ref.update({
+                    ...updateData,
+                    yesPercent: admin.firestore.FieldValue.delete(),
+                    noPercent: admin.firestore.FieldValue.delete(),
+                    yesPool: admin.firestore.FieldValue.delete(),
+                    noPool: admin.firestore.FieldValue.delete()
+                });
+                multiOptionFixed++;
+                console.log(`🔧 Fixed multi-option quick play (removed yesPercent/noPercent): ${market.title}`);
+                continue; // Skip to next market
+            }
+            
             const hasInvalidPools = !Number.isFinite(yesPool) || !Number.isFinite(noPool) || 
                                     !Number.isFinite(totalPool) || yesPool <= 0 || noPool <= 0 || totalPool <= 0;
             
@@ -2922,8 +2952,9 @@ async function cleanupBrokenMarkets() {
             }
         }
         
-        if (standardRepaired > 0 || standardDeleted > 0 || quickPlayRepaired > 0 || quickPlayDeleted > 0) {
+        if (standardRepaired > 0 || standardDeleted > 0 || quickPlayRepaired > 0 || quickPlayDeleted > 0 || multiOptionFixed > 0) {
             console.log(`✅ Cleanup complete: Repaired ${standardRepaired} standard + ${quickPlayRepaired} quick play markets`);
+            console.log(`🔧 Fixed ${multiOptionFixed} multi-option markets (removed yesPercent/noPercent)`);
             console.log(`🗑️ Deleted ${standardDeleted} standard + ${quickPlayDeleted} quick play markets with stakes`);
         } else {
             console.log('✅ No broken markets found - all markets have valid liquidity');
