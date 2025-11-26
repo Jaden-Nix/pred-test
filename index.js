@@ -1073,7 +1073,18 @@ REQUIREMENTS:
                     });
                     console.log(`✅ Created multi-option market: ${marketData.title} (Options: ${marketData.options.join(', ')})`);
                 } else {
-                    // Binary YES/NO market
+                    // Binary YES/NO market - WITH VALIDATION
+                    const yesPool = 10000;
+                    const noPool = 10000;
+                    const totalPool = 20000;
+                    
+                    // Safety check: ensure pools are valid finite numbers
+                    if (!Number.isFinite(yesPool) || !Number.isFinite(noPool) || !Number.isFinite(totalPool) ||
+                        yesPool <= 0 || noPool <= 0 || totalPool <= 0) {
+                        console.error(`⚠️ Invalid pool values for market ${marketData.title}, skipping`);
+                        continue;
+                    }
+                    
                     await marketRef.set({
                         id: marketRef.id,
                         title: marketData.title || "Prediction Market",
@@ -1084,12 +1095,12 @@ REQUIREMENTS:
                         isResolved: false,
                         resolutionDate: resolutionDate.toISOString().split('T')[0],
                         status: 'active',
-                        yesPool: 10000,
-                        noPool: 10000,
+                        yesPool: yesPool,
+                        noPool: noPool,
                         yesPercent: 50,
                         noPercent: 50,
-                        totalPool: 20000,
-                        totalStakeVolume: 20000,
+                        totalPool: totalPool,
+                        totalStakeVolume: totalPool,
                         marketType: 'binary',
                         isMock: false
                     });
@@ -1216,7 +1227,18 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
                     });
                     console.log(`✅ Created quick play (MULTI): ${marketData.title} (Options: ${marketData.options.join(', ')})`);
                 } else {
-                    // Binary quick play
+                    // Binary quick play - WITH VALIDATION
+                    const yesPool = 10000;
+                    const noPool = 10000;
+                    const totalPool = 20000;
+                    
+                    // Safety check: ensure pools are valid finite numbers
+                    if (!Number.isFinite(yesPool) || !Number.isFinite(noPool) || !Number.isFinite(totalPool) ||
+                        yesPool <= 0 || noPool <= 0 || totalPool <= 0) {
+                        console.error(`⚠️ Invalid pool values for quick play ${marketData.title}, skipping`);
+                        continue;
+                    }
+                    
                     await marketRef.set({
                         id: marketRef.id,
                         title: marketData.title || "Quick Play Market",
@@ -1227,12 +1249,12 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
                         resolutionDate: futureDate.toISOString().split('T')[0],
                         isResolved: false,
                         status: 'active',
-                        yesPool: 10000,
-                        noPool: 10000,
+                        yesPool: yesPool,
+                        noPool: noPool,
                         yesPercent: 50,
                         noPercent: 50,
-                        totalPool: 20000,
-                        totalStakeVolume: 20000,
+                        totalPool: totalPool,
+                        totalStakeVolume: totalPool,
                         marketType: 'binary',
                         isMock: false
                     });
@@ -2783,6 +2805,23 @@ Always be helpful, accurate about platform features, and encourage users to expl
 */
 
 // =============================================================================
+// ADMIN: REPAIR MARKETS ENDPOINT
+// =============================================================================
+app.post('/api/admin/repair-markets', requireAdmin, requireFirebase, async (req, res) => {
+    try {
+        console.log('🔧 Admin triggered market repair...');
+        await cleanupBrokenMarkets();
+        res.json({ 
+            success: true, 
+            message: 'Market repair completed. Check server logs for details.' 
+        });
+    } catch (error) {
+        console.error('❌ Market repair failed:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// =============================================================================
 // HEALTH CHECK
 // =============================================================================
 app.get('/api/health', (req, res) => {
@@ -2801,28 +2840,93 @@ app.get('/api/health', (req, res) => {
 // CLEANUP BROKEN MARKETS (runs once on startup)
 // =============================================================================
 async function cleanupBrokenMarkets() {
-    console.log('🧹 Cleaning up markets with 0 liquidity...');
+    console.log('🧹 Cleaning up and repairing markets with invalid liquidity...');
     try {
-        // Clean standard markets with totalPool = 0
+        // Repair standard markets with 0 or invalid pools
         const standardSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/standard_markets`)
-            .where('totalPool', '==', 0).get();
+            .where('isResolved', '==', false).get();
+        let standardRepaired = 0;
         let standardDeleted = 0;
+        
         for (const doc of standardSnapshot.docs) {
-            await doc.ref.delete();
-            standardDeleted++;
+            const market = doc.data();
+            const yesPool = market.yesPool ?? 0;
+            const noPool = market.noPool ?? 0;
+            const totalPool = market.totalPool ?? 0;
+            
+            // Check if pools are invalid (0, NaN, undefined, or Infinity)
+            const hasInvalidPools = !Number.isFinite(yesPool) || !Number.isFinite(noPool) || 
+                                    !Number.isFinite(totalPool) || yesPool <= 0 || noPool <= 0 || totalPool <= 0;
+            
+            if (hasInvalidPools) {
+                // If market has no stakes, repair it with default liquidity
+                const pledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
+                const pledgeSnaps = await pledgesRef.where('marketId', '==', doc.id).get();
+                
+                if (pledgeSnaps.empty) {
+                    // No stakes yet - safe to repair
+                    await doc.ref.update({
+                        yesPool: 10000,
+                        noPool: 10000,
+                        totalPool: 20000,
+                        yesPercent: 50,
+                        noPercent: 50,
+                        totalStakeVolume: 20000
+                    });
+                    standardRepaired++;
+                    console.log(`🔧 Repaired market: ${market.title} (ID: ${doc.id})`);
+                } else {
+                    // Has stakes but invalid pools - delete to prevent issues
+                    await doc.ref.delete();
+                    standardDeleted++;
+                    console.log(`🗑️ Deleted corrupted market with stakes: ${market.title}`);
+                }
+            }
         }
         
-        // Clean quick play markets with totalPool = 0
+        // Repair quick play markets
         const quickPlaySnapshot = await db.collection(`artifacts/${APP_ID}/public/data/quick_play_markets`)
-            .where('totalPool', '==', 0).get();
+            .where('isResolved', '==', false).get();
+        let quickPlayRepaired = 0;
         let quickPlayDeleted = 0;
+        
         for (const doc of quickPlaySnapshot.docs) {
-            await doc.ref.delete();
-            quickPlayDeleted++;
+            const market = doc.data();
+            const yesPool = market.yesPool ?? 0;
+            const noPool = market.noPool ?? 0;
+            const totalPool = market.totalPool ?? 0;
+            
+            const hasInvalidPools = !Number.isFinite(yesPool) || !Number.isFinite(noPool) || 
+                                    !Number.isFinite(totalPool) || yesPool <= 0 || noPool <= 0 || totalPool <= 0;
+            
+            if (hasInvalidPools) {
+                const pledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
+                const pledgeSnaps = await pledgesRef.where('marketId', '==', doc.id).get();
+                
+                if (pledgeSnaps.empty) {
+                    await doc.ref.update({
+                        yesPool: 10000,
+                        noPool: 10000,
+                        totalPool: 20000,
+                        yesPercent: 50,
+                        noPercent: 50,
+                        totalStakeVolume: 20000
+                    });
+                    quickPlayRepaired++;
+                    console.log(`🔧 Repaired quick play: ${market.title} (ID: ${doc.id})`);
+                } else {
+                    await doc.ref.delete();
+                    quickPlayDeleted++;
+                    console.log(`🗑️ Deleted corrupted quick play with stakes: ${market.title}`);
+                }
+            }
         }
         
-        if (standardDeleted > 0 || quickPlayDeleted > 0) {
-            console.log(`✅ Cleanup complete: ${standardDeleted} standard + ${quickPlayDeleted} quick play markets deleted`);
+        if (standardRepaired > 0 || standardDeleted > 0 || quickPlayRepaired > 0 || quickPlayDeleted > 0) {
+            console.log(`✅ Cleanup complete: Repaired ${standardRepaired} standard + ${quickPlayRepaired} quick play markets`);
+            console.log(`🗑️ Deleted ${standardDeleted} standard + ${quickPlayDeleted} quick play markets with stakes`);
+        } else {
+            console.log('✅ No broken markets found - all markets have valid liquidity');
         }
     } catch (error) {
         console.warn('⚠️ Cleanup encountered an issue (non-blocking):', error.message);
