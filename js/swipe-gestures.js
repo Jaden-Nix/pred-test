@@ -189,11 +189,17 @@ class SwipeGestureHandler {
 
 // Initialize swipe gestures for Quick Play
 function initSwipeGestures() {
-    const quickPlayContainer = document.getElementById('quick-play-container');
+    // Try both IDs to find Quick Play content
+    const quickPlayContainer = document.getElementById('quick-play-content') || 
+                                document.getElementById('quick-play-container') ||
+                                document.getElementById('pledge-pool-content');
+    
     if (quickPlayContainer) {
         const swipeHandler = new SwipeGestureHandler();
         swipeHandler.init(quickPlayContainer);
-        console.log('✨ Swipe gestures initialized for Quick Play!');
+        console.log('✨ Swipe gestures initialized for Quick Play!', quickPlayContainer.id);
+    } else {
+        console.log('⚠️ Quick Play container not found for swipe gestures');
     }
 }
 
