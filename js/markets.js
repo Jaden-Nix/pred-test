@@ -7,6 +7,7 @@
 let allStandardMarkets = [];
 let allQuickMarkets = [];
 let currentFilter = 'All';
+let marketNotifications = {}; // { marketId: unreadCount }
 
 // Market filtering
 function filterByCategory(category) {
@@ -51,9 +52,14 @@ function renderMarkets() {
 function createMarketCard(market) {
     const yesPercent = market.yesPercent || 50;
     const noPercent = market.noPercent || 50;
+    const unreadCount = marketNotifications[market.id] || 0;
+    const notificationBadge = unreadCount > 0 
+        ? `<span class="market-notification-badge">${unreadCount}</span>` 
+        : '';
     
     return `
-        <div class="ui-panel p-6 rounded-2xl hover-lift interactive market-card" data-market-id="${market.id}">
+        <div class="ui-panel p-6 rounded-2xl hover-lift interactive market-card relative" data-market-id="${market.id}">
+            ${notificationBadge}
             <div class="flex justify-between items-start mb-4">
                 <div class="flex-1">
                     <span class="text-xs px-3 py-1 rounded-full bg-sky-500/20 text-sky-400">${market.category || 'General'}</span>
@@ -124,7 +130,46 @@ async function placeBet(marketId, pick) {
     // This will be wired up to the existing betting system
 }
 
+// Fetch market notifications from Firebase
+async function fetchMarketNotifications() {
+    try {
+        const response = await fetch('/api/notifications', {
+            headers: {
+                'Authorization': `Bearer ${await window.currentUser?.getIdToken()}`
+            }
+        });
+        
+        if (!response.ok) {
+            console.log('No notifications available (user may not be authenticated)');
+            return;
+        }
+        
+        const data = await response.json();
+        const notifications = data.notifications || [];
+        
+        // Count unread notifications per market
+        marketNotifications = {};
+        notifications.forEach(notif => {
+            if (!notif.read && notif.marketId) {
+                marketNotifications[notif.marketId] = (marketNotifications[notif.marketId] || 0) + 1;
+            }
+        });
+        
+        console.log('📊 Market notifications loaded:', marketNotifications);
+        
+        // Re-render markets to show badges
+        renderMarkets();
+        
+    } catch (error) {
+        console.log('Notifications fetch skipped:', error.message);
+    }
+}
+
+// Auto-refresh notifications every 30 seconds
+setInterval(fetchMarketNotifications, 30000);
+
 // Export functions for use in app.html
 window.filterByCategory = filterByCategory;
 window.renderMarkets = renderMarkets;
 window.placeBet = placeBet;
+window.fetchMarketNotifications = fetchMarketNotifications;
