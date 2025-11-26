@@ -9783,10 +9783,18 @@
                         // --- CALL 1: GET "SMART" IDEAS (Google Search only) ---
                         console.log("AI Assist (Step 1/2): Getting future-event ideas...");
                         const searchTools = [{ "google_search": {} }];
+                        
+                        // Get current date for the AI
+                        const today = new Date();
+                        const todayFormatted = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                        
                         const systemPrompt_1 = `You are a research assistant. Use Google Search to find up-to-date, real-time information about the user's topic.
-        Find a *single, specific, future-focused* event (for 2025 or 2026).
-        Respond ONLY with a 1-2 sentence summary of this event.
-        Example: "Solana's Firedancer upgrade is scheduled for 2026, aiming to improve network speed."`;
+
+CRITICAL: TODAY IS ${todayFormatted}. Only find events that will happen in the FUTURE (December 2025 or later).
+
+Find a *single, specific, future-focused* event. DO NOT suggest events that have already occurred.
+Respond ONLY with a 1-2 sentence summary of this FUTURE event.
+Example: "The Bitcoin halving is scheduled for April 2028, which historically leads to price increases."`;
 
                         // We call with 'tools' (for Search) and null for 'jsonSchema'
                         const ideaText = await callGemini(systemPrompt_1, prompt, searchTools, null);
@@ -9826,11 +9834,14 @@
                         const systemPrompt_2 = `You are a market creator. A user has provided context about a future event.
                         Your ONLY job is to use the 'create_market_form' tool to create a market based on this context.
 
+                        CRITICAL: TODAY IS ${todayFormatted}. The resolutionDate MUST be in the FUTURE (December 1, 2025 or later).
+
                         RULES:
-                        - 'title' must be a yes/no question
+                        - 'title' must be a yes/no question about a FUTURE event
                         - 'insight' must be a brief summary of the context
                         - 'category' must match one from the allowed list (use new categories like Campus, Gaming, Creator Milestones for GenZ content)
-                        - 'resolutionDate' must be parsed from context (Q1 2026 = 2026-03-31, Q2 2026 = 2026-06-30, end of 2025 = 2025-12-31, etc.)
+                        - 'resolutionDate' MUST be in the future - December 2025 or later (Format: YYYY-MM-DD)
+                          Examples: Q1 2026 = 2026-03-31, Q2 2026 = 2026-06-30, end of 2025 = 2025-12-31, December 15 = 2025-12-15
                         - 'marketType' should be 'fixed-pot' for low-risk/GenZ/campus events, 'traditional' for high-volume crypto/sports
                         - 'stakingDeadline' should be 1-7 days before resolutionDate
                         - Odds (yesPercent, noPercent) must be between 1 and 99, and sum to 100
