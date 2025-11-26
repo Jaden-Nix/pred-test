@@ -2074,6 +2074,15 @@
         <div class="flex items-center justify-between gap-2">
             <div id="mobile-logo" style="display: none;" class="text-lg font-bold gradient-text">Predora</div>
             <div class="flex items-center gap-2">
+                <!-- Notification Bell -->
+                <button id="notification-bell" onclick="showScreen('notifications-screen')" class="hidden relative p-2 rounded-lg hover:bg-white/10 transition-all duration-200">
+                    <svg class="w-6 h-6 text-gray-400 hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                    <!-- Notification Badge -->
+                    <span id="notification-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold animate-pulse">0</span>
+                </button>
+                
                 <button id="mobile-signin-btn" onclick="window.location.href='login.html'" style="display: none;" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg hover:from-sky-400 hover:to-indigo-500 transition-all duration-300 shadow-lg shadow-sky-500/30 hover:shadow-sky-500/50">
                     Sign In
                 </button>
@@ -2847,6 +2856,116 @@
                 </div>
             </div>
 
+            <!-- Copy Trading Screen -->
+            <div id="copy-trading-screen" class="screen screen-inactive">
+                <div class="max-w-4xl mx-auto space-y-6 px-4 md:px-6 pb-6 pt-6">
+                    <div id="copy-trading-container">
+                        <div class="ui-panel p-8 text-center">
+                            <p class="text-gray-400 text-lg">Loading copy trading...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Screen -->
+            <div id="notifications-screen" class="screen screen-inactive">
+                <div class="max-w-2xl mx-auto space-y-6 px-4 md:px-6 pb-6 pt-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <svg class="w-7 h-7 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                            </svg>
+                            Notifications
+                        </h1>
+                        <button onclick="clearAllNotifications()" class="text-sm text-sky-400 hover:text-sky-300">
+                            Clear all
+                        </button>
+                    </div>
+                    
+                    <div id="notifications-container" class="space-y-3">
+                        <!-- Notifications will be loaded here -->
+                        <div class="ui-panel p-8 text-center">
+                            <p class="text-gray-400">No new notifications</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Screen -->
+            <div id="settings-screen" class="screen screen-inactive">
+                <div class="max-w-2xl mx-auto space-y-6 px-4 md:px-6 pb-6 pt-6">
+                    <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <svg class="w-7 h-7 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        Settings
+                    </h1>
+
+                    <!-- Profile Settings -->
+                    <div class="ui-panel p-6 rounded-2xl space-y-4">
+                        <h3 class="text-lg font-bold text-white mb-4">Profile</h3>
+                        <button onclick="openEditProfile()" class="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 rounded-xl transition-all">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                <span class="text-white">Edit Profile</span>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Display Settings -->
+                    <div class="ui-panel p-6 rounded-2xl space-y-4">
+                        <h3 class="text-lg font-bold text-white mb-4">Display & Animations</h3>
+                        
+                        <!-- Animations Toggle -->
+                        <div class="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                            <div>
+                                <p class="text-white font-semibold">Live Animations</p>
+                                <p class="text-sm text-gray-400">Activity signals, trending badges, etc.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="animations-toggle" class="sr-only peer" onchange="toggleAnimations(this.checked)" checked>
+                                <div class="w-14 h-7 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-sky-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-sky-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Feed Filter Toggle -->
+                        <div class="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                            <div>
+                                <p class="text-white font-semibold">Feed Filter</p>
+                                <p class="text-sm text-gray-400">Show only people you follow</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="feed-filter-toggle" class="sr-only peer" onchange="toggleFeedFilter(this.checked)">
+                                <div class="w-14 h-7 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-sky-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-sky-500"></div>
+                            </label>
+                        </div>
+
+                        <!-- Notifications Toggle -->
+                        <div class="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                            <div>
+                                <p class="text-white font-semibold">Push Notifications</p>
+                                <p class="text-sm text-gray-400">Get notified about activity</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="notifications-toggle" class="sr-only peer" onchange="toggleNotifications(this.checked)" checked>
+                                <div class="w-14 h-7 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-sky-400 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-sky-500"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Back Button -->
+                    <button onclick="showScreen('profile-screen')" class="w-full btn btn-secondary">
+                        Back to Profile
+                    </button>
+                </div>
+            </div>
+
             <div id="pledge-pool-screen" class="screen screen-inactive space-y-4">
                 <h1 class="text-2xl lg:text-3xl font-bold gradient-text">Quick Predictions</h1>
 
@@ -2995,10 +3114,11 @@
                                 </svg>
                             </button>
 
-                            <!-- Edit Profile Button at Top Right -->
-                            <button onclick="openEditProfile()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-all duration-200" title="Edit profile">
+                            <!-- Settings Button at Top Right -->
+                            <button onclick="showScreen('settings-screen')" class="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 transition-all duration-200" title="Settings">
                                 <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 </svg>
                             </button>
 
@@ -13838,6 +13958,337 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
         console.log('🔥 Trending badges: ACTIVE');
         console.log('🏆 Gamification system: ACTIVE');
         console.log('💫 Micro-interactions: ACTIVE');
+
+    </script>
+
+    <!-- Modular JS Modules -->
+    <script src="js/markets.js"></script>
+    <script src="js/ai-features.js"></script>
+    <script src="js/swipe-gestures.js"></script>
+    <script src="js/copy-trading.js"></script>
+    <script src="js/nav-icons.js"></script>
+
+    <!-- Initialize New Features -->
+    <script>
+        // Initialize swipe gestures for Quick Play
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (window.initSwipeGestures) {
+                    initSwipeGestures();
+                }
+                if (window.initCopyTrading) {
+                    initCopyTrading();
+                }
+                if (window.updateNavigationIcons) {
+                    updateNavigationIcons();
+                }
+            }, 1000);
+        });
+
+        // Hook into screen navigation to render copy trading panel
+        const originalShowScreen = window.showScreen;
+        window.showScreen = function(screenId) {
+            originalShowScreen?.(screenId);
+            
+            if (screenId === 'copy-trading-screen' && window.renderCopyTradingPanel) {
+                renderCopyTradingPanel();
+            }
+            
+            if (window.updateActiveNav) {
+                updateActiveNav(screenId);
+            }
+        };
+
+        // Show activity nudges periodically
+        setInterval(() => {
+            if (Math.random() > 0.7 && window.showActivityNudge) {
+                const nudges = [
+                    "3 friends just joined a trending market—check it out!",
+                    "Market odds shifted +8% in the last 10 minutes ⚡",
+                    "You're close to unlocking the Hot Streak badge! 🔥",
+                    "A top trader just made a prediction. Want to copy?"
+                ];
+                const randomNudge = nudges[Math.floor(Math.random() * nudges.length)];
+                showActivityNudge(randomNudge);
+            }
+        }, 25000);
+
+        // Trigger breaking news cards occasionally
+        setTimeout(() => {
+            if (Math.random() > 0.6 && window.showBreakingCard) {
+                showBreakingCard(
+                    'Market Flipped!',
+                    'The "BTC $100k" market just flipped from NO to YES in the last hour! 🚨',
+                    'alert'
+                );
+            }
+        }, 30000);
+
+        console.log('🚀 All modular features loaded!');
+        console.log('👆 Swipe-to-stake: READY');
+        console.log('💎 Copy trading: READY');
+        console.log('🤖 AI insights: READY');
+        console.log('📱 Modern nav icons: READY');
+
+        /**
+         * ========================================
+         * SETTINGS & NOTIFICATIONS SYSTEM
+         * ========================================
+         */
+
+        // Settings state
+        let appSettings = {
+            animationsEnabled: true,
+            feedFilterEnabled: false,
+            notificationsEnabled: true
+        };
+
+        // Notifications state
+        let notifications = [];
+
+        // Load settings from localStorage
+        function loadSettings() {
+            const stored = localStorage.getItem('predora_settings');
+            if (stored) {
+                try {
+                    appSettings = JSON.parse(stored);
+                    applySettings();
+                } catch (e) {
+                    console.error('Error loading settings:', e);
+                }
+            }
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            localStorage.setItem('predora_settings', JSON.stringify(appSettings));
+            console.log('✅ Settings saved:', appSettings);
+        }
+
+        // Apply settings to UI
+        function applySettings() {
+            // Update toggle states
+            const animToggle = document.getElementById('animations-toggle');
+            const feedToggle = document.getElementById('feed-filter-toggle');
+            const notifToggle = document.getElementById('notifications-toggle');
+            
+            if (animToggle) animToggle.checked = appSettings.animationsEnabled;
+            if (feedToggle) feedToggle.checked = appSettings.feedFilterEnabled;
+            if (notifToggle) notifToggle.checked = appSettings.notificationsEnabled;
+        }
+
+        // Toggle animations
+        function toggleAnimations(enabled) {
+            appSettings.animationsEnabled = enabled;
+            saveSettings();
+            
+            if (!enabled) {
+                // Stop all animations
+                document.querySelectorAll('[class*="animate"]').forEach(el => {
+                    el.style.animation = 'none';
+                });
+                console.log('🔇 Animations disabled');
+            } else {
+                console.log('✨ Animations enabled');
+                // Reload page to re-enable animations
+                setTimeout(() => window.location.reload(), 500);
+            }
+            
+            showToast(enabled ? 'Animations enabled' : 'Animations disabled', 'info');
+        }
+
+        // Toggle feed filter
+        function toggleFeedFilter(enabled) {
+            appSettings.feedFilterEnabled = enabled;
+            saveSettings();
+            
+            console.log(enabled ? '🎯 Feed filter: Only followed users' : '🌍 Feed filter: All users');
+            showToast(enabled ? 'Feed shows only followed users' : 'Feed shows all users', 'info');
+            
+            // Refresh social feed if it's active
+            const socialFeed = document.getElementById('social-feed-screen');
+            if (socialFeed && !socialFeed.classList.contains('screen-inactive')) {
+                filterSocialFeedByFollowing();
+            }
+        }
+
+        // Toggle notifications
+        function toggleNotifications(enabled) {
+            appSettings.notificationsEnabled = enabled;
+            saveSettings();
+            
+            console.log(enabled ? '🔔 Notifications enabled' : '🔕 Notifications disabled');
+            showToast(enabled ? 'Notifications enabled' : 'Notifications disabled', 'info');
+        }
+
+        // Add a notification
+        function addNotification(type, title, message, timestamp = Date.now()) {
+            if (!appSettings.notificationsEnabled) return;
+            
+            const notification = {
+                id: 'notif_' + timestamp + '_' + Math.random().toString(36).substr(2, 9),
+                type, // 'prediction', 'comment', 'follow', 'win', 'achievement'
+                title,
+                message,
+                timestamp,
+                read: false
+            };
+            
+            notifications.unshift(notification);
+            
+            // Save to localStorage
+            localStorage.setItem('predora_notifications', JSON.stringify(notifications));
+            
+            // Update badge
+            updateNotificationBadge();
+            
+            console.log('🔔 New notification:', title);
+        }
+
+        // Load notifications
+        function loadNotifications() {
+            const stored = localStorage.getItem('predora_notifications');
+            if (stored) {
+                try {
+                    notifications = JSON.parse(stored);
+                    updateNotificationBadge();
+                    renderNotifications();
+                } catch (e) {
+                    console.error('Error loading notifications:', e);
+                }
+            }
+        }
+
+        // Update notification badge
+        function updateNotificationBadge() {
+            const unreadCount = notifications.filter(n => !n.read).length;
+            const badge = document.getElementById('notification-badge');
+            const bell = document.getElementById('notification-bell');
+            
+            if (badge) {
+                if (unreadCount > 0) {
+                    badge.classList.remove('hidden');
+                    badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+            
+            // Show notification bell when logged in
+            if (bell && window.userProfile) {
+                bell.classList.remove('hidden');
+            }
+        }
+
+        // Render notifications
+        function renderNotifications() {
+            const container = document.getElementById('notifications-container');
+            if (!container) return;
+            
+            if (notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="ui-panel p-8 text-center">
+                        <svg class="w-16 h-16 text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        <p class="text-gray-400">No notifications yet</p>
+                        <p class="text-sm text-gray-500 mt-2">You'll see activity updates here</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const icons = {
+                prediction: '📈',
+                comment: '💬',
+                follow: '👤',
+                win: '🎉',
+                achievement: '🏆'
+            };
+            
+            container.innerHTML = notifications.map(notif => {
+                const timeAgo = getTimeAgo(notif.timestamp);
+                const icon = icons[notif.type] || '🔔';
+                
+                return `
+                    <div class="ui-panel p-4 hover:bg-white/5 transition-all ${notif.read ? 'opacity-60' : ''}" onclick="markNotificationRead('${notif.id}')">
+                        <div class="flex items-start gap-3">
+                            <div class="text-3xl">${icon}</div>
+                            <div class="flex-1">
+                                <div class="flex items-start justify-between">
+                                    <h4 class="font-bold text-white">${notif.title}</h4>
+                                    ${!notif.read ? '<span class="w-2 h-2 bg-sky-400 rounded-full"></span>' : ''}
+                                </div>
+                                <p class="text-sm text-gray-300 mt-1">${notif.message}</p>
+                                <p class="text-xs text-gray-500 mt-2">${timeAgo}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Mark notification as read
+        function markNotificationRead(notificationId) {
+            const notif = notifications.find(n => n.id === notificationId);
+            if (notif) {
+                notif.read = true;
+                localStorage.setItem('predora_notifications', JSON.stringify(notifications));
+                updateNotificationBadge();
+                renderNotifications();
+            }
+        }
+
+        // Clear all notifications
+        function clearAllNotifications() {
+            if (confirm('Clear all notifications?')) {
+                notifications = [];
+                localStorage.removeItem('predora_notifications');
+                updateNotificationBadge();
+                renderNotifications();
+                showToast('All notifications cleared', 'info');
+            }
+        }
+
+        // Get time ago string
+        function getTimeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+            return new Date(timestamp).toLocaleDateString();
+        }
+
+        // Filter social feed by following
+        function filterSocialFeedByFollowing() {
+            // This will be called when feed filter is enabled
+            // The existing feed render logic should respect appSettings.feedFilterEnabled
+            console.log('Filtering feed by followed users...');
+        }
+
+        // Initialize settings and notifications
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                loadSettings();
+                loadNotifications();
+                
+                // Show notification bell when user is logged in
+                setTimeout(updateNotificationBadge, 1000);
+                
+                console.log('⚙️ Settings system initialized');
+                console.log('🔔 Notifications system initialized');
+            }, 500);
+        });
+
+        // Demo: Add sample notifications after delay
+        setTimeout(() => {
+            if (notifications.length === 0 && window.userProfile) {
+                addNotification('prediction', 'Market Prediction', 'Your prediction on "BTC $100k" is trending!', Date.now() - 300000);
+                addNotification('follow', 'New Follower', 'CryptoKing started following you', Date.now() - 600000);
+                addNotification('win', 'You Won!', 'Your YES prediction on "ETH Merge" won $50!', Date.now() - 900000);
+            }
+        }, 5000);
 
     </script>
     </div>
