@@ -5528,6 +5528,8 @@
                     comments.push({ ...doc.data(), commentId: doc.id });
                 });
                 
+                console.log(`💬 Loaded ${comments.length} comments for post ${postId}. Current user: ${currentUserId}`);
+                
                 const getRelativeTime = (timestamp) => {
                     if (!timestamp) return 'now';
                     const now = Date.now();
@@ -5542,12 +5544,14 @@
                 let html = '';
                 comments.forEach(c => {
                     const isRootComment = !c.parentCommentId;
-                    const editBtn = c.userId === currentUserId ? `<button onclick="editComment('${postId}', '${c.commentId}', '${c.userId}', '${c.content.replace(/'/g, "\\'")}')" class="text-yellow-400 hover:text-yellow-300 text-xs ml-2">Edit</button>` : '';
-                    const delBtn = c.userId === currentUserId ? `<button onclick="deleteComment('${postId}', '${c.commentId}', '${c.userId}')" class="text-red-400 hover:text-red-300 text-xs ml-2">×</button>` : '';
+                    const isOwner = c.userId === currentUserId;
+                    console.log(`Comment by ${c.displayName}: userId=${c.userId}, currentUserId=${currentUserId}, isOwner=${isOwner}`);
+                    const editBtn = isOwner ? `<button onclick="editComment('${postId}', '${c.commentId}', '${c.userId}', '${c.content.replace(/'/g, "\\'")}')" class="text-yellow-400 hover:text-yellow-300 text-xs ml-2 font-semibold">✏️ Edit</button>` : '';
+                    const delBtn = isOwner ? `<button onclick="deleteComment('${postId}', '${c.commentId}', '${c.userId}')" class="text-red-400 hover:text-red-300 text-xs ml-2 font-semibold">🗑️ Delete</button>` : '';
                     const replyBtn = `<button onclick="replyToComment('${postId}', '${c.commentId}', '${c.displayName}')" class="text-sky-400 hover:text-sky-300 text-xs ml-2">Reply</button>`;
                     const timeStr = getRelativeTime(c.timestamp);
                     const indent = c.parentCommentId ? 'ml-8 pl-3 border-l border-gray-600' : '';
-                    html += `<div class="flex gap-2 text-sm ${indent}"><img src="${c.avatarUrl || LOGO_URL}" class="w-6 h-6 rounded-full flex-shrink-0"><div class="flex-1"><p class="font-semibold text-white text-xs">${c.displayName}<span class="text-gray-500 text-xs ml-1">· ${timeStr}</span></p><p class="text-gray-300">${c.content}</p><div class="flex gap-1">${replyBtn}${editBtn}${delBtn}</div></div></div>`;
+                    html += `<div class="flex gap-2 text-sm ${indent}"><img src="${c.avatarUrl || LOGO_URL}" class="w-6 h-6 rounded-full flex-shrink-0"><div class="flex-1"><p class="font-semibold text-white text-xs">${c.displayName}<span class="text-gray-500 text-xs ml-1">· ${timeStr}</span></p><p class="text-gray-300">${c.content}</p><div class="flex gap-1 mt-1">${replyBtn}${editBtn}${delBtn}</div></div></div>`;
                     if (c.parentCommentId) {
                         const parentComment = comments.find(cm => cm.commentId === c.parentCommentId);
                         if (parentComment && !html.includes(`reply-to-${c.parentCommentId}`)) {
@@ -5556,7 +5560,10 @@
                     }
                 });
                 listEl.innerHTML = html;
-            } catch (e) { listEl.innerHTML = '<p class="text-red-400 text-xs text-center">Error loading</p>'; }
+            } catch (e) { 
+                console.error('❌ Error loading comments:', e);
+                listEl.innerHTML = '<p class="text-red-400 text-xs text-center">Error loading comments</p>'; 
+            }
         };
         
         window.replyToComment = (postId, commentId, displayName) => {
