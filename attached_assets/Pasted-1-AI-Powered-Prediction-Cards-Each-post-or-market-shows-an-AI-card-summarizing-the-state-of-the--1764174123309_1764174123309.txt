@@ -1,0 +1,55 @@
+1. AI-Powered Prediction Cards
+	•	Each post or market shows an AI card summarizing the state of the market:
+	•	“Most users predict Yes (62%), trend rising.”
+	•	“This market’s volatility just spiked. Top predictor: @Alice.”
+	•	Cards update dynamically in the feed—users see the market breathing.
+	•	Optional: “What would AI do?” hint cards for casual users.
+
+⸻
+
+2. Activity Nudges
+	•	Feed gives contextual, time-sensitive nudges:
+	•	“3 friends just joined this market—your opinion could tip the balance.”
+	•	“This prediction is trending—join in before it closes.”
+	•	Subtle prompts increase engagement without extra sections.
+
+⸻
+
+3. Market Pulse
+	•	Each market post has a live pulse bar or indicator:
+	•	Shows number of active predictions in real time.
+	•	Color or speed changes to convey activity intensity.
+	•	Feels alive, gives users a sense of urgency.
+
+⸻
+
+4. AI-Generated Insights
+	•	Inline insights or highlights appear in posts:
+	•	“The odds shifted +5% in the last 10 minutes.”
+	•	“Most predictions for this outcome came from top predictors.”
+	•	Helps users quickly assess what’s happening without leaving the feed.
+
+⸻
+
+5. Streaks & Predictive Feedback
+	•	AI suggests next actions based on user behavior:
+	•	“You’ve predicted 3 correct Yes answers in a row—maybe try this new market?”
+	•	Cards can pop up or gently slide in to suggest markets the user might like.
+
+⸻
+
+6. Event-Triggered Cards
+	•	When big events happen in the markets (odds shift drastically, a popular post gets traction), dynamic cards appear in the feed:
+	•	“Breaking: Market X just flipped to No.”
+	•	Can include micro-animation or highlight without breaking the flow.
+
+⸻
+
+7. Feed as a Story
+	•	Each user action (predicting, commenting, winning streaks) generates micro-story cards in the feed.
+	•	Example: “Your prediction in Market Y was right! +5 points.”
+	•	Creates a narrative feeling—users feel the feed reacting to them.
+
+⸻
+
+💡 Key UX Principle Here: Make the feed reactive and personalized. Every card, nudge, or insight should respond to user actions or global market changes. That’s how the feed feels alive without adding visual noise.

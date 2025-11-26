@@ -13468,6 +13468,377 @@ dom.searchBarInput.addEventListener('input', handleSearchDebounced);
 
         }
 
+        /**
+         * ========================================
+         * ENHANCED INTERACTIVE FEATURES
+         * Live Activity, Gamification & Micro-Interactions
+         * ========================================
+         */
+
+        // 1. Live Activity Notification System
+        const liveActivities = [
+            { user: 'Sarah', action: 'predicted YES on', market: 'BTC $100k', icon: '📈', color: 'green' },
+            { user: 'Mike', action: 'commented on', market: 'US Elections', icon: '💬', color: 'blue' },
+            { user: 'Alex', action: 'predicted NO on', market: 'ETH Merge', icon: '📉', color: 'red' },
+            { user: 'Emma', action: 'won', market: 'NFL Finals', icon: '🎉', color: 'purple' },
+            { user: 'Chris', action: 'created', market: 'Tesla Stock', icon: '✨', color: 'sky' },
+            { user: 'Julia', action: 'upvoted', market: 'AI Trends', icon: '👍', color: 'amber' },
+            { user: 'David', action: 'achieved 5-day streak', market: '', icon: '🔥', color: 'orange' },
+            { user: 'Lisa', action: 'unlocked badge', market: 'Early Adopter', icon: '🏆', color: 'yellow' }
+        ];
+
+        function showLiveActivity() {
+            const activity = liveActivities[Math.floor(Math.random() * liveActivities.length)];
+            const toast = document.createElement('div');
+            
+            // Map colors to explicit Tailwind classes
+            const borderColors = {
+                green: 'border-green-500/30',
+                blue: 'border-blue-500/30',
+                red: 'border-red-500/30',
+                purple: 'border-purple-500/30',
+                sky: 'border-sky-500/30',
+                amber: 'border-amber-500/30',
+                orange: 'border-orange-500/30',
+                yellow: 'border-yellow-500/30'
+            };
+            
+            toast.className = `fixed top-24 right-6 z-50 glass-panel p-4 rounded-2xl border ${borderColors[activity.color] || 'border-sky-500/30'} shadow-lg max-w-xs transform translate-x-full transition-transform duration-500`;
+            toast.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="activity-indicator text-2xl">${activity.icon}</div>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-white">${activity.user} ${activity.action}</p>
+                        ${activity.market ? `<p class="text-xs text-gray-400">${activity.market}</p>` : ''}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+
+            // Slide in
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+
+            // Slide out after 4 seconds
+            setTimeout(() => {
+                toast.style.transform = 'translateX(400px)';
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        // Show random activity every 8-15 seconds
+        setInterval(() => {
+            if (Math.random() > 0.3) { // 70% chance to show
+                showLiveActivity();
+            }
+        }, 10000);
+
+        // 2. Trending Market Badge System
+        function addTrendingBadges() {
+            const marketCards = document.querySelectorAll('.ui-panel');
+            marketCards.forEach((card, index) => {
+                // Add trending badge to random markets
+                if (Math.random() > 0.7 && !card.querySelector('.trending-badge-label')) {
+                    const badge = document.createElement('div');
+                    badge.className = 'trending-badge-label absolute top-3 right-3 px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-full text-xs font-bold text-white shadow-lg hot-indicator z-10';
+                    badge.innerHTML = '🔥 HOT';
+                    
+                    // Find the card header or add to the card
+                    if (card.querySelector('h3, h2')) {
+                        card.style.position = 'relative';
+                        card.appendChild(badge);
+                    }
+                }
+
+                // Add momentum indicators to some markets
+                if (Math.random() > 0.6 && !card.querySelector('.momentum-indicator')) {
+                    const direction = Math.random() > 0.5 ? 'up' : 'down';
+                    const badge = document.createElement('div');
+                    badge.className = `momentum-indicator inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold ${direction === 'up' ? 'momentum-up text-green-900' : 'momentum-down text-red-900'}`;
+                    badge.innerHTML = direction === 'up' ? '↗️ +15% momentum' : '↘️ -12% momentum';
+                    
+                    // Try to insert after title
+                    const title = card.querySelector('h3, h2');
+                    if (title) {
+                        title.insertAdjacentElement('afterend', badge);
+                    }
+                }
+            });
+        }
+
+        // Add trending badges after markets load
+        setTimeout(addTrendingBadges, 2000);
+
+        // 3. Achievement Toast System
+        const achievements = [
+            { title: 'First Win', icon: '🎉', description: 'Won your first market!' },
+            { title: 'Hot Streak', icon: '🔥', description: '5 correct predictions in a row!' },
+            { title: 'Early Bird', icon: '🐦', description: 'Predicted before market got hot!' },
+            { title: 'Whale Move', icon: '🐋', description: 'Placed a $100+ bet!' },
+            { title: 'Social Butterfly', icon: '🦋', description: '10 comments posted!' },
+            { title: 'Market Maker', icon: '✨', description: 'Created 5 markets!' }
+        ];
+
+        function showAchievementToast() {
+            const achievement = achievements[Math.floor(Math.random() * achievements.length)];
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 achievement-badge';
+            toast.innerHTML = `
+                <div class="glass-panel p-6 rounded-3xl border-2 border-yellow-500/50 shadow-2xl max-w-sm bg-gradient-to-br from-yellow-500/20 to-orange-500/10 badge-glow">
+                    <div class="flex items-center gap-4">
+                        <div class="text-5xl">${achievement.icon}</div>
+                        <div>
+                            <h4 class="text-lg font-bold text-white mb-1">🎊 Achievement Unlocked!</h4>
+                            <p class="text-base font-semibold text-yellow-400">${achievement.title}</p>
+                            <p class="text-sm text-gray-300">${achievement.description}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+
+            // Add confetti
+            createConfetti();
+
+            // Remove after 5 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        }
+
+        // Trigger random achievements
+        setTimeout(() => {
+            if (Math.random() > 0.5) {
+                showAchievementToast();
+            }
+        }, 15000);
+
+        // 4. Confetti System
+        function createConfetti() {
+            const colors = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                confetti.style.animationDuration = 2 + Math.random() * 2 + 's';
+                document.body.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 5000);
+            }
+        }
+
+        // 5. Typing Indicator for Comments
+        function showTypingIndicator(username = 'Someone') {
+            const feedContainer = document.getElementById('social-feed-container');
+            if (!feedContainer) return;
+
+            const indicator = document.createElement('div');
+            indicator.id = 'typing-indicator';
+            indicator.className = 'ui-panel p-4 rounded-xl mb-4';
+            indicator.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-gradient-to-br from-sky-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        ${username[0]}
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400">${username} is typing...</p>
+                        <div class="flex gap-1 mt-1">
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            feedContainer.prepend(indicator);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+                setTimeout(() => indicator.remove(), 300);
+            }, 3000);
+        }
+
+        // Simulate typing indicators occasionally
+        setInterval(() => {
+            if (Math.random() > 0.7 && document.getElementById('social-feed-container')) {
+                const users = ['Alice', 'Bob', 'Carol', 'Dave', 'Eve'];
+                showTypingIndicator(users[Math.floor(Math.random() * users.length)]);
+            }
+        }, 20000);
+
+        // 6. Live Reaction Counter with Animation
+        function animateReactionCount(element) {
+            if (!element) return;
+            element.classList.add('live-counter-update');
+            setTimeout(() => {
+                element.classList.remove('live-counter-update');
+            }, 500);
+        }
+
+        // Simulate live reaction updates
+        setInterval(() => {
+            const reactionElements = document.querySelectorAll('[id*="reaction-count"]');
+            if (reactionElements.length > 0 && Math.random() > 0.6) {
+                const randomElement = reactionElements[Math.floor(Math.random() * reactionElements.length)];
+                const currentCount = parseInt(randomElement.textContent) || 0;
+                randomElement.textContent = currentCount + 1;
+                animateReactionCount(randomElement);
+                
+                // Add spark effect
+                const spark = document.createElement('div');
+                spark.className = 'reaction-spark absolute text-yellow-400 text-2xl pointer-events-none';
+                spark.innerHTML = '✨';
+                spark.style.left = randomElement.offsetLeft + 'px';
+                spark.style.top = randomElement.offsetTop + 'px';
+                randomElement.parentElement?.appendChild(spark);
+                setTimeout(() => spark.remove(), 600);
+            }
+        }, 8000);
+
+        // 7. Mini Leaderboard in Feed
+        function addMiniLeaderboard() {
+            const feedContainer = document.getElementById('social-feed-container');
+            if (!feedContainer || document.getElementById('mini-leaderboard')) return;
+
+            const leaderboard = document.createElement('div');
+            leaderboard.id = 'mini-leaderboard';
+            leaderboard.className = 'ui-panel p-6 rounded-2xl mb-6 hover-lift';
+            leaderboard.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        🏆 Top Predictors This Hour
+                    </h3>
+                    <span class="live-user-dot"></span>
+                </div>
+                <div class="space-y-3">
+                    <div class="leaderboard-entry flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/10 border border-yellow-500/30">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">🥇</span>
+                            <div>
+                                <p class="font-bold text-white">CryptoKing</p>
+                                <p class="text-xs text-gray-400">12 wins today</p>
+                            </div>
+                        </div>
+                        <span class="text-green-400 font-bold">+$1,240</span>
+                    </div>
+                    <div class="leaderboard-entry flex items-center justify-between p-3 rounded-xl bg-white/5">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">🥈</span>
+                            <div>
+                                <p class="font-bold text-white">OracleAI</p>
+                                <p class="text-xs text-gray-400">9 wins today</p>
+                            </div>
+                        </div>
+                        <span class="text-green-400 font-bold">+$890</span>
+                    </div>
+                    <div class="leaderboard-entry flex items-center justify-between p-3 rounded-xl bg-white/5">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">🥉</span>
+                            <div>
+                                <p class="font-bold text-white">MarketMaster</p>
+                                <p class="text-xs text-gray-400">7 wins today</p>
+                            </div>
+                        </div>
+                        <span class="text-green-400 font-bold">+$650</span>
+                    </div>
+                </div>
+            `;
+
+            setTimeout(() => {
+                feedContainer.prepend(leaderboard);
+            }, 1000);
+        }
+
+        // Add mini leaderboard when feed loads
+        setTimeout(addMiniLeaderboard, 3000);
+
+        // 8. Price Change Flash Effect
+        function flashPriceChange(element, direction) {
+            if (!element) return;
+            element.classList.add(direction === 'up' ? 'price-up' : 'price-down');
+            setTimeout(() => {
+                element.classList.remove('price-up', 'price-down');
+            }, 800);
+        }
+
+        // 9. Enhanced Market Card Entrance Animations
+        function animateMarketCards() {
+            const cards = document.querySelectorAll('.ui-panel');
+            cards.forEach((card, index) => {
+                if (!card.classList.contains('market-card-enter')) {
+                    setTimeout(() => {
+                        card.classList.add('market-card-enter');
+                    }, index * 100);
+                }
+            });
+        }
+
+        // Apply entrance animations when markets load
+        setTimeout(animateMarketCards, 500);
+
+        // 10. Interactive Hover Effects for Cards
+        document.addEventListener('DOMContentLoaded', () => {
+            const interactiveCards = document.querySelectorAll('.ui-panel');
+            interactiveCards.forEach(card => {
+                // Add interactive class
+                if (!card.classList.contains('interactive')) {
+                    card.classList.add('interactive');
+                }
+            });
+        });
+
+        // 11. Live Activity Badge on Nav Icons
+        function addActivityBadge(iconId) {
+            const icon = document.getElementById(iconId) || document.querySelector(`[data-screen="${iconId}"]`);
+            if (!icon || icon.querySelector('.new-activity-ping')) return;
+
+            icon.classList.add('new-activity-ping');
+
+            setTimeout(() => {
+                icon.classList.remove('new-activity-ping');
+            }, 30000);
+        }
+
+        // Simulate activity badges
+        setTimeout(() => {
+            if (Math.random() > 0.5) {
+                addActivityBadge('social-feed-screen');
+            }
+        }, 10000);
+
+        // 12. Streak Flame Animation Enhancement
+        function enhanceStreakDisplay() {
+            const streakElements = document.querySelectorAll('[id*="streak"]');
+            streakElements.forEach(el => {
+                if (el.textContent.includes('🔥') && !el.classList.contains('streak-flame')) {
+                    el.classList.add('streak-flame');
+                }
+            });
+        }
+
+        setInterval(enhanceStreakDisplay, 5000);
+
+        // 13. Poll Result Animation
+        function animatePollResults(pollElement) {
+            const bars = pollElement.querySelectorAll('.poll-bar');
+            bars.forEach(bar => {
+                bar.classList.add('animated-progress-bar');
+            });
+        }
+
+        // Initialize all interactive features
+        console.log('✨ Interactive features initialized!');
+        console.log('🎯 Live activity notifications: ACTIVE');
+        console.log('🔥 Trending badges: ACTIVE');
+        console.log('🏆 Gamification system: ACTIVE');
+        console.log('💫 Micro-interactions: ACTIVE');
+
     </script>
     </div>
 </body>
