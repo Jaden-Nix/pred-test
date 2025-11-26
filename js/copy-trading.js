@@ -104,7 +104,14 @@ async function getTopTraders() {
         }
 
         // Query real users from Firestore leaderboard collection
-        const APP_ID = window.APP_ID || 'default';
+        const APP_ID = window.APP_ID;
+        if (!APP_ID || APP_ID === 'default') {
+            console.error('⚠️ APP_ID not properly initialized. Copy trading may not work correctly.');
+            if (window.showToast) {
+                window.showToast('Copy trading data unavailable - using demo data', 'warning');
+            }
+            return getFallbackTraders();
+        }
         const usersRef = window.db.collection(`artifacts/${APP_ID}/public/data/leaderboard`);
         
         // Get all users from leaderboard sorted by XP

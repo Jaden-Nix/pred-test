@@ -6244,15 +6244,16 @@
                     const isOwner = c.userId === currentUserId;
                     const escapedDisplayName = escapeHtml(c.displayName);
                     const escapedContent = escapeHtml(c.content);
-                    const replyBtn = `<button class="text-sky-400 hover:text-sky-300 text-xs reply-btn" data-post-id="${postId}" data-comment-id="${c.commentId}" data-display-name="${escapeHtml(c.displayName)}">Reply</button>`;
-                    const menuId = `comment-menu-${c.commentId}`;
-                    const menuBtn = isOwner ? `<div class="relative"><button class="text-gray-400 hover:text-gray-200 text-xs px-2 comment-menu-btn transition-colors" data-menu-id="${menuId}" title="Options">•••</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-10 min-w-32"><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white edit-comment-btn transition-colors border-b border-gray-700" data-post-id="${postId}" data-comment-id="${c.commentId}" data-content="${escapeHtml(c.content)}">Edit</button><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-red-400 delete-comment-btn transition-colors" data-post-id="${postId}" data-comment-id="${c.commentId}">Delete</button></div></div>` : '';
+                    const safeAvatarUrl = (c.avatarUrl || LOGO_URL).startsWith('http') ? c.avatarUrl || LOGO_URL : LOGO_URL;
+                    const escapedCommentId = escapeHtml(c.commentId);
+                    const replyBtn = `<button class="text-sky-400 hover:text-sky-300 text-xs reply-btn" data-post-id="${postId}" data-comment-id="${escapedCommentId}" data-display-name="${escapeHtml(c.displayName)}">Reply</button>`;
+                    const menuId = `comment-menu-${escapedCommentId}`;
+                    const menuBtn = isOwner ? `<div class="relative"><button class="text-gray-400 hover:text-gray-200 text-xs px-2 comment-menu-btn transition-colors" data-menu-id="${menuId}" title="Options">•••</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-10 min-w-32"><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white edit-comment-btn transition-colors border-b border-gray-700" data-post-id="${postId}" data-comment-id="${escapedCommentId}" data-content="">Edit</button><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-red-400 delete-comment-btn transition-colors" data-post-id="${postId}" data-comment-id="${escapedCommentId}">Delete</button></div></div>` : '';
                     const timeStr = getRelativeTime(c.timestamp);
                     
-                    // Build comment article with proper structure
-                    let html = `<article class="comment ${isReply ? 'comment--reply' : ''}" data-comment-id="${c.commentId}">`;
-                    html += `<div class="flex gap-2 text-sm mb-3 ${isReply ? 'ml-8 pl-3 border-l-2 border-sky-500/30' : ''}" data-user-id="${c.userId}">`;
-                    html += `<img src="${c.avatarUrl || LOGO_URL}" class="w-6 h-6 rounded-full flex-shrink-0">`;
+                    // Simple threaded structure with proper escaping
+                    let html = `<div class="flex gap-2 text-sm mb-3 ${isReply ? 'ml-8 pl-3 border-l-2 border-sky-500/30' : ''}" data-comment-id="${escapedCommentId}" data-user-id="${escapeHtml(c.userId)}">`;
+                    html += `<img src="${safeAvatarUrl}" class="w-6 h-6 rounded-full flex-shrink-0" alt="Avatar">`;
                     html += '<div class="flex-1">';
                     html += '<div class="flex items-start justify-between">';
                     html += `<div><p class="font-semibold text-white text-xs">${escapedDisplayName}<span class="text-gray-500 text-xs ml-1">· ${timeStr}</span></p></div>`;
@@ -6260,19 +6261,18 @@
                     html += '</div>';
                     html += `<p class="text-gray-300">${escapedContent}</p>`;
                     html += `<div class="flex gap-1 mt-1">${replyBtn}</div>`;
-                    html += '</div></div>';
                     
-                    // Render replies in a dedicated container (sibling to comment body)
+                    // Render replies with indentation
                     const replies = repliesMap[c.commentId] || [];
                     if (replies.length > 0) {
-                        html += '<div class="comment__replies">';
+                        html += '<div class="mt-2">';
                         replies.forEach(reply => {
                             html += renderComment(reply, true);
                         });
                         html += '</div>';
                     }
                     
-                    html += '</article>';
+                    html += '</div></div>';
                     return html;
                 };
                 
