@@ -954,6 +954,20 @@ async function createDailyMarkets() {
     console.log("ORACLE: Creating daily markets with ADVANCED AI analysis...");
     
     try {
+        // MAX MARKET LIMIT CHECK - prevent spam
+        const MAX_ACTIVE_MARKETS = 50; // Maximum active markets allowed
+        const activeMarketsSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/standard_markets`)
+            .where('isResolved', '==', false)
+            .get();
+        
+        if (activeMarketsSnapshot.size >= MAX_ACTIVE_MARKETS) {
+            console.log(`⏸️ ORACLE PAUSED: Already have ${activeMarketsSnapshot.size} active markets (max: ${MAX_ACTIVE_MARKETS})`);
+            console.log(`   Skipping market creation to prevent spam. Markets will auto-create when some resolve.`);
+            return; // Exit early - don't create more markets
+        }
+        
+        console.log(`📊 Active markets: ${activeMarketsSnapshot.size}/${MAX_ACTIVE_MARKETS} - Creating new markets...`);
+        
         // Get advanced market data with sentiment and technical analysis
         const marketData = await getAdvancedMarketData();
         console.log(`📊 Market Analysis:`);
@@ -1118,6 +1132,20 @@ async function autoGenerateQuickPlays() {
     console.log("ORACLE: Generating quick play markets with AI...");
     
     try {
+        // MAX MARKET LIMIT CHECK - prevent spam
+        const MAX_ACTIVE_QUICK_PLAYS = 30; // Maximum active quick play markets allowed
+        const activeQuickPlaysSnapshot = await db.collection(`artifacts/${APP_ID}/public/data/quick_play_markets`)
+            .where('isResolved', '==', false)
+            .get();
+        
+        if (activeQuickPlaysSnapshot.size >= MAX_ACTIVE_QUICK_PLAYS) {
+            console.log(`⏸️ QUICK PLAY ORACLE PAUSED: Already have ${activeQuickPlaysSnapshot.size} active quick plays (max: ${MAX_ACTIVE_QUICK_PLAYS})`);
+            console.log(`   Skipping quick play creation to prevent spam. Markets will auto-create when some resolve.`);
+            return; // Exit early - don't create more markets
+        }
+        
+        console.log(`⚡ Active quick plays: ${activeQuickPlaysSnapshot.size}/${MAX_ACTIVE_QUICK_PLAYS} - Creating new quick plays...`);
+        
         // Get advanced market data for quick plays
         const qpMarketData = await getAdvancedMarketData();
         
