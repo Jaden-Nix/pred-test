@@ -8351,8 +8351,8 @@
             cardEl.dataset.ismock = market.isMock || false; 
 
             // Render the card HTML
-            const yesPercent = market.yesPercent || (market.yesPool && market.noPool ? (market.yesPool / (market.yesPool + market.noPool) * 100) : 50);
-            const noPercent = market.noPercent || (market.yesPool && market.noPool ? (market.noPool / (market.yesPool + market.noPool) * 100) : 50);
+            const yesPercent = market.yesPercent ?? (market.yesPool && market.noPool ? (market.yesPool / (market.yesPool + market.noPool) * 100) : 50);
+            const noPercent = market.noPercent ?? (market.yesPool && market.noPool ? (market.noPool / (market.yesPool + market.noPool) * 100) : 50);
             
             cardEl.innerHTML = `
                 <div class="flex-grow flex flex-col justify-center py-4">

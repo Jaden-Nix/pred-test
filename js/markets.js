@@ -50,8 +50,8 @@ function renderMarkets() {
 
 // Create market card HTML
 function createMarketCard(market) {
-    const yesPercent = market.yesPercent || 50;
-    const noPercent = market.noPercent || 50;
+    const yesPercent = market.yesPercent ?? 50;
+    const noPercent = market.noPercent ?? 50;
     const unreadCount = marketNotifications[market.id] || 0;
     const notificationBadge = unreadCount > 0 
         ? `<span class="market-notification-badge">${unreadCount}</span>` 

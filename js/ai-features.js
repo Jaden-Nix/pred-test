@@ -26,8 +26,8 @@ function getAIInsightCard(market) {
 // Generate AI insights for a market
 function generateAIInsights(market) {
     const insights = [];
-    const yesPercent = market.yesPercent || 50;
-    const noPercent = market.noPercent || 50;
+    const yesPercent = market.yesPercent ?? 50;
+    const noPercent = market.noPercent ?? 50;
     const volume = market.totalVolume || 0;
     
     // Trend analysis
