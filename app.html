@@ -5574,11 +5574,13 @@
                     } else if (e.target.classList.contains('reply-btn')) {
                         replyToComment(e.target.dataset.postId, e.target.dataset.commentId, e.target.dataset.displayName);
                     } else if (e.target.classList.contains('edit-comment-btn')) {
-                        const commentDiv = e.target.closest('[data-comment-user-id]');
-                        const userId = commentDiv?.dataset.commentUserId || e.target.closest('.flex')?.dataset.userId;
-                        editComment(e.target.dataset.postId, e.target.dataset.commentId, firebaseUid, e.target.dataset.content);
+                        const commentDiv = e.target.closest('[data-user-id]');
+                        const authorId = commentDiv?.dataset.userId;
+                        editComment(e.target.dataset.postId, e.target.dataset.commentId, authorId, e.target.dataset.content);
                     } else if (e.target.classList.contains('delete-comment-btn')) {
-                        deleteComment(e.target.dataset.postId, e.target.dataset.commentId, firebaseUid);
+                        const commentDiv = e.target.closest('[data-user-id]');
+                        const authorId = commentDiv?.dataset.userId;
+                        deleteComment(e.target.dataset.postId, e.target.dataset.commentId, authorId);
                     }
                 });
             } catch (e) { 
