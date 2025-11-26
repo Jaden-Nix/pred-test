@@ -9793,8 +9793,15 @@
 CRITICAL: TODAY IS ${todayFormatted}. Only find events that will happen in the FUTURE (December 2025 or later).
 
 Find a *single, specific, future-focused* event. DO NOT suggest events that have already occurred.
-Respond ONLY with a 1-2 sentence summary of this FUTURE event.
-Example: "The Bitcoin halving is scheduled for April 2028, which historically leads to price increases."`;
+
+IMPORTANT: Look for UNCERTAIN outcomes, not confirmed announcements. 
+❌ BAD: "Apple will release iPhone on Sept 22" (too obvious, already confirmed)
+✅ GOOD: "Bitcoin might break $100k by year end" (uncertain, speculative)
+✅ GOOD: "Super Bowl matchup predictions" (uncertain outcome)
+✅ GOOD: "Will Apple's new product outsell last year?" (uncertain metric)
+
+Respond ONLY with a 1-2 sentence summary of this UNCERTAIN FUTURE event.
+Example: "Analysts predict Bitcoin could reach $150k by Q2 2026 if institutional adoption continues."`;
 
                         // We call with 'tools' (for Search) and null for 'jsonSchema'
                         const ideaText = await callGemini(systemPrompt_1, prompt, searchTools, null);
@@ -9836,8 +9843,15 @@ Example: "The Bitcoin halving is scheduled for April 2028, which historically le
 
                         CRITICAL: TODAY IS ${todayFormatted}. The resolutionDate MUST be in the FUTURE (December 1, 2025 or later).
 
+                        CREATE SPECULATIVE, UNCERTAIN MARKETS - NOT OBVIOUS CONFIRMATIONS:
+                        ❌ BAD: "Will Apple release a phone on September 22?" (if they already announced it - too obvious!)
+                        ✅ GOOD: "Will the new iPhone outsell the iPhone 15 in Q4 2025?"
+                        ✅ GOOD: "Will Bitcoin reach $150,000 by March 31, 2026?"
+                        ✅ GOOD: "Will Kansas City win the Super Bowl?"
+
                         RULES:
-                        - 'title' must be a yes/no question about a FUTURE event
+                        - 'title' must be a YES/NO question about an UNCERTAIN outcome (not a confirmed announcement)
+                        - Make it SPECULATIVE - ask about prices, performance, winners, records, milestones (not confirmed schedules)
                         - 'insight' must be a brief summary of the context
                         - 'category' must match one from the allowed list (use new categories like Campus, Gaming, Creator Milestones for GenZ content)
                         - 'resolutionDate' MUST be in the future - December 2025 or later (Format: YYYY-MM-DD)
