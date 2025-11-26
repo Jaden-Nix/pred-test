@@ -5519,6 +5519,11 @@
             if (screenId === 'home-screen' && allStandardMarkets && currentCategoryFilter) {
                 filterMarkets(currentCategoryFilter);
             }
+            
+            // Render copy trading panel when navigating to copy trading screen
+            if (screenId === 'copy-trading-screen' && window.renderCopyTradingPanel) {
+                renderCopyTradingPanel();
+            }
 
             // Load data for the new screen
             if (currentUserId) {
@@ -8011,9 +8016,13 @@
                     // 8. TRANSACTION WRITE 4 & 5: Update user's profile and leaderboard
                     transaction.update(profileRef, {
                         [balanceFieldToUpdate]: increment(-amount),
-                        xp: increment(xpToAward)
+                        xp: increment(xpToAward),
+                        totalPredictions: increment(1) // Track total predictions for copy trading
                     });
-                    transaction.update(publicProfileRef, { xp: increment(xpToAward) });
+                    transaction.update(publicProfileRef, { 
+                        xp: increment(xpToAward),
+                        totalPredictions: increment(1) // Track total predictions for copy trading leaderboard
+                    });
                 });
                 // --- END OF TRANSACTION ---
 

@@ -105,16 +105,30 @@ async function getTopTraders() {
 
         // Query real users from Firestore sorted by win rate
         const usersRef = window.db.collection('users');
-        const snapshot = await usersRef
-            .where('totalPredictions', '>', 5) // Only users with at least 5 predictions
+        
+        // First, try to get users with 5+ predictions
+        let snapshot = await usersRef
+            .where('totalPredictions', '>', 5)
             .orderBy('totalPredictions', 'desc')
             .limit(20)
             .get();
 
+        // If no users with 5+ predictions, lower threshold to 1+
         if (snapshot.empty) {
-            console.log('No users found, using fallback');
+            console.log('⚠️ No users with 5+ predictions, trying 1+...');
+            snapshot = await usersRef
+                .where('totalPredictions', '>', 0)
+                .orderBy('totalPredictions', 'desc')
+                .limit(20)
+                .get();
+        }
+
+        if (snapshot.empty) {
+            console.log('⚠️ No users with predictions found, using fallback');
             return getFallbackTraders();
         }
+        
+        console.log(`📊 Found ${snapshot.size} users with predictions`);
 
         // Calculate win rates and sort
         const traders = [];
@@ -122,9 +136,11 @@ async function getTopTraders() {
             const data = doc.data();
             const totalWins = data.totalWins || 0;
             const totalLosses = data.totalLosses || 0;
-            const totalPredictions = totalWins + totalLosses;
+            const totalPredictions = data.totalPredictions || (totalWins + totalLosses);
             
-            if (totalPredictions >= 5) {
+            console.log(`👤 User ${data.displayName}: wins=${totalWins}, losses=${totalLosses}, total=${totalPredictions}`);
+            
+            if (totalPredictions >= 1) { // Lowered from 5 to 1
                 const winRate = totalPredictions > 0 ? Math.round((totalWins / totalPredictions) * 100) : 0;
                 
                 traders.push({
@@ -190,10 +206,16 @@ function getRandomAvatar() {
 
 // Render copy trading panel
 async function renderCopyTradingPanel() {
+    console.log('📊 Rendering copy trading panel...');
     const container = document.getElementById('copy-trading-container');
-    if (!container) return;
+    if (!container) {
+        console.warn('⚠️ Copy trading container not found!');
+        return;
+    }
     
+    console.log('🔍 Fetching top traders from Firebase...');
     const topTraders = await getTopTraders();
+    console.log('✅ Got traders:', topTraders.length, topTraders);
     
     container.innerHTML = `
         <div class="space-y-6">
