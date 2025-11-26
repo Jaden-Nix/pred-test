@@ -5838,21 +5838,17 @@
                             const imageHtml = post.imageUrl ? `<img data-lightbox-image class="w-full rounded-lg max-h-80 object-cover cursor-pointer hover:opacity-90 transition-opacity" src="${post.imageUrl.replace(/"/g, '&quot;')}">` : '';
                             let marketHtml = '';
                             if (post.attachedMarket) {
-                                // Check if user has staked OR if this is the post author's market with a stance
-                                const userHasStake = userStakesCache[post.attachedMarket.id?.toLowerCase()];
-                                const isAuthorWithStance = post.userId?.toLowerCase() === currentUserId?.toLowerCase() && post.attachedMarket.stance;
-                                const hasStake = userHasStake || isAuthorWithStance;
-                                const stakeLabel = hasStake ? `<span class="text-green-400 font-semibold">Skin in game</span>` : `<span class="text-gray-400">No stake</span>`;
+                                // Check if POST AUTHOR has a stance in the market they're posting about
+                                const authorHasStance = post.attachedMarket.stance; // Post author's stake/position
+                                const stakeLabel = authorHasStance ? `<span class="text-green-400 font-semibold">✅ Skin in game</span>` : `<span class="text-gray-400">❌ No stake</span>`;
                                 console.log('📊 Market Stake Check:', {
                                     marketId: post.attachedMarket.id,
                                     marketTitle: post.attachedMarket.title,
-                                    userStakesCache: userStakesCache[post.attachedMarket.id?.toLowerCase()],
+                                    postAuthor: post.displayName,
                                     postUserId: post.userId,
-                                    currentUserId: currentUserId,
-                                    isAuthorWithStance: isAuthorWithStance,
-                                    userHasStake: userHasStake,
-                                    hasStake: hasStake,
-                                    label: hasStake ? '✅ Skin in game' : '❌ No stake'
+                                    authorStance: post.attachedMarket.stance,
+                                    authorHasStance: authorHasStance,
+                                    label: authorHasStance ? '✅ Skin in game' : '❌ No stake'
                                 });
                                 marketHtml = `<div class="bg-sky-400/10 p-3 rounded border border-sky-400/30 text-sm cursor-pointer hover:bg-sky-400/20 transition-all" onclick="navigateToMarket('${post.attachedMarket.id}')"><p class="text-sky-300 font-medium">${post.attachedMarket.title}</p>${stakeLabel}</div>`;
                             }
@@ -6222,7 +6218,64 @@
             listEl.dataset.hasCommentHandler = 'true';
         };
         
+        // Reload comments without toggling visibility
+        window.reloadComments = async (postId) => {
+            const listEl = document.getElementById(`comments-list-${postId}`);
+            if (!listEl) return;
+            listEl.innerHTML = '<p class="text-gray-400 text-center text-sm">Loading...</p>';
+            try {
+                const { collection, query, orderBy, getDocs } = window.firebase.firestore;
+                const q = query(collection(db, 'artifacts', APP_ID, 'public', 'data', 'social_posts', postId, 'comments'), orderBy('timestamp', 'asc'));
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) { listEl.innerHTML = '<p class="text-gray-400 text-center text-sm">No comments yet</p>'; return; }
+                let comments = [];
+                snapshot.forEach(doc => {
+                    comments.push({ ...doc.data(), commentId: doc.id });
+                });
+                console.log(`💬 Loaded ${comments.length} comments for post ${postId}. Current user: ${currentUserId}`);
+                let html = '';
+                comments.forEach(comment => {
+                    const isOwner = comment.userId === currentUserId;
+                    console.log(`Comment by ${comment.displayName}: userId=${comment.userId}, currentUserId=${currentUserId}, isOwner=${isOwner}`);
+                    const menuHtml = isOwner ? `<div class="relative"><button onclick="window.toggleCommentMenu('comment-menu-${comment.commentId}')" class="text-gray-400 hover:text-white">⋯</button><div id="comment-menu-${comment.commentId}" class="hidden absolute right-0 top-6 bg-gray-800 border border-white/10 rounded shadow-xl z-50 min-w-32"><button onclick="window.editComment('${postId}', '${comment.commentId}', '${comment.userId}', '${comment.content.replace(/'/g, "\\'")}'); window.toggleCommentMenu('comment-menu-${comment.commentId}');" class="w-full text-left px-3 py-2 text-sm hover:bg-yellow-500/20 text-gray-300 hover:text-yellow-400">✏️ Edit</button><button onclick="window.deleteComment('${postId}', '${comment.commentId}', '${comment.userId}'); window.toggleCommentMenu('comment-menu-${comment.commentId}');" class="w-full text-left px-3 py-2 text-sm hover:bg-red-500/20 text-gray-300 hover:text-red-400">🗑️ Delete</button></div></div>` : '';
+                    html += `<div class="flex items-start gap-2 p-2 rounded bg-white/5"><img src="${comment.avatarUrl || LOGO_URL}" class="w-8 h-8 rounded-full"><div class="flex-1"><div class="flex items-center gap-2"><p class="text-sm font-semibold text-white">${comment.displayName}</p>${menuHtml}</div><p class="text-sm text-gray-300 mt-1">${comment.content}</p></div></div>`;
+                });
+                listEl.innerHTML = html;
+                
+                if (!listEl.dataset.hasCommentHandler) {
+                    const commentClickHandler = (e) => {
+                        if (e.target.closest('button[onclick^="window.toggleCommentMenu"]')) return;
+                        if (e.target.closest('button[onclick^="window.editComment"]')) return;
+                        if (e.target.closest('button[onclick^="window.deleteComment"]')) return;
+                        const menus = listEl.querySelectorAll('[id^="comment-menu-"]');
+                        menus.forEach(m => m.classList.add('hidden'));
+                    };
+                    
+                    listEl.addEventListener('click', commentClickHandler);
+                    listEl.dataset.hasCommentHandler = 'true';
+                }
+            } catch (error) {
+                console.error(`Error loading comments for post ${postId}:`, error);
+                listEl.innerHTML = '<p class="text-red-400 text-center text-sm">Error loading comments</p>';
+            }
+        };
+        
         window.toggleComments = async (postId) => {
+            if (!currentUserId) { showToast('Sign in to comment', 'info'); return; }
+            if (isGuestMode && !isDemoAccount) { showToast('Sign in to view comments', 'info'); return; }
+            const section = document.getElementById(`comments-section-${postId}`);
+            if (!section) return;
+            const wasHidden = section.classList.contains('hidden');
+            section.classList.toggle('hidden');
+            if (section.classList.contains('hidden')) return;
+            // If section was just opened, load comments
+            if (wasHidden) {
+                await window.reloadComments(postId);
+            }
+        };
+        
+        // Keep old implementation for reference
+        window.toggleCommentsOld = async (postId) => {
             if (!currentUserId) { showToast('Sign in to comment', 'info'); return; }
             if (isGuestMode && !isDemoAccount) { showToast('Sign in to view comments', 'info'); return; }
             const section = document.getElementById(`comments-section-${postId}`);
@@ -6408,7 +6461,8 @@
                 input.placeholder = 'Add a comment...';
                 delete input.dataset.replyTo;
                 if (btn) btn.disabled = false;
-                window.toggleComments(postId);
+                // Reload comments instead of toggling
+                await window.reloadComments(postId);
             } catch (e) { 
                 console.error('Comment error:', e.message || e);
                 showToast('Failed to add comment', 'error');
@@ -6429,7 +6483,7 @@
                 
                 if (!response.ok) throw new Error('Edit failed');
                 showToast('Comment updated!', 'success');
-                window.toggleComments(postId);
+                await window.reloadComments(postId);
             } catch (error) {
                 console.error('Edit error:', error);
                 showToast('Failed to edit comment', 'error');
@@ -6448,7 +6502,7 @@
                 
                 if (!response.ok) throw new Error('Delete failed');
                 showToast('Comment deleted', 'success');
-                window.toggleComments(postId);
+                await window.reloadComments(postId);
             } catch (e) { 
                 console.error('Delete error:', e);
                 showToast('Failed to delete comment', 'error'); 
