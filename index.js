@@ -1931,7 +1931,7 @@ app.post('/api/social/react', requireAuth, requireFirebase, async (req, res) => 
 });
 
 app.post('/api/social/comment', requireAuth, requireFirebase, async (req, res) => {
-    const { postId, userId, displayName, avatarUrl, content } = req.body;
+    const { postId, userId, displayName, avatarUrl, content, parentCommentId } = req.body;
     const storedUserId = userId || req.user.uid;
     
     try {
@@ -1972,13 +1972,19 @@ app.post('/api/social/comment', requireAuth, requireFirebase, async (req, res) =
         
         const commentRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts/${postId}/comments`);
         
-        await commentRef.add({
+        const commentData = {
             userId: storedUserId,
             displayName,
             avatarUrl,
             content,
             timestamp: new Date()
-        });
+        };
+        
+        if (parentCommentId) {
+            commentData.parentCommentId = parentCommentId;
+        }
+        
+        await commentRef.add(commentData);
         
         const postRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts`).doc(postId);
         const postSnap = await postRef.get();

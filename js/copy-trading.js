@@ -103,72 +103,66 @@ async function getTopTraders() {
             return getFallbackTraders();
         }
 
-        // Query real users from Firestore sorted by win rate
-        const usersRef = window.db.collection('users');
+        // Query real users from Firestore leaderboard collection
+        const APP_ID = window.APP_ID || 'default';
+        const usersRef = window.db.collection(`artifacts/${APP_ID}/public/data/leaderboard`);
         
-        // First, try to get users with 5+ predictions
+        // Get all users from leaderboard sorted by XP
         let snapshot = await usersRef
-            .where('totalPredictions', '>', 5)
-            .orderBy('totalPredictions', 'desc')
-            .limit(20)
+            .orderBy('xp', 'desc')
+            .limit(50)
             .get();
 
-        // If no users with 5+ predictions, lower threshold to 1+
         if (snapshot.empty) {
-            console.log('⚠️ No users with 5+ predictions, trying 1+...');
-            snapshot = await usersRef
-                .where('totalPredictions', '>', 0)
-                .orderBy('totalPredictions', 'desc')
-                .limit(20)
-                .get();
-        }
-
-        if (snapshot.empty) {
-            console.log('⚠️ No users with predictions found, using fallback');
+            console.log('⚠️ No users found in leaderboard, using fallback');
             return getFallbackTraders();
         }
         
-        console.log(`📊 Found ${snapshot.size} users with predictions`);
+        console.log(`📊 Found ${snapshot.size} users in leaderboard`);
 
-        // Calculate win rates and sort
+        // Calculate win rates and build traders list
         const traders = [];
         snapshot.forEach(doc => {
             const data = doc.data();
             const totalWins = data.totalWins || 0;
             const totalLosses = data.totalLosses || 0;
-            const totalPredictions = data.totalPredictions || (totalWins + totalLosses);
+            const totalPredictions = totalWins + totalLosses;
+            const xp = data.xp || 0;
             
-            console.log(`👤 User ${data.displayName}: wins=${totalWins}, losses=${totalLosses}, total=${totalPredictions}`);
+            console.log(`👤 User ${data.displayName}: XP=${xp}, wins=${totalWins}, losses=${totalLosses}, total=${totalPredictions}`);
             
-            if (totalPredictions >= 1) { // Lowered from 5 to 1
+            // Only include users with at least 1 prediction
+            if (totalPredictions >= 1) {
                 const winRate = totalPredictions > 0 ? Math.round((totalWins / totalPredictions) * 100) : 0;
                 
                 traders.push({
                     id: doc.id,
-                    name: data.displayName || data.email?.split('@')[0] || 'Anonymous',
-                    avatar: data.avatar || getRandomAvatar(),
+                    name: data.displayName || 'Anonymous Trader',
+                    avatar: data.avatarUrl || getRandomAvatar(),
                     stats: {
                         winRate: winRate,
                         totalWins: totalWins,
                         streak: data.streak || 0,
-                        totalProfit: data.totalProfit || 0
+                        totalProfit: data.totalProfit || 0,
+                        xp: xp
                     }
                 });
             }
         });
 
-        // Sort by win rate, then by total wins
+        // Sort by win rate first, then by XP
         traders.sort((a, b) => {
             if (b.stats.winRate !== a.stats.winRate) {
                 return b.stats.winRate - a.stats.winRate;
             }
-            return b.stats.totalWins - a.stats.totalWins;
+            return b.stats.xp - a.stats.xp;
         });
 
         // Return top 5
         const topFive = traders.slice(0, 5);
         
         if (topFive.length === 0) {
+            console.log('⚠️ No traders with predictions found, using fallback');
             return getFallbackTraders();
         }
 

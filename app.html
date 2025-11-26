@@ -2091,6 +2091,20 @@
         body.light-mode .admin-stat-label {
             color: #6B7280;
         }
+        :root.light-mode .admin-stat-value,
+        body.light-mode .admin-stat-value {
+            color: #1F2937;
+        }
+        :root.light-mode .admin-nav-card h3,
+        body.light-mode .admin-nav-card h3,
+        :root.light-mode .admin-nav-card .text-white,
+        body.light-mode .admin-nav-card .text-white {
+            color: #1F2937 !important;
+        }
+        :root.light-mode .admin-nav-card .text-gray-400,
+        body.light-mode .admin-nav-card .text-gray-400 {
+            color: #6B7280 !important;
+        }
     </style>
 </head>
 <body class="text-gray-100">
@@ -5538,7 +5552,7 @@
         /**
          * Alias for returning to the home screen.
          */
-        window.goBack = () => showScreen('home-screen');
+        window.goBack = () => showScreen('home-screen', true);
 
         // ============================================================
         // SOCIAL FEED SYSTEM - FULL IMPLEMENTATION
@@ -6144,6 +6158,44 @@
             }
         });
 
+        // HTML escaping to prevent XSS
+        const escapeHtml = (unsafe) => {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        };
+        
+        // Module-level comment event handler to prevent duplicates
+        const setupCommentEventDelegation = (listEl, postId) => {
+            if (listEl.dataset.hasCommentHandler === 'true') return;
+            
+            const commentClickHandler = (e) => {
+                if (e.target.classList.contains('comment-menu-btn')) {
+                    const menuId = e.target.dataset.menuId;
+                    const menu = document.getElementById(menuId);
+                    if (menu) menu.classList.toggle('hidden');
+                } else if (e.target.classList.contains('reply-btn')) {
+                    replyToComment(e.target.dataset.postId, e.target.dataset.commentId, e.target.dataset.displayName);
+                } else if (e.target.classList.contains('edit-comment-btn')) {
+                    const commentDiv = e.target.closest('[data-user-id]');
+                    const authorId = commentDiv?.dataset.userId;
+                    const content = e.target.dataset.content;
+                    editComment(e.target.dataset.postId, e.target.dataset.commentId, authorId, content);
+                } else if (e.target.classList.contains('delete-comment-btn')) {
+                    const commentDiv = e.target.closest('[data-user-id]');
+                    const authorId = commentDiv?.dataset.userId;
+                    deleteComment(e.target.dataset.postId, e.target.dataset.commentId, authorId);
+                }
+            };
+            
+            listEl.addEventListener('click', commentClickHandler);
+            listEl.dataset.hasCommentHandler = 'true';
+        };
+        
         window.toggleComments = async (postId) => {
             if (!currentUserId) { showToast('Sign in to comment', 'info'); return; }
             if (isGuestMode && !isDemoAccount) { showToast('Sign in to view comments', 'info'); return; }
@@ -6176,44 +6228,63 @@
                     return Math.floor(diff / 86400) + 'd ago';
                 };
                 
-                let html = '';
+                // Organize comments by parent/child relationships
+                const rootComments = comments.filter(c => !c.parentCommentId);
+                const repliesMap = {};
                 comments.forEach(c => {
-                    const isRootComment = !c.parentCommentId;
-                    const isOwner = c.userId === currentUserId;
-                    console.log(`Comment by ${c.displayName}: userId=${c.userId}, currentUserId=${currentUserId}, isOwner=${isOwner}`);
-                    const replyBtn = `<button class="text-sky-400 hover:text-sky-300 text-xs reply-btn" data-post-id="${postId}" data-comment-id="${c.commentId}" data-display-name="${c.displayName}">Reply</button>`;
-                    const menuId = `comment-menu-${c.commentId}`;
-                    const menuBtn = isOwner ? `<div class="relative"><button class="text-gray-400 hover:text-gray-200 text-xs px-2 comment-menu-btn transition-colors" data-menu-id="${menuId}" title="Options">•••</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-10 min-w-32"><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white edit-comment-btn transition-colors border-b border-gray-700" data-post-id="${postId}" data-comment-id="${c.commentId}" data-content="${c.content.replace(/"/g, '&quot;')}">Edit</button><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-red-400 delete-comment-btn transition-colors" data-post-id="${postId}" data-comment-id="${c.commentId}">Delete</button></div></div>` : '';
-                    const timeStr = getRelativeTime(c.timestamp);
-                    const indent = c.parentCommentId ? 'ml-8 pl-3 border-l border-gray-600' : '';
-                    html += `<div class="flex gap-2 text-sm ${indent}" data-user-id="${c.userId}"><img src="${c.avatarUrl || LOGO_URL}" class="w-6 h-6 rounded-full flex-shrink-0"><div class="flex-1"><div class="flex items-start justify-between"><div><p class="font-semibold text-white text-xs">${c.displayName}<span class="text-gray-500 text-xs ml-1">· ${timeStr}</span></p></div>${menuBtn}</div><p class="text-gray-300">${c.content}</p><div class="flex gap-1 mt-1">${replyBtn}</div></div></div>`;
                     if (c.parentCommentId) {
-                        const parentComment = comments.find(cm => cm.commentId === c.parentCommentId);
-                        if (parentComment && !html.includes(`reply-to-${c.parentCommentId}`)) {
-                            html = html.replace(`</div>`, `<div id="reply-to-${c.parentCommentId}" class="mt-2 space-y-2"></div></div>`);
+                        if (!repliesMap[c.parentCommentId]) {
+                            repliesMap[c.parentCommentId] = [];
                         }
+                        repliesMap[c.parentCommentId].push(c);
                     }
                 });
+                
+                const renderComment = (c, isReply = false) => {
+                    const isOwner = c.userId === currentUserId;
+                    const escapedDisplayName = escapeHtml(c.displayName);
+                    const escapedContent = escapeHtml(c.content);
+                    const replyBtn = `<button class="text-sky-400 hover:text-sky-300 text-xs reply-btn" data-post-id="${postId}" data-comment-id="${c.commentId}" data-display-name="${escapeHtml(c.displayName)}">Reply</button>`;
+                    const menuId = `comment-menu-${c.commentId}`;
+                    const menuBtn = isOwner ? `<div class="relative"><button class="text-gray-400 hover:text-gray-200 text-xs px-2 comment-menu-btn transition-colors" data-menu-id="${menuId}" title="Options">•••</button><div id="${menuId}" class="hidden absolute right-0 mt-1 bg-gray-900 border border-gray-700 rounded-md shadow-lg z-10 min-w-32"><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white edit-comment-btn transition-colors border-b border-gray-700" data-post-id="${postId}" data-comment-id="${c.commentId}" data-content="${escapeHtml(c.content)}">Edit</button><button class="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-red-400 delete-comment-btn transition-colors" data-post-id="${postId}" data-comment-id="${c.commentId}">Delete</button></div></div>` : '';
+                    const timeStr = getRelativeTime(c.timestamp);
+                    
+                    // Build comment article with proper structure
+                    let html = `<article class="comment ${isReply ? 'comment--reply' : ''}" data-comment-id="${c.commentId}">`;
+                    html += `<div class="flex gap-2 text-sm mb-3 ${isReply ? 'ml-8 pl-3 border-l-2 border-sky-500/30' : ''}" data-user-id="${c.userId}">`;
+                    html += `<img src="${c.avatarUrl || LOGO_URL}" class="w-6 h-6 rounded-full flex-shrink-0">`;
+                    html += '<div class="flex-1">';
+                    html += '<div class="flex items-start justify-between">';
+                    html += `<div><p class="font-semibold text-white text-xs">${escapedDisplayName}<span class="text-gray-500 text-xs ml-1">· ${timeStr}</span></p></div>`;
+                    html += menuBtn;
+                    html += '</div>';
+                    html += `<p class="text-gray-300">${escapedContent}</p>`;
+                    html += `<div class="flex gap-1 mt-1">${replyBtn}</div>`;
+                    html += '</div></div>';
+                    
+                    // Render replies in a dedicated container (sibling to comment body)
+                    const replies = repliesMap[c.commentId] || [];
+                    if (replies.length > 0) {
+                        html += '<div class="comment__replies">';
+                        replies.forEach(reply => {
+                            html += renderComment(reply, true);
+                        });
+                        html += '</div>';
+                    }
+                    
+                    html += '</article>';
+                    return html;
+                };
+                
+                let html = '';
+                rootComments.forEach(c => {
+                    html += renderComment(c);
+                });
+                
                 listEl.innerHTML = html;
                 
-                // Event delegation for comment buttons
-                listEl.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('comment-menu-btn')) {
-                        const menuId = e.target.dataset.menuId;
-                        const menu = document.getElementById(menuId);
-                        if (menu) menu.classList.toggle('hidden');
-                    } else if (e.target.classList.contains('reply-btn')) {
-                        replyToComment(e.target.dataset.postId, e.target.dataset.commentId, e.target.dataset.displayName);
-                    } else if (e.target.classList.contains('edit-comment-btn')) {
-                        const commentDiv = e.target.closest('[data-user-id]');
-                        const authorId = commentDiv?.dataset.userId;
-                        editComment(e.target.dataset.postId, e.target.dataset.commentId, authorId, e.target.dataset.content);
-                    } else if (e.target.classList.contains('delete-comment-btn')) {
-                        const commentDiv = e.target.closest('[data-user-id]');
-                        const authorId = commentDiv?.dataset.userId;
-                        deleteComment(e.target.dataset.postId, e.target.dataset.commentId, authorId);
-                    }
-                });
+                // Set up event delegation once per list
+                setupCommentEventDelegation(listEl, postId);
             } catch (e) { 
                 console.error('❌ Error loading comments:', e);
                 listEl.innerHTML = '<p class="text-red-400 text-xs text-center">Error loading comments</p>'; 
@@ -6259,16 +6330,22 @@
                 await getAuthToken();
                 if (!authToken) { showToast('Authentication failed', 'error'); if (btn) btn.disabled = false; return; }
                 
+                const requestBody = {
+                    postId,
+                    userId: currentUserId,
+                    displayName: userProfile?.displayName || currentUserId,
+                    avatarUrl: userProfile?.photoURL || LOGO_URL,
+                    content: content
+                };
+                
+                if (input.dataset.replyTo) {
+                    requestBody.parentCommentId = input.dataset.replyTo;
+                }
+                
                 const response = await fetch('/api/social/comment', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({
-                        postId,
-                        userId: currentUserId,
-                        displayName: userProfile?.displayName || currentUserId,
-                        avatarUrl: userProfile?.photoURL || LOGO_URL,
-                        content: content
-                    })
+                    body: JSON.stringify(requestBody)
                 });
                 
                 if (!response.ok) {
@@ -6847,7 +6924,8 @@
                     if (guestBalanceMsg) guestBalanceMsg.classList.add('hidden');
                 }
                 
-                dom.profileRankBadge.innerText = `Rank: #${profile.xp > 1000 ? '1' : '12'}`; 
+                const userRank = await getUserRank(currentUserId);
+                dom.profileRankBadge.innerText = userRank ? `Rank: #${userRank}` : `Rank: N/A`; 
                 dom.profileAccuracyBadge.innerText = `${profile.xp > 0 ? '82' : '0'}% Accuracy`; 
 
                 if (dom.userStreakText) {
@@ -9772,7 +9850,7 @@ ${historyText}`;
             document.getElementById('admin-logout-btn').addEventListener('click', () => {
                 adminSecret = null;
                 isAdminMode = false;
-                showScreen('home-screen');
+                showScreen('home-screen', true);
             });
             document.getElementById('admin-generate-btn').addEventListener('click', adminGenerateQuickPlay);
             document.getElementById('admin-publish-btn').addEventListener('click', adminPublishQuickPlay);
@@ -12473,7 +12551,8 @@ ${historyText}`;
 
                 // Update follower count for this user
                 updateFollowerCount(userId);
-                dom.publicProfileRankBadge.innerText = `Rank: N/A`; // Note: Rank is tricky to get for a single user
+                const publicUserRank = await getUserRank(userId);
+                dom.publicProfileRankBadge.innerText = publicUserRank ? `Rank: #${publicUserRank}` : `Rank: N/A`;
                 dom.publicProfileAccuracyBadge.innerText = `${profile.xp > 0 ? '82' : '0'}% Accuracy`; // Still mocked
 
                 // 3. Set up the Follow button
