@@ -6304,38 +6304,48 @@
                     const safeContent = escapeHtml(comment.content || '');
                     
                     // Use data attributes instead of inline onclick with user content
-                    const menuHtml = isOwner ? `<div class="relative">
-                        <button class="comment-menu-toggle text-gray-400 hover:text-white" data-menu-id="comment-menu-${comment.commentId}">⋯</button>
-                        <div id="comment-menu-${comment.commentId}" class="hidden absolute right-0 top-6 bg-gray-800 border border-white/10 rounded shadow-xl z-50 min-w-32">
-                            <button class="comment-edit-btn w-full text-left px-3 py-2 text-sm hover:bg-yellow-500/20 text-gray-300 hover:text-yellow-400" 
-                                data-post-id="${postId}" data-comment-id="${comment.commentId}" data-user-id="${comment.userId}">✏️ Edit</button>
-                            <button class="comment-delete-btn w-full text-left px-3 py-2 text-sm hover:bg-red-500/20 text-gray-300 hover:text-red-400" 
-                                data-post-id="${postId}" data-comment-id="${comment.commentId}" data-user-id="${comment.userId}">🗑️ Delete</button>
+                    const menuHtml = isOwner ? `<div class="relative ml-auto">
+                        <button class="comment-menu-toggle text-gray-500 hover:text-white p-1 rounded hover:bg-white/10 transition-colors" data-menu-id="comment-menu-${comment.commentId}">⋯</button>
+                        <div id="comment-menu-${comment.commentId}" class="hidden absolute right-0 top-8 bg-gray-800 border border-white/20 rounded-lg shadow-2xl z-50 min-w-36 overflow-hidden">
+                            <button class="comment-edit-btn w-full text-left px-4 py-2.5 text-sm hover:bg-yellow-500/20 text-gray-300 hover:text-yellow-400 transition-colors flex items-center gap-2" 
+                                data-post-id="${postId}" data-comment-id="${comment.commentId}" data-user-id="${comment.userId}">
+                                <span>✏️</span> Edit
+                            </button>
+                            <button class="comment-delete-btn w-full text-left px-4 py-2.5 text-sm hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-colors flex items-center gap-2" 
+                                data-post-id="${postId}" data-comment-id="${comment.commentId}" data-user-id="${comment.userId}">
+                                <span>🗑️</span> Delete
+                            </button>
                         </div>
                     </div>` : '';
-                    const replyBtn = `<button class="comment-reply-btn text-xs text-gray-400 hover:text-sky-400 transition-colors" 
-                        data-post-id="${postId}" data-comment-id="${comment.commentId}">Reply</button>`;
+                    const replyBtn = `<button class="comment-reply-btn text-xs font-semibold text-gray-400 hover:text-sky-400 transition-colors px-2 py-1 rounded hover:bg-sky-500/10" 
+                        data-post-id="${postId}" data-comment-id="${comment.commentId}">💬 Reply</button>`;
                     
                     const isNested = depth > 0;
-                    const indentClass = isNested ? 'ml-6 pl-3 border-l-2 border-white/10' : '';
-                    const bgClass = isNested ? 'bg-white/[0.02]' : 'bg-white/5';
+                    const indentClass = isNested ? 'ml-10 pl-4 border-l-2 border-sky-500/30' : '';
+                    const bgClass = isNested ? 'bg-gradient-to-r from-sky-500/5 to-transparent' : 'bg-white/5 hover:bg-white/10';
                     
-                    let html = `<div class="${indentClass}"><div class="flex items-start gap-2 p-2 rounded ${bgClass}">
-                        <img src="${comment.avatarUrl || LOGO_URL}" class="w-8 h-8 rounded-full flex-shrink-0">
+                    let html = `<div class="${indentClass} transition-all duration-200">
+                        <div class="flex items-start gap-3 p-3 rounded-lg ${bgClass} transition-colors duration-200">
+                        <img src="${comment.avatarUrl || LOGO_URL}" class="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-white/10">
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2">
-                                <p class="text-sm font-semibold text-white truncate">${safeDisplayName}</p>
+                            <div class="flex items-center gap-2 mb-1">
+                                <p class="text-sm font-bold text-white truncate">${safeDisplayName}</p>
+                                <span class="text-xs text-gray-500">•</span>
+                                <span class="text-xs text-gray-500">now</span>
                                 ${menuHtml}
                             </div>
-                            <p class="text-sm text-gray-300 mt-1 break-words">${safeContent}</p>
-                            <div class="mt-1">${replyBtn}</div>
+                            <p class="text-sm text-gray-200 leading-relaxed break-words">${safeContent}</p>
+                            <div class="flex items-center gap-3 mt-2">
+                                ${replyBtn}
+                                ${isNested ? `<span class="text-xs text-gray-600">↳ Reply to thread</span>` : ''}
+                            </div>
                         </div>
                     </div>`;
                     
                     // Recursively render nested replies (Reddit-style deep threading)
                     const replies = repliesMap[comment.commentId] || [];
                     if (replies.length > 0 && depth < maxDepth) {
-                        html += '<div class="mt-1 space-y-1">';
+                        html += '<div class="mt-2 space-y-2">';
                         // Sort replies by timestamp
                         const sortedReplies = [...replies].sort((a, b) => 
                             (a.timestamp?.toMillis?.() || 0) - (b.timestamp?.toMillis?.() || 0)
@@ -6344,6 +6354,8 @@
                             html += renderComment(reply, depth + 1, maxDepth, visited);
                         });
                         html += '</div>';
+                    } else if (depth === maxDepth && replies.length > 0) {
+                        html += `<div class="ml-10 mt-2"><button class="text-xs text-sky-400 hover:text-sky-300 font-medium">→ View ${replies.length} more ${replies.length === 1 ? 'reply' : 'replies'}...</button></div>`;
                     }
                     
                     html += '</div>';
