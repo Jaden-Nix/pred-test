@@ -5004,10 +5004,16 @@
                         const stake = doc.data();
                         // Filter by userId on client side (handles different formats/casing)
                         if (stake.userId && stake.userId.toLowerCase() === currentUserId.toLowerCase()) {
-                            // Try all possible field names - store the value even if undefined initially
-                            const stakeValue = stake.prediction || stake.selectedStance || stake.stance || stake.vote || stake.choice || 'YES';
-                            userStakesCache[stake.marketId?.toLowerCase()] = stakeValue;
-                            console.log('📍 Stake cached - FULL OBJECT:', JSON.stringify(stake), 'Extracted value:', stakeValue);
+                            // The pledge field name is 'pick' (stores YES/NO/etc)
+                            const stakeValue = stake.pick || stake.prediction || stake.selectedStance || stake.stance || stake.vote;
+                            if (stakeValue) {
+                                userStakesCache[stake.marketId?.toLowerCase()] = stakeValue;
+                                console.log('📍 Stake cached:', {
+                                    marketId: stake.marketId,
+                                    pick: stake.pick,
+                                    cached: userStakesCache[stake.marketId?.toLowerCase()]
+                                });
+                            }
                         }
                     });
                     console.log('📊 User stakes updated:', userStakesCache, 'Total stakes found:', Object.keys(userStakesCache).length);
