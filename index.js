@@ -1906,7 +1906,7 @@ app.post('/api/social/create-post', requireAuth, requireFirebase, async (req, re
             });
         }
 
-        // Full AI moderation check with error handling
+        // Full AI moderation check with error handling (relaxed for better UX)
         let moderationResult;
         try {
             moderationResult = await moderateContent(content, 'post', geminiClient);
@@ -1920,8 +1920,9 @@ app.post('/api/social/create-post', requireAuth, requireFirebase, async (req, re
                 ip: req.ip
             });
 
-            // Block if confidence is too low
-            if (moderationResult.confidence < 50) {
+            // Only block if BOTH confidence is low AND approved is false
+            // This prevents false positives where AI says "approved" but confidence is mid-range
+            if (moderationResult.confidence < 70 && moderationResult.approved === false) {
                 return res.status(400).json({ 
                     error: 'Your post contains potentially inappropriate content.',
                     blocked: true,
