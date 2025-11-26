@@ -5004,9 +5004,10 @@
                         const stake = doc.data();
                         // Filter by userId on client side (handles different formats/casing)
                         if (stake.userId && stake.userId.toLowerCase() === currentUserId.toLowerCase()) {
-                            userStakesCache[stake.marketId?.toLowerCase()] = stake.selectedStance;
+                            userStakesCache[stake.marketId?.toLowerCase()] = stake.prediction || stake.selectedStance || stake.stance;
                             console.log('📍 Stake cached:', {
                                 marketId: stake.marketId,
+                                prediction: stake.prediction,
                                 selectedStance: stake.selectedStance,
                                 stakesUserId: stake.userId,
                                 currentUserId: currentUserId
