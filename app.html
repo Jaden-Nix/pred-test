@@ -13303,8 +13303,61 @@ ${historyText}`;
                 
                 // Check if this is a multi-option market
                 if (market.marketType === 'multi' && market.options && market.options.length > 0) {
-                    // MULTI-OPTION MARKET - hide from main feed for now (they don't have YES/NO display)
-                    return; // Skip multi-option markets in the main feed
+                    // MULTI-OPTION MARKET
+                    const totalPool = market.totalPool || 0;
+                    const liquidityDisplay = totalPool > 0 ? totalPool.toFixed(4) : '0.0000';
+                    
+                    // Calculate percentages for each option
+                    let optionsHTML = '';
+                    market.options.forEach((option, index) => {
+                        const optionPool = market.optionAmounts?.[option] || 0;
+                        const percentage = totalPool > 0 ? (optionPool / totalPool) * 100 : (100 / market.options.length);
+                        const price = (percentage / 100).toFixed(2);
+                        
+                        // Color palette for options
+                        const colors = ['green', 'blue', 'purple', 'orange', 'pink', 'cyan'];
+                        const color = colors[index % colors.length];
+                        
+                        optionsHTML += `
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-${color}-400">${percentage.toFixed(1)}%</div>
+                                <div class="text-xs text-gray-400 mt-1 truncate" title="${option}">${option}</div>
+                                <div class="text-xs font-semibold mt-1 text-gray-400">($${price})</div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `
+                        <div class="ui-panel" data-market-id="${market.id}">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs text-gray-400 font-light">By ${displayName}</span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="badge badge-purple">Multi-Option</span>
+                                    <div class.badge badge-timer flex items-center space-x-1.5">
+                                        <span class="w-1.5 h-1.5 bg-sky-400 rounded-full live-dot"></span>
+                                        <span>${market.stakeDuration || '...'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white mb-3 leading-tight">${market.title}</h3>
+                            
+                            <!-- Pool Liquidity Display -->
+                            <div class="mb-4 p-2.5 bg-white/5 rounded-lg border border-white/10">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-gray-400">💧 Total Pool Liquidity (AMM)</span>
+                                    <span class="text-xs font-semibold text-sky-400">${liquidityDisplay} BUSD</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Multi-Option Display -->
+                            <div class="grid grid-cols-${Math.min(market.options.length, 4)} gap-3 mb-5">
+                                ${optionsHTML}
+                            </div>
+                            
+                            <button onclick="viewMarketDetail('${market.id}')" class="btn btn-primary w-full">View Market</button>
+                        </div>
+                    `;
+                    return; // Done with multi-option market
                 }
                 
                 // BINARY YES/NO MARKET
