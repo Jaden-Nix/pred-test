@@ -133,9 +133,15 @@
         }
         
         /* Ensure content is above background */
-        #top-nav, #bottom-nav, .screen, .main-container {
+        #top-nav, .screen, .main-container {
             position: relative;
             z-index: 1;
+        }
+        
+        /* Bottom nav needs to stay fixed, not relative */
+        #bottom-nav {
+            position: fixed !important;
+            z-index: 50 !important;
         }
 
         #top-nav {
