@@ -7484,6 +7484,9 @@
             cardEl.dataset.ismock = market.isMock || false; 
 
             // Render the card HTML
+            const yesPercent = market.yesPercent || (market.yesPool && market.noPool ? (market.yesPool / (market.yesPool + market.noPool) * 100) : 50);
+            const noPercent = market.noPercent || (market.yesPool && market.noPool ? (market.noPool / (market.yesPool + market.noPool) * 100) : 50);
+            
             cardEl.innerHTML = `
                 <div class="flex-grow flex flex-col justify-center">
                     <div class="flex justify-between items-center w-full mb-4">
@@ -7501,11 +7504,11 @@
                     <h2 class="text-2xl font-bold text-white text-center mb-6">${market.title}</h2>
                     <div class="flex justify-around mb-5">
                         <div class="text-center">
-                            <div class="text-4xl font-bold text-green-400">${market.yesPercent.toFixed(1)}%</div>
+                            <div class="text-4xl font-bold text-green-400">${parseFloat(yesPercent).toFixed(1)}%</div>
                             <div class="text-sm text-gray-300">YES</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-4xl font-bold text-red-400">${market.noPercent.toFixed(1)}%</div>
+                            <div class="text-4xl font-bold text-red-400">${parseFloat(noPercent).toFixed(1)}%</div>
                             <div class="text-sm text-gray-300">NO</div>
                         </div>
                     </div>

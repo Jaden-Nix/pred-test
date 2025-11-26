@@ -998,6 +998,7 @@ REQUIREMENTS:
                         acc[opt] = poolPerOption;
                         return acc;
                     }, {});
+                    const totalPool = poolPerOption * marketData.options.length;
                     
                     await marketRef.set({
                         id: marketRef.id,
@@ -1012,8 +1013,12 @@ REQUIREMENTS:
                         marketType: 'multi',
                         options: marketData.options,
                         optionAmounts: optionAmounts,
-                        totalPool: poolPerOption * marketData.options.length,
-                        totalStakeVolume: poolPerOption * marketData.options.length,
+                        yesPercent: 100 / marketData.options.length,
+                        noPercent: 100 / marketData.options.length,
+                        yesPool: totalPool / 2,
+                        noPool: totalPool / 2,
+                        totalPool: totalPool,
+                        totalStakeVolume: totalPool,
                         isMock: false
                     });
                     console.log(`✅ Created multi-option market: ${marketData.title} (Options: ${marketData.options.join(', ')})`);
@@ -1136,6 +1141,7 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
                         acc[opt] = poolPerOption;
                         return acc;
                     }, {});
+                    const totalPool = poolPerOption * marketData.options.length;
                     
                     await marketRef.set({
                         id: marketRef.id,
@@ -1150,8 +1156,12 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
                         marketType: 'multi',
                         options: marketData.options,
                         optionAmounts: optionAmounts,
-                        totalPool: poolPerOption * marketData.options.length,
-                        totalStakeVolume: poolPerOption * marketData.options.length,
+                        yesPercent: 100 / marketData.options.length,
+                        noPercent: 100 / marketData.options.length,
+                        yesPool: totalPool / 2,
+                        noPool: totalPool / 2,
+                        totalPool: totalPool,
+                        totalStakeVolume: totalPool,
                         isMock: false
                     });
                     console.log(`✅ Created quick play (MULTI): ${marketData.title} (Options: ${marketData.options.join(', ')})`);
