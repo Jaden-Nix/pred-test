@@ -24,8 +24,9 @@ Preferred communication style: Simple, everyday language.
   - Gaming markets now appear correctly when clicking the Gaming filter
 - **Mobile navigation update**: Replaced Copy Trading with Quick Play in mobile bottom nav
   - Mobile users can now access Quick Play (pledge pool & quick polls) from bottom navigation
-  - Copy Trading remains accessible on desktop navigation
-  - Prioritizes mobile-first swipe-style betting experience
+  - Copy Trading remains accessible via desktop navigation AND Profile screen sidebar
+  - Added "Copy Trading" quick access panel in Profile for easy mobile access
+  - Prioritizes mobile-first swipe-style betting experience while keeping all features accessible
 
 ## System Architecture
 
