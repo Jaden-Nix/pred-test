@@ -8058,7 +8058,8 @@
 
             // Determine if this is a multi-option pick
             const isMultiOption = market.marketStructure === 'multi-option';
-            const optionLabel = isMultiOption ? market.options.find(o => o.id === pick)?.label : null;
+            // For multi-option: pick is the option label/name itself (stored as strings in backend)
+            const optionLabel = isMultiOption ? pick : null;
 
             // 2. --- VALIDATION ---
             if (!amount || amount <= 0) {
@@ -8122,32 +8123,31 @@
                     if (!marketData.isNoLoss) {
                         if (isMultiOption) {
                             // MULTI-OPTION AMM: Dynamic odds shifting
-                            let options = marketData.options.map(opt => ({
-                                ...opt,
-                                pool: opt.pool || (opt.odds / 100) * 1000
-                            }));
-
-                            const stakedOptionIndex = options.findIndex(o => o.id === pick);
-                            if (stakedOptionIndex === -1) throw new Error("Invalid option selected.");
-
-                            options[stakedOptionIndex].pool += amountInUsd;
-
-                            const totalPool = options.reduce((sum, opt) => sum + opt.pool, 0);
-                            options = options.map(opt => ({
-                                ...opt,
-                                odds: (opt.pool / totalPool) * 100
-                            }));
-
-                            const stakedOdds = options[stakedOptionIndex].odds;
-                            potentialPayoutUsd = amountInUsd / (stakedOdds / 100);
+                            // Backend stores options as string array and optionAmounts as {optionName: amount}
+                            const optionAmounts = marketData.optionAmounts || {};
+                            
+                            // Validate pick is a valid option
+                            if (!marketData.options.includes(pick)) {
+                                throw new Error("Invalid option selected.");
+                            }
+                            
+                            // Normalize optionAmounts: ensure all options have entries (default to 0)
+                            const normalizedOptionAmounts = {};
+                            marketData.options.forEach(option => {
+                                normalizedOptionAmounts[option] = optionAmounts[option] || 0;
+                            });
+                            
+                            // Update the selected option's pool
+                            normalizedOptionAmounts[pick] += amountInUsd;
+                            
+                            // Calculate total pool and odds for payout
+                            const totalPool = Object.values(normalizedOptionAmounts).reduce((sum, amt) => sum + amt, 0);
+                            const stakedOdds = totalPool > 0 ? (normalizedOptionAmounts[pick] / totalPool) * 100 : 0;
+                            potentialPayoutUsd = stakedOdds > 0 ? amountInUsd / (stakedOdds / 100) : amountInUsd;
 
                             transaction.update(marketRef, {
-                                options: options.map(opt => ({
-                                    id: opt.id,
-                                    label: opt.label,
-                                    odds: parseFloat(opt.odds.toFixed(2)),
-                                    pool: opt.pool
-                                })),
+                                optionAmounts: normalizedOptionAmounts,
+                                totalPool: totalPool,
                                 totalStakeVolume: increment(amountInUsd)
                             });
                         } else {
