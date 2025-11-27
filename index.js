@@ -2918,27 +2918,62 @@ async function cleanupBrokenMarkets() {
                                     !Number.isFinite(totalPool) || yesPool <= 0 || noPool <= 0 || totalPool <= 0;
             
             if (hasInvalidPools) {
-                // If market has no stakes, repair it with default liquidity
+                // Repair by calculating actual stake totals from pledges
                 const pledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
                 const pledgeSnaps = await pledgesRef.where('marketId', '==', doc.id).get();
                 
                 if (pledgeSnaps.empty) {
-                    // No stakes yet - safe to repair
+                    // No stakes yet - safe to repair with default liquidity
                     await doc.ref.update({
                         yesPool: 10000,
                         noPool: 10000,
                         totalPool: 20000,
                         yesPercent: 50,
                         noPercent: 50,
+                        totalYesStake: 10000,
+                        totalNoStake: 10000,
                         totalStakeVolume: 20000
                     });
                     standardRepaired++;
-                    console.log(`🔧 Repaired market: ${market.title} (ID: ${doc.id})`);
+                    console.log(`🔧 Repaired empty market: ${market.title} (ID: ${doc.id})`);
                 } else {
-                    // Has stakes but invalid pools - delete to prevent issues
-                    await doc.ref.delete();
-                    standardDeleted++;
-                    console.log(`🗑️ Deleted corrupted market with stakes: ${market.title}`);
+                    // Has stakes - recalculate totals from pledges
+                    let totalYesStake = 0;
+                    let totalNoStake = 0;
+                    
+                    pledgeSnaps.docs.forEach(pledgeDoc => {
+                        const pledge = pledgeDoc.data();
+                        const amountUsd = pledge.amountUsd || 0;
+                        if (pledge.pick === 'YES') {
+                            totalYesStake += amountUsd;
+                        } else if (pledge.pick === 'NO') {
+                            totalNoStake += amountUsd;
+                        }
+                    });
+                    
+                    // Ensure non-zero totals for percentage calculation
+                    if (totalYesStake === 0 && totalNoStake === 0) {
+                        totalYesStake = 10000;
+                        totalNoStake = 10000;
+                    }
+                    
+                    const totalStaked = totalYesStake + totalNoStake;
+                    // Clamp percentages to prevent 0%/100% display issues
+                    const yesPercent = Math.max(0.1, Math.min(99.9, (totalYesStake / totalStaked) * 100));
+                    const noPercent = Math.max(0.1, Math.min(99.9, (totalNoStake / totalStaked) * 100));
+                    
+                    await doc.ref.update({
+                        yesPool: totalYesStake,
+                        noPool: totalNoStake,
+                        totalPool: totalStaked,
+                        yesPercent: yesPercent,
+                        noPercent: noPercent,
+                        totalYesStake: totalYesStake,
+                        totalNoStake: totalNoStake,
+                        totalStakeVolume: totalStaked
+                    });
+                    standardRepaired++;
+                    console.log(`🔧 Repaired market from pledges: ${market.title} (YES: $${totalYesStake.toFixed(2)}, NO: $${totalNoStake.toFixed(2)})`);
                 }
             }
         }
@@ -2986,22 +3021,57 @@ async function cleanupBrokenMarkets() {
                         totalPool: 20000,
                         yesPercent: 50,
                         noPercent: 50,
+                        totalYesStake: 10000,
+                        totalNoStake: 10000,
                         totalStakeVolume: 20000
                     });
                     quickPlayRepaired++;
-                    console.log(`🔧 Repaired quick play: ${market.title} (ID: ${doc.id})`);
+                    console.log(`🔧 Repaired empty quick play: ${market.title} (ID: ${doc.id})`);
                 } else {
-                    await doc.ref.delete();
-                    quickPlayDeleted++;
-                    console.log(`🗑️ Deleted corrupted quick play with stakes: ${market.title}`);
+                    // Has stakes - recalculate totals from pledges
+                    let totalYesStake = 0;
+                    let totalNoStake = 0;
+                    
+                    pledgeSnaps.docs.forEach(pledgeDoc => {
+                        const pledge = pledgeDoc.data();
+                        const amountUsd = pledge.amountUsd || 0;
+                        if (pledge.pick === 'YES') {
+                            totalYesStake += amountUsd;
+                        } else if (pledge.pick === 'NO') {
+                            totalNoStake += amountUsd;
+                        }
+                    });
+                    
+                    // Ensure non-zero totals for percentage calculation
+                    if (totalYesStake === 0 && totalNoStake === 0) {
+                        totalYesStake = 10000;
+                        totalNoStake = 10000;
+                    }
+                    
+                    const totalStaked = totalYesStake + totalNoStake;
+                    // Clamp percentages to prevent 0%/100% display issues
+                    const yesPercent = Math.max(0.1, Math.min(99.9, (totalYesStake / totalStaked) * 100));
+                    const noPercent = Math.max(0.1, Math.min(99.9, (totalNoStake / totalStaked) * 100));
+                    
+                    await doc.ref.update({
+                        yesPool: totalYesStake,
+                        noPool: totalNoStake,
+                        totalPool: totalStaked,
+                        yesPercent: yesPercent,
+                        noPercent: noPercent,
+                        totalYesStake: totalYesStake,
+                        totalNoStake: totalNoStake,
+                        totalStakeVolume: totalStaked
+                    });
+                    quickPlayRepaired++;
+                    console.log(`🔧 Repaired quick play from pledges: ${market.title} (YES: $${totalYesStake.toFixed(2)}, NO: $${totalNoStake.toFixed(2)})`);
                 }
             }
         }
         
-        if (standardRepaired > 0 || standardDeleted > 0 || quickPlayRepaired > 0 || quickPlayDeleted > 0 || multiOptionFixed > 0) {
+        if (standardRepaired > 0 || quickPlayRepaired > 0 || multiOptionFixed > 0) {
             console.log(`✅ Cleanup complete: Repaired ${standardRepaired} standard + ${quickPlayRepaired} quick play markets`);
             console.log(`🔧 Fixed ${multiOptionFixed} multi-option markets (removed yesPercent/noPercent)`);
-            console.log(`🗑️ Deleted ${standardDeleted} standard + ${quickPlayDeleted} quick play markets with stakes`);
         } else {
             console.log('✅ No broken markets found - all markets have valid liquidity');
         }

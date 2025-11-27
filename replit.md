@@ -10,7 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### November 27, 2025 - Critical Payout Calculation & Balance Update Fixes
+### November 27, 2025 - Critical Payout Calculation, Balance Update & Pool Architecture Fixes
 - **Fixed payout calculation (Backend)**: The backend was incorrectly dividing pool equally among winners
   - Changed from `poolTotal / winners.length` to proportional stake-based payouts
   - New formula: `stake + (stake / totalWinningStake) * losingPool`
@@ -24,6 +24,13 @@ Preferred communication style: Simple, everyday language.
   - Added `populateAssetSelector()` call to profile snapshot listener
   - Now all balance displays (header, asset selector, wallet cards) update when Firestore changes arrive
   - Users will see balance changes immediately after payouts or stakes
+- **Fixed architectural mismatch between AMM liquidity and stake totals**:
+  - **Root Cause**: The old AMM formula used mutable liquidity pools (`yesPool`/`noPool`) that shift with trades via constant-product formula, not actual cumulative stake totals. This caused pools to show ~$205 when $700+ was actually staked.
+  - **New Architecture**: Added `totalYesStake`/`totalNoStake` fields to track actual stake totals. The `yesPool`/`noPool` values now mirror these totals for consistent display.
+  - **Unified Payout Preview**: Changed payout preview during staking to use the same proportional formula as resolution: `stake + (stake/totalWinningStake) * losingPool`. Previously showed AMM "shares" (~$89) but resolution paid proportionally (~$208).
+  - **Percentage Stability**: Odds percentages now calculated from actual stake totals, preventing small stakes from dramatically flipping percentages.
+  - **Repair Function Enhancement**: Backend repair now recalculates stake totals from existing pledges instead of resetting to defaults or deleting markets.
+  - **UI Label Update**: Changed "Pool Liquidity (AMM)" to "Total Staked" for clarity.
 
 ### November 26, 2025 - Multi-Option Market Fixes & Mobile UX Improvements
 - **Fixed multi-option display bug**: Options were showing as "undefined" because odds weren't being calculated from optionAmounts

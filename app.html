@@ -8338,40 +8338,54 @@
                                 totalStakeVolume: increment(amountInUsd)
                             });
                         } else {
-                            // BINARY AMM: YES/NO constant product formula
-                            let yesPool = marketData.yesPool;
-                            let noPool = marketData.noPool;
+                            // BINARY MARKET: Track actual stake totals for proportional payouts
+                            // Get current stake totals (fallback to yesPool/noPool for legacy markets)
+                            let totalYesStake = marketData.totalYesStake || marketData.yesPool || 0;
+                            let totalNoStake = marketData.totalNoStake || marketData.noPool || 0;
                             
-                            // VALIDATION: Check if pool values exist and are valid (including Infinity check)
-                            if (!Number.isFinite(yesPool) || !Number.isFinite(noPool) || yesPool <= 0 || noPool <= 0) {
-                                throw new Error("Invalid market liquidity pools. This market cannot accept stakes.");
-                            }
-                            
-                            const k = yesPool * noPool;
-
+                            // Add this stake to the appropriate side
                             if (pick === 'YES') {
-                                const newYesPool = yesPool + amountInUsd;
-                                const newNoPool = k / newYesPool;
-                                potentialPayoutUsd = noPool - newNoPool;
-                                yesPool = newYesPool;
-                                noPool = newNoPool;
+                                totalYesStake += amountInUsd;
                             } else {
-                                const newNoPool = noPool + amountInUsd;
-                                const newYesPool = k / newNoPool;
-                                potentialPayoutUsd = yesPool - newYesPool;
-                                yesPool = newYesPool;
-                                noPool = newNoPool;
+                                totalNoStake += amountInUsd;
                             }
-                            const totalPool = yesPool + noPool;
                             
-                            updatedYesPool = yesPool;
-                            updatedNoPool = noPool;
+                            const totalStaked = totalYesStake + totalNoStake;
+                            
+                            // Calculate proportional payout preview (same formula as resolution)
+                            // Payout = stake + (stake / totalWinningStake) * losingPool
+                            const winningPool = pick === 'YES' ? totalYesStake : totalNoStake;
+                            const losingPool = pick === 'YES' ? totalNoStake : totalYesStake;
+                            
+                            // When winning pool includes only your stake, you get stake back plus losingPool
+                            // When others are also on winning side, you get proportional share
+                            if (winningPool > 0 && losingPool > 0) {
+                                const stakeShare = amountInUsd / winningPool;
+                                const winnings = stakeShare * losingPool;
+                                potentialPayoutUsd = amountInUsd + winnings;
+                            } else if (losingPool === 0) {
+                                // No one on losing side - you just get your stake back if you win
+                                potentialPayoutUsd = amountInUsd;
+                            } else {
+                                // Edge case - shouldn't happen but default to stake
+                                potentialPayoutUsd = amountInUsd;
+                            }
+                            
+                            // Calculate new percentages based on actual stake totals
+                            // Use clamped percentages to prevent display issues
+                            const yesPercent = totalStaked > 0 ? Math.max(0.1, Math.min(99.9, (totalYesStake / totalStaked) * 100)) : 50;
+                            const noPercent = totalStaked > 0 ? Math.max(0.1, Math.min(99.9, (totalNoStake / totalStaked) * 100)) : 50;
+                            
+                            updatedYesPool = totalYesStake;
+                            updatedNoPool = totalNoStake;
 
                             transaction.update(marketRef, {
-                                yesPool: yesPool,
-                                noPool: noPool,
-                                yesPercent: (yesPool / totalPool) * 100,
-                                noPercent: (noPool / totalPool) * 100,
+                                totalYesStake: totalYesStake,
+                                totalNoStake: totalNoStake,
+                                yesPool: totalYesStake,
+                                noPool: totalNoStake,
+                                yesPercent: yesPercent,
+                                noPercent: noPercent,
                                 totalStakeVolume: increment(amountInUsd)
                             });
                         }
@@ -8512,8 +8526,9 @@
                         currentMarket.yesPool = result.updatedYesPool;
                         currentMarket.noPool = result.updatedNoPool;
                         const totalPool = result.updatedYesPool + result.updatedNoPool;
-                        currentMarket.yesPercent = (result.updatedYesPool / totalPool) * 100;
-                        currentMarket.noPercent = (result.updatedNoPool / totalPool) * 100;
+                        // Clamp percentages to prevent 0%/100% display issues
+                        currentMarket.yesPercent = totalPool > 0 ? Math.max(0.1, Math.min(99.9, (result.updatedYesPool / totalPool) * 100)) : 50;
+                        currentMarket.noPercent = totalPool > 0 ? Math.max(0.1, Math.min(99.9, (result.updatedNoPool / totalPool) * 100)) : 50;
                     }
                     
                     // Update the displayed pools on the current market card
@@ -8525,8 +8540,9 @@
                         allStandardMarkets[marketIndex].yesPool = result.updatedYesPool;
                         allStandardMarkets[marketIndex].noPool = result.updatedNoPool;
                         const totalPool = result.updatedYesPool + result.updatedNoPool;
-                        allStandardMarkets[marketIndex].yesPercent = (result.updatedYesPool / totalPool) * 100;
-                        allStandardMarkets[marketIndex].noPercent = (result.updatedNoPool / totalPool) * 100;
+                        // Clamp percentages to prevent 0%/100% display issues
+                        allStandardMarkets[marketIndex].yesPercent = totalPool > 0 ? Math.max(0.1, Math.min(99.9, (result.updatedYesPool / totalPool) * 100)) : 50;
+                        allStandardMarkets[marketIndex].noPercent = totalPool > 0 ? Math.max(0.1, Math.min(99.9, (result.updatedNoPool / totalPool) * 100)) : 50;
                     }
                     
                     // Re-render the market feed to ensure home screen shows updated pools
@@ -8588,9 +8604,11 @@
             cardEl.dataset.title = market.title;
             cardEl.dataset.ismock = market.isMock || false; 
 
-            // Render the card HTML
-            const yesPercent = market.yesPercent ?? (market.yesPool && market.noPool ? (market.yesPool / (market.yesPool + market.noPool) * 100) : 50);
-            const noPercent = market.noPercent ?? (market.yesPool && market.noPool ? (market.noPool / (market.yesPool + market.noPool) * 100) : 50);
+            // Render the card HTML - clamp percentages to prevent 0%/100% display issues
+            const rawYesPercent = market.yesPercent ?? (market.yesPool && market.noPool ? (market.yesPool / (market.yesPool + market.noPool) * 100) : 50);
+            const rawNoPercent = market.noPercent ?? (market.yesPool && market.noPool ? (market.noPool / (market.yesPool + market.noPool) * 100) : 50);
+            const yesPercent = Math.max(0.1, Math.min(99.9, rawYesPercent));
+            const noPercent = Math.max(0.1, Math.min(99.9, rawNoPercent));
             
             cardEl.innerHTML = `
                 <div class="flex-grow flex flex-col justify-center py-4">
@@ -8942,37 +8960,51 @@
                             });
 
                         } else {
-                            // --- THIS IS A REAL AMM QUICK PLAY ---
-                            // 11. AMM MATH
+                            // --- THIS IS A REAL QUICK PLAY ---
+                            // Use proportional stake tracking (same as standard markets)
                             const market = marketSnap.data();
-                            const marketRef = marketSnap.ref; // Get the ref from the snapshot
-                            let yesPool = market.yesPool;
-                            let noPool = market.noPool;
-                            const k = yesPool * noPool;
-                            let potentialPayoutUsd = 0; // "Shares"
-
+                            const marketRef = marketSnap.ref;
+                            
+                            // Get current stake totals (fallback to yesPool/noPool for legacy markets)
+                            let totalYesStake = market.totalYesStake || market.yesPool || 0;
+                            let totalNoStake = market.totalNoStake || market.noPool || 0;
+                            
+                            // Add this stake to the appropriate side
                             if (item.pick === 'YES') {
-                                const newYesPool = yesPool + amountInUsdPerPledge;
-                                const newNoPool = k / newYesPool;
-                                potentialPayoutUsd = noPool - newNoPool;
-                                yesPool = newYesPool;
-                                noPool = newNoPool;
-                            } else { // pick === 'NO'
-                                const newNoPool = noPool + amountInUsdPerPledge;
-                                const newYesPool = k / newNoPool;
-                                potentialPayoutUsd = yesPool - newYesPool;
-                                yesPool = newYesPool;
-                                noPool = newNoPool;
+                                totalYesStake += amountInUsdPerPledge;
+                            } else {
+                                totalNoStake += amountInUsdPerPledge;
                             }
+                            
+                            const totalStaked = totalYesStake + totalNoStake;
+                            
+                            // Calculate proportional payout preview (same formula as resolution)
+                            const winningPool = item.pick === 'YES' ? totalYesStake : totalNoStake;
+                            const losingPool = item.pick === 'YES' ? totalNoStake : totalYesStake;
+                            let potentialPayoutUsd = amountInUsdPerPledge;
+                            
+                            // When winning pool includes only your stake, you get stake back plus losingPool
+                            // When others are also on winning side, you get proportional share
+                            if (winningPool > 0 && losingPool > 0) {
+                                const stakeShare = amountInUsdPerPledge / winningPool;
+                                const winnings = stakeShare * losingPool;
+                                potentialPayoutUsd = amountInUsdPerPledge + winnings;
+                            } else if (losingPool === 0) {
+                                // No one on losing side - you just get your stake back if you win
+                                potentialPayoutUsd = amountInUsdPerPledge;
+                            }
+                            
+                            // Calculate percentages from actual stake totals
+                            // Use clamped percentages to prevent display issues
+                            const newYesPercent = totalStaked > 0 ? Math.max(0.1, Math.min(99.9, (totalYesStake / totalStaked) * 100)) : 50;
+                            const newNoPercent = totalStaked > 0 ? Math.max(0.1, Math.min(99.9, (totalNoStake / totalStaked) * 100)) : 50;
 
-                            const totalPool = yesPool + noPool;
-                            const newYesPercent = (yesPool / totalPool) * 100;
-                            const newNoPercent = (noPool / totalPool) * 100;
-
-                            // 12. TRANSACTION WRITE 1: Update the market
+                            // Update market with stake totals
                             transaction.update(marketRef, {
-                                yesPool: yesPool,
-                                noPool: noPool,
+                                totalYesStake: totalYesStake,
+                                totalNoStake: totalNoStake,
+                                yesPool: totalYesStake,
+                                noPool: totalNoStake,
                                 yesPercent: newYesPercent,
                                 noPercent: newNoPercent,
                                 totalStakeVolume: increment(amountInUsdPerPledge)
@@ -13688,19 +13720,19 @@ ${historyText}`;
                         </div>
                         <h3 class="text-lg font-semibold text-white mb-3 leading-tight">${market.title}</h3>
                         
-                        <!-- Pool Liquidity Display -->
+                        <!-- Total Staked Display -->
                         <div class="mb-4 p-2.5 bg-white/5 rounded-lg border border-white/10 pool-section" data-pool-total="${liquidityDisplay}" data-pool-yes="${yesPoolDisplay}" data-pool-no="${noPoolDisplay}">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-xs text-gray-400">💧 Pool Liquidity (AMM)</span>
+                                <span class="text-xs text-gray-400">💰 Total Staked</span>
                                 <span class="text-xs font-semibold text-sky-400 pool-total">${liquidityDisplay} BUSD</span>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div class="bg-green-500/15 border border-green-500/30 rounded px-2 py-1.5">
-                                    <div class="text-xs text-green-300 font-medium">YES Pool</div>
+                                    <div class="text-xs text-green-300 font-medium">YES Stakes</div>
                                     <div class="text-sm font-semibold text-green-400 pool-yes">${yesPoolDisplay} BUSD</div>
                                 </div>
                                 <div class="bg-red-500/15 border border-red-500/30 rounded px-2 py-1.5">
-                                    <div class="text-xs text-red-300 font-medium">NO Pool</div>
+                                    <div class="text-xs text-red-300 font-medium">NO Stakes</div>
                                     <div class="text-sm font-semibold text-red-400 pool-no">${noPoolDisplay} BUSD</div>
                                 </div>
                             </div>
