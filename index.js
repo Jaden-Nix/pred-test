@@ -1499,24 +1499,30 @@ app.post('/api/auth/verify-otp', requireFirebase, async (req, res) => {
             console.warn(`⚠️ Firestore update failed (OTP still valid): ${dbError.message}`);
         }
         
-        const userRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(email);
-        const userSnap = await userRef.get();
-        
-        if (!userSnap.exists) {
-            await userRef.set({
-                userId: email,
-                email,
-                createdAt: new Date(),
-                lastLogin: new Date(),
-                xp: 0,
-                displayName: email.split('@')[0],
-                avatarUrl: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`,
-                following: [],
-                followers: [],
-                badges: []
-            });
-        } else {
-            await userRef.update({ lastLogin: new Date() });
+        // Try to create/update user profile (may fail if quota exceeded, that's ok)
+        try {
+            const userRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(email);
+            const userSnap = await userRef.get();
+            
+            if (!userSnap.exists) {
+                await userRef.set({
+                    userId: email,
+                    email,
+                    createdAt: new Date(),
+                    lastLogin: new Date(),
+                    xp: 0,
+                    displayName: email.split('@')[0],
+                    avatarUrl: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=random`,
+                    following: [],
+                    followers: [],
+                    badges: []
+                });
+            } else {
+                await userRef.update({ lastLogin: new Date() });
+            }
+        } catch (profileError) {
+            console.warn(`⚠️ User profile update skipped (quota): ${profileError.message}`);
+            // Continue anyway - user can still login
         }
         
         const customToken = await admin.auth().createCustomToken(email);
