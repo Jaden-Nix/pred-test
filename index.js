@@ -1518,7 +1518,7 @@ app.post('/api/auth/verify-otp', requireFirebase, async (req, res) => {
                     badges: []
                 });
             } else {
-                await userRef.set({ lastLogin: new Date() }, { merge: true });
+                await userRef.update({ lastLogin: new Date() });
             }
         } catch (profileError) {
             console.warn(`⚠️ User profile update skipped (quota): ${profileError.message}`);
@@ -1684,7 +1684,7 @@ app.post('/api/auth/demo-login', async (req, res) => {
                         badges: ['Demo User']
                     });
                 } else {
-                    await userRef.set({ lastLogin: new Date() }, { merge: true });
+                    await userRef.update({ lastLogin: new Date() });
                 }
             } catch (dbError) {
                 console.warn('Database update failed (non-critical):', dbError.message);
@@ -2099,7 +2099,7 @@ app.post('/api/social/react', requireAuth, requireFirebase, async (req, res) => 
             reactions[reaction].push(userId);
         }
         
-        await postRef.set({ reactions }, { merge: true });
+        await postRef.update({ reactions });
         res.status(200).json({ success: true, added: index === -1 });
     } catch (error) {
         console.error('Error toggling reaction:', error);
@@ -2165,8 +2165,8 @@ app.post('/api/social/comment', requireAuth, requireFirebase, async (req, res) =
         
         const postRef = db.collection(`artifacts/${APP_ID}/public/data/social_posts`).doc(postId);
         const postSnap = await postRef.get();
-        const currentCount = postSnap.exists ? (postSnap.data().commentCount || 0) : 0;
-        await postRef.set({ commentCount: currentCount + 1 }, { merge: true });
+        const currentCount = postSnap.data().commentCount || 0;
+        await postRef.update({ commentCount: currentCount + 1 });
         
         res.status(200).json({ success: true });
     } catch (error) {
