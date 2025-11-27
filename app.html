@@ -1440,6 +1440,117 @@
             background-clip: text;
         }
 
+        /* CRITICAL: Override text-white to dark color in light mode */
+        :root.light-mode .text-white,
+        body.light-mode .text-white {
+            color: #1E293B !important;
+        }
+
+        /* Keep text-white for buttons with colored backgrounds */
+        :root.light-mode .bg-gradient-to-r .text-white,
+        body.light-mode .bg-gradient-to-r .text-white,
+        :root.light-mode .bg-gradient-to-br .text-white,
+        body.light-mode .bg-gradient-to-br .text-white,
+        :root.light-mode .bg-sky-500 .text-white,
+        body.light-mode .bg-sky-500 .text-white,
+        :root.light-mode .bg-indigo-600 .text-white,
+        body.light-mode .bg-indigo-600 .text-white,
+        :root.light-mode .bg-blue-600 .text-white,
+        body.light-mode .bg-blue-600 .text-white,
+        :root.light-mode .bg-green-500 .text-white,
+        body.light-mode .bg-green-500 .text-white,
+        :root.light-mode .bg-red-500 .text-white,
+        body.light-mode .bg-red-500 .text-white,
+        :root.light-mode [class*="from-sky"] .text-white,
+        body.light-mode [class*="from-sky"] .text-white,
+        :root.light-mode [class*="from-indigo"] .text-white,
+        body.light-mode [class*="from-indigo"] .text-white,
+        :root.light-mode .btn-primary,
+        body.light-mode .btn-primary {
+            color: #FFFFFF !important;
+        }
+
+        /* Override text-gray-100 and text-gray-200 */
+        :root.light-mode .text-gray-100,
+        body.light-mode .text-gray-100 {
+            color: #1E293B !important;
+        }
+
+        :root.light-mode .text-gray-200,
+        body.light-mode .text-gray-200 {
+            color: #334155 !important;
+        }
+
+        /* Fix dark backgrounds in light mode */
+        :root.light-mode .bg-gray-800,
+        body.light-mode .bg-gray-800 {
+            background-color: #F1F5F9 !important;
+        }
+
+        :root.light-mode .bg-gray-900,
+        body.light-mode .bg-gray-900 {
+            background-color: #E2E8F0 !important;
+        }
+
+        :root.light-mode .bg-slate-800,
+        body.light-mode .bg-slate-800 {
+            background-color: #F1F5F9 !important;
+        }
+
+        :root.light-mode .bg-slate-900,
+        body.light-mode .bg-slate-900 {
+            background-color: #E2E8F0 !important;
+        }
+
+        /* Fix bg-white with opacity */
+        :root.light-mode .bg-white\/5,
+        body.light-mode .bg-white\/5 {
+            background-color: rgba(15, 23, 42, 0.05) !important;
+        }
+
+        :root.light-mode .bg-white\/10,
+        body.light-mode .bg-white\/10 {
+            background-color: rgba(15, 23, 42, 0.08) !important;
+        }
+
+        /* Fix border colors */
+        :root.light-mode .border-white\/10,
+        body.light-mode .border-white\/10 {
+            border-color: rgba(15, 23, 42, 0.1) !important;
+        }
+
+        :root.light-mode .border-white\/20,
+        body.light-mode .border-white\/20 {
+            border-color: rgba(15, 23, 42, 0.15) !important;
+        }
+
+        :root.light-mode .border-gray-700,
+        body.light-mode .border-gray-700 {
+            border-color: #CBD5E1 !important;
+        }
+
+        :root.light-mode .border-gray-800,
+        body.light-mode .border-gray-800 {
+            border-color: #E2E8F0 !important;
+        }
+
+        /* Fix hover states */
+        :root.light-mode .hover\:bg-gray-800:hover,
+        body.light-mode .hover\:bg-gray-800:hover {
+            background-color: #E2E8F0 !important;
+        }
+
+        :root.light-mode .hover\:text-white:hover,
+        body.light-mode .hover\:text-white:hover {
+            color: #0F172A !important;
+        }
+
+        /* Fix placeholder text */
+        :root.light-mode ::placeholder,
+        body.light-mode ::placeholder {
+            color: #94A3B8 !important;
+        }
+
         /* --- Custom Toggle Switch --- */
         .toggle-label {
             position: relative;
