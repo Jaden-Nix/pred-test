@@ -140,6 +140,17 @@ app.use((req, res, next) => {
 
 async function requireAuth(req, res, next) {
     const authToken = req.headers['authorization']?.replace('Bearer ', '') || req.body.authToken;
+    const demoUserId = req.body.userId || req.headers['x-demo-user-id'];
+    
+    // Allow demo users (alice-456, bob-789, etc.) without Firebase token
+    if (demoUserId && (demoUserId.startsWith('alice-') || demoUserId.startsWith('bob-') || demoUserId.startsWith('guest-'))) {
+        req.user = {
+            uid: demoUserId,
+            email: `${demoUserId.split('-')[0]}@demo.predora.app`,
+            isDemo: true
+        };
+        return next();
+    }
     
     if (!authToken) {
         return res.status(401).json({ error: 'Authentication required' });
