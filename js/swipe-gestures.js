@@ -153,23 +153,21 @@ class SwipeGestureHandler {
     }
 }
 
-// Initialize swipe gestures for Quick Play
+// Initialize swipe gestures for Quick Play card screen ONLY
 function initSwipeGestures() {
     // Cleanup any leftover indicator elements from old code
     document.getElementById('swipe-indicator')?.remove();
     document.querySelectorAll('.stake-success-animation').forEach(el => el.parentElement?.remove());
     
-    // Try both IDs to find Quick Play content
-    const quickPlayContainer = document.getElementById('quick-play-content') || 
-                                document.getElementById('quick-play-container') ||
-                                document.getElementById('pledge-pool-content');
+    // Only attach to the Quick Play card container - NOT pledge pool
+    const quickPlayCard = document.getElementById('quick-play-card');
     
-    if (quickPlayContainer) {
+    if (quickPlayCard) {
         const swipeHandler = new SwipeGestureHandler();
-        swipeHandler.init(quickPlayContainer);
-        console.log('✨ Swipe gestures initialized for Quick Play!', quickPlayContainer.id);
+        swipeHandler.init(quickPlayCard);
+        console.log('✨ Swipe gestures initialized for Quick Play card');
     } else {
-        console.log('⚠️ Quick Play container not found for swipe gestures');
+        console.log('⚠️ Quick Play card not found for swipe gestures');
     }
 }
 
