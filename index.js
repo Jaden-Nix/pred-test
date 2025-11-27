@@ -31,6 +31,9 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET;
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
 const APP_ID = 'predora-hackathon';
 
+// In-memory OTP backup store (fallback when Firestore quota exceeded)
+const otpMemoryStore = new Map();
+
 // OpenAI removed - now using Gemini for all AI features including content moderation
 
 // Initialize Gemini for AI Assistant Chat (free tier)
@@ -1359,14 +1362,30 @@ app.post('/api/auth/send-otp', requireFirebase, async (req, res) => {
         const otpRef = db.collection(`artifacts/${APP_ID}/public/data/otp_codes`).doc(email);
         
         console.log(`💾 Saving OTP to database: ${email} -> ${otp}`);
-        await otpRef.set({
+        
+        // Always save to memory backup first (instant, no quota issues)
+        otpMemoryStore.set(email, {
             otp,
             email,
             createdAt: new Date(),
             expiresAt: new Date(Date.now() + 10 * 60 * 1000),
             used: false
         });
-        console.log(`✅ OTP saved to database`);
+        console.log(`✅ OTP saved to memory backup`);
+        
+        // Also try to save to Firestore (may fail if quota exceeded)
+        try {
+            await otpRef.set({
+                otp,
+                email,
+                createdAt: new Date(),
+                expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+                used: false
+            });
+            console.log(`✅ OTP saved to database`);
+        } catch (dbError) {
+            console.warn(`⚠️ Firestore save failed (using memory backup): ${dbError.message}`);
+        }
         
         try {
             const sendGridClient = await getUncachableSendGridClient();
@@ -1416,15 +1435,32 @@ app.post('/api/auth/verify-otp', requireFirebase, async (req, res) => {
     email = email.toLowerCase().trim();
     
     try {
-        const otpRef = db.collection(`artifacts/${APP_ID}/public/data/otp_codes`).doc(email);
-        const otpSnap = await otpRef.get();
+        let otpData = null;
+        let usingMemoryBackup = false;
         
-        if (!otpSnap.exists) {
-            console.warn(`⚠️ No OTP record found for email: ${email}`);
-            return res.status(404).json({ error: 'No code found for this email' });
+        // Try memory backup first (faster, no quota issues)
+        if (otpMemoryStore.has(email)) {
+            otpData = otpMemoryStore.get(email);
+            usingMemoryBackup = true;
+            console.log(`✅ Found OTP in memory backup for ${email}`);
+        } else {
+            // Fall back to Firestore
+            try {
+                const otpRef = db.collection(`artifacts/${APP_ID}/public/data/otp_codes`).doc(email);
+                const otpSnap = await otpRef.get();
+                if (otpSnap.exists) {
+                    otpData = otpSnap.data();
+                    console.log(`✅ Found OTP in Firestore for ${email}`);
+                }
+            } catch (dbError) {
+                console.warn(`⚠️ Firestore read failed: ${dbError.message}`);
+            }
         }
         
-        const otpData = otpSnap.data();
+        if (!otpData) {
+            console.warn(`⚠️ No OTP record found for email: ${email}`);
+            return res.status(404).json({ error: 'No code found for this email. Please request a new code.' });
+        }
         
         if (otpData.used) {
             console.warn(`⚠️ OTP already used for email: ${email}`);
@@ -1440,20 +1476,28 @@ app.post('/api/auth/verify-otp', requireFirebase, async (req, res) => {
         const storedOtp = String(otpData.otp).trim();
         const providedOtp = String(otp).trim();
         
-        console.log(`🔐 OTP Verification Debug:`);
+        console.log(`🔐 OTP Verification (${usingMemoryBackup ? 'MEMORY' : 'FIRESTORE'}):`);
         console.log(`   Email: ${email}`);
-        console.log(`   Stored OTP: "${storedOtp}" (type: ${typeof otpData.otp}, length: ${storedOtp.length})`);
-        console.log(`   Provided OTP: "${providedOtp}" (type: ${typeof otp}, length: ${providedOtp.length})`);
-        console.log(`   Match: ${storedOtp === providedOtp}`);
-        console.log(`   Char codes stored: ${Array.from(storedOtp).map(c => c.charCodeAt(0)).join(',')}`);
-        console.log(`   Char codes provided: ${Array.from(providedOtp).map(c => c.charCodeAt(0)).join(',')}`);
+        console.log(`   Stored: "${storedOtp}", Provided: "${providedOtp}", Match: ${storedOtp === providedOtp}`);
         
         if (storedOtp !== providedOtp) {
             console.warn(`❌ OTP mismatch for ${email}`);
             return res.status(401).json({ error: 'Invalid code' });
         }
         
-        await otpRef.update({ used: true, usedAt: new Date() });
+        // Mark as used in memory
+        if (usingMemoryBackup) {
+            otpData.used = true;
+            otpMemoryStore.set(email, otpData);
+        }
+        
+        // Try to mark as used in Firestore (may fail, that's ok)
+        try {
+            const otpRef = db.collection(`artifacts/${APP_ID}/public/data/otp_codes`).doc(email);
+            await otpRef.update({ used: true, usedAt: new Date() });
+        } catch (dbError) {
+            console.warn(`⚠️ Firestore update failed (OTP still valid): ${dbError.message}`);
+        }
         
         const userRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(email);
         const userSnap = await userRef.get();
