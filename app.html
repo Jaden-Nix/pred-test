@@ -7058,13 +7058,14 @@
          * and renders the home screen feed. [NEW VERSION]
          */
         function attachStandardMarketsListener() {
-            const { collection, query, onSnapshot } = window.firebase.firestore;
+            const { collection, query, onSnapshot, limit } = window.firebase.firestore;
 
             try {
-                // Query for all standard markets
+                // Query for standard markets - limit to 50 for faster loading
                 const q = query(
                     collection(db, 'artifacts', APP_ID, 'public', 'data', STANDARD_MARKETS_COLLECTION),
-                where('isResolved', '==', false)
+                    where('isResolved', '==', false),
+                    limit(50)
                 );
 
                 standardMarketsUnsubscribe = onSnapshot(q, (snapshot) => {
@@ -7129,10 +7130,12 @@
                 // 3. Filter the Mock Markets
                 const filteredMockMarkets = allMockMarkets.filter(market => !stakedMarketIds.has(market.id)&& !localPledgeIds.has(market.id));
 
-                // 4. Listen for Active "Real" Markets from the admin panel
+                // 4. Listen for Active "Real" Markets from the admin panel (limit to 30 for faster loading)
+                const { limit: qpLimit } = window.firebase.firestore;
                 const q = query(
                     collection(db, 'artifacts', APP_ID, 'public', 'data', QUICK_PLAY_MARKETS_COLLECTION),
-                    where('isResolved', '==', false)
+                    where('isResolved', '==', false),
+                    qpLimit(30)
                 );
 
                 if (quickPlayUnsubscribe) quickPlayUnsubscribe(); 
