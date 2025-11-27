@@ -1335,12 +1335,15 @@ function generateJuryCode() {
 // =============================================================================
 
 app.post('/api/auth/send-otp', requireFirebase, async (req, res) => {
-    const { email } = req.body;
+    let { email } = req.body;
     
     if (!email) {
         console.warn('⚠️ Send OTP request missing email');
         return res.status(400).json({ error: 'Email required' });
     }
+    
+    // Normalize email to lowercase to avoid case-sensitivity issues
+    email = email.toLowerCase().trim();
     
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1403,11 +1406,14 @@ app.post('/api/auth/send-otp', requireFirebase, async (req, res) => {
 });
 
 app.post('/api/auth/verify-otp', requireFirebase, async (req, res) => {
-    const { email, otp } = req.body;
+    let { email, otp } = req.body;
     
     if (!email || !otp) {
         return res.status(400).json({ error: 'Email and OTP required' });
     }
+    
+    // Normalize email to lowercase to match how it was stored
+    email = email.toLowerCase().trim();
     
     try {
         const otpRef = db.collection(`artifacts/${APP_ID}/public/data/otp_codes`).doc(email);
