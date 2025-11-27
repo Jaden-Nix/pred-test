@@ -5143,6 +5143,10 @@
                         userProfile = doc.data();
                         console.log("Profile updated in real-time:", userProfile);
                         updateProfileUI(userProfile);
+                        // Update all balance displays including asset selectors
+                        if (typeof populateAssetSelector === 'function') {
+                            populateAssetSelector();
+                        }
                     }
                 });
 
@@ -11156,30 +11160,40 @@ ${historyText}`;
                 const batch = writeBatch(db);
                 let winnersPaid = 0;
 
-                // Use default 60/40 odds for Quick Play if odds are missing
-                const winningOdds = winningOutcome === 'YES' 
-                    ? (market.yesPercent || 60) 
-                    : (market.noPercent || 40);
+                // --- PROPORTIONAL PAYOUT CALCULATION ---
+                // First pass: Calculate total stakes for winners and losers
+                let totalWinningStakeUsd = 0;
+                let totalLosingStakeUsd = 0;
+                const allPledges = snapshot.docs.map(d => ({ ref: d.ref, data: d.data() }));
+                
+                for (const { data: pledge } of allPledges) {
+                    const stakeUsd = pledge.amountUsd || 0;
+                    if (pledge.pick === winningOutcome) {
+                        totalWinningStakeUsd += stakeUsd;
+                    } else {
+                        totalLosingStakeUsd += stakeUsd;
+                    }
+                }
+                
+                const totalPoolUsd = totalWinningStakeUsd + totalLosingStakeUsd;
+                console.log(`PAYOUT: Pool=$${totalPoolUsd.toFixed(2)}, Winners=$${totalWinningStakeUsd.toFixed(2)}, Losers=$${totalLosingStakeUsd.toFixed(2)}`);
 
                 // --- YIELD SYSTEM LOGIC (TIME-WEIGHTED PER PLEDGE) ---
                 const resolutionTime = new Date();
 
-                for (const pledgeDoc of snapshot.docs) {
-                    const pledge = pledgeDoc.data();
-                    const pledgeRef = pledgeDoc.ref;
-
+                for (const { ref: pledgeRef, data: pledge } of allPledges) {
                     // Multi-option or binary check
                     const isWinner = pledge.pick === winningOutcome;
+                    const stakeUsd = pledge.amountUsd || 0;
 
-                    // For multi-option markets, get the winning option's odds
-                    let winningOddsForPayout = winningOdds;
-                    if (market.marketStructure === 'multi-option' && market.options && isWinner) {
-                        const winningOption = market.options.find(opt => opt.id === winningOutcome);
-                        winningOddsForPayout = winningOption ? winningOption.odds : 100;
+                    // Calculate proportional payout: stake + (stake / totalWinningStake) * losingPool
+                    // This gives winners their stake back plus a proportional share of the losing pool
+                    let payoutUsd = 0;
+                    if (isWinner && totalWinningStakeUsd > 0) {
+                        const stakeShare = stakeUsd / totalWinningStakeUsd;
+                        const winnings = stakeShare * totalLosingStakeUsd;
+                        payoutUsd = stakeUsd + winnings;
                     }
-
-                    // Calculate base payout based on the market's odds
-                    const payoutUsd = isWinner ? (pledge.amountUsd / (winningOddsForPayout / 100)) : 0;
 
                     // For No-Loss, losers get principal back. For Classic, they get 0.
                     const principalReturn = market.isNoLoss ? pledge.amountUsd : 0;

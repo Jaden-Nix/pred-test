@@ -550,36 +550,40 @@ async function autoResolveMarkets() {
             const outcome = response.candidates[0].content.parts[0].text.trim().toUpperCase();
 
             if (outcome === 'YES' || outcome === 'NO') {
-                // Payout logic: distribute winnings to correct predictors
+                // Payout logic: distribute winnings proportionally to stake size
                 try {
                     const pledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
                     const pledgeSnaps = await pledgesRef.where('marketId', '==', marketId).get();
                     
-                    let totalWinnings = 0;
+                    // Process each pledge and calculate totals
+                    const allPledges = pledgeSnaps.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    // Calculate total stakes for winners and losers
+                    let totalWinningStakeUsd = 0;
+                    let totalLosingStakeUsd = 0;
                     const winners = [];
                     
-                    for (const pledgeSnap of pledgeSnaps.docs) {
-                        const pledge = pledgeSnap.data();
-                        // CRITICAL FIX: Use pledge.pick (the canonical field stored in pledges)
+                    for (const pledge of allPledges) {
+                        const stakeUsd = pledge.amountUsd || pledge.amount || 0;
                         if (pledge.pick === outcome) {
                             winners.push(pledge);
-                            totalWinnings += pledge.amount || 0;
+                            totalWinningStakeUsd += stakeUsd;
+                        } else {
+                            totalLosingStakeUsd += stakeUsd;
                         }
                     }
                     
-                    // Process each pledge independently - simpler and more accurate
-                    const allPledges = pledgeSnaps.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    const poolTotal = market.totalPool || (market.yesAmount || 0) + (market.noAmount || 0);
-                    const winningsPerPledge = winners.length > 0 ? poolTotal / winners.length : 0;
+                    const totalPoolUsd = totalWinningStakeUsd + totalLosingStakeUsd;
                     
                     // Use batch writes for atomicity
                     const batch = db.batch();
                     const userStatsMap = new Map(); // Track cumulative stats per user for final update
                     
-                    // First pass: Calculate stats per user across all their pledges
+                    // First pass: Calculate proportional payouts per user across all their pledges
                     for (const pledge of allPledges) {
                         const userId = pledge.userId;
                         const isWinner = pledge.pick === outcome;
+                        const stakeUsd = pledge.amountUsd || pledge.amount || 0;
                         
                         if (!userStatsMap.has(userId)) {
                             userStatsMap.set(userId, { wins: 0, losses: 0, profit: 0 });
@@ -588,9 +592,14 @@ async function autoResolveMarkets() {
                         const userStats = userStatsMap.get(userId);
                         if (isWinner) {
                             userStats.wins++;
-                            userStats.profit += winningsPerPledge;
+                            // Proportional payout: stake + (stake / totalWinningStake) * losingPool
+                            // This gives winners their stake back plus a proportional share of losing pool
+                            const stakeShare = totalWinningStakeUsd > 0 ? stakeUsd / totalWinningStakeUsd : 0;
+                            const winnings = stakeShare * totalLosingStakeUsd;
+                            userStats.profit += stakeUsd + winnings; // Return stake + winnings
                         } else {
                             userStats.losses++;
+                            // Losers get nothing (their stake went to winners)
                         }
                     }
                     

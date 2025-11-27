@@ -10,6 +10,21 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### November 27, 2025 - Critical Payout Calculation & Balance Update Fixes
+- **Fixed payout calculation (Backend)**: The backend was incorrectly dividing pool equally among winners
+  - Changed from `poolTotal / winners.length` to proportional stake-based payouts
+  - New formula: `stake + (stake / totalWinningStake) * losingPool`
+  - Winners now receive their stake back plus proportional share of losing pool
+  - This correctly rewards larger stakes with proportionally larger winnings
+- **Fixed payout calculation (Frontend)**: The admin resolution used incorrect odds-based formula
+  - Removed `pledge.amountUsd / (winningOddsForPayout / 100)` calculation
+  - Replaced with same proportional formula as backend for consistency
+  - Added logging for payout pool calculations
+- **Fixed balance not updating in realtime**: Balance display wasn't refreshing after transactions
+  - Added `populateAssetSelector()` call to profile snapshot listener
+  - Now all balance displays (header, asset selector, wallet cards) update when Firestore changes arrive
+  - Users will see balance changes immediately after payouts or stakes
+
 ### November 26, 2025 - Multi-Option Market Fixes & Mobile UX Improvements
 - **Fixed multi-option display bug**: Options were showing as "undefined" because odds weren't being calculated from optionAmounts
   - Implemented proper odds calculation by summing all optionAmounts values and computing percentages
