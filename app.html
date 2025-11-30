@@ -6225,19 +6225,21 @@
             const postCard = btn?.closest('.card-micro');
             
             try {
-                // Ensure we have a fresh token
+                // Try to get auth token (may fail for demo/email users)
                 await getAuthToken();
-                if (!authToken) { 
-                    console.error('❌ No auth token available for reaction'); 
-                    showToast('Authentication failed', 'error');
-                    return; 
+                
+                // Build request with userId for demo/email users without Firebase token
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
                 }
-                console.log('📤 Sending reaction with token prefix:', authToken?.substring(0, 10));
+                
+                console.log('📤 Sending reaction - userId:', currentUserId, 'hasToken:', !!authToken);
                 
                 const response = await fetch('/api/social/react', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                    body: JSON.stringify({ postId, reaction: reactionType })
+                    headers,
+                    body: JSON.stringify({ postId, reaction: reactionType, userId: currentUserId })
                 });
                 
                 if (!response.ok) {
@@ -6747,9 +6749,8 @@
             if (!content) return;
             if (btn) btn.disabled = true;
             try {
-                // Ensure we have a fresh token
+                // Try to get auth token (may fail for demo/email users)
                 await getAuthToken();
-                if (!authToken) { showToast('Authentication failed', 'error'); if (btn) btn.disabled = false; return; }
                 
                 const requestBody = {
                     postId,
@@ -6763,9 +6764,16 @@
                     requestBody.parentCommentId = input.dataset.replyTo;
                 }
                 
+                const headers = { 'Content-Type': 'application/json' };
+                if (authToken) {
+                    headers['Authorization'] = `Bearer ${authToken}`;
+                }
+                
+                console.log('📤 Sending comment - userId:', currentUserId, 'hasToken:', !!authToken);
+                
                 const response = await fetch('/api/social/comment', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+                    headers,
                     body: JSON.stringify(requestBody)
                 });
                 
