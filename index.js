@@ -1416,7 +1416,7 @@ RULES:
 3. Consider daily volatility when setting targets
 4. DIVERSITY: Include crypto, sports, entertainment, and gaming quick plays
 5. Focus on HIGH-PROBABILITY + HIGH-INTEREST events
-6. Create events happening ${tomorrowStr}-${dayAfterStr}, 2025 (the NEXT 24-48 hours)
+6. Create events happening ${tomorrowStr}-${dayAfterStr}, ${tomorrow.getFullYear()} (the NEXT 24-48 hours)
 
 Return ONLY a JSON array with:
 - title: specific, short-term prediction
