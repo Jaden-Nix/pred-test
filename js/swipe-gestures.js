@@ -9,6 +9,7 @@ class SwipeGestureHandler {
         this.startY = 0;
         this.endX = 0;
         this.endY = 0;
+        this.hasMoved = false;
         this.minSwipeDistance = 50;
         this.activeElement = null;
         this.boundHandlers = {};
@@ -55,6 +56,9 @@ class SwipeGestureHandler {
     handleTouchStart(e) {
         this.startX = e.touches[0].clientX;
         this.startY = e.touches[0].clientY;
+        this.endX = this.startX;
+        this.endY = this.startY;
+        this.hasMoved = false;
     }
 
     handleTouchMove(e) {
@@ -62,6 +66,7 @@ class SwipeGestureHandler {
 
         this.endX = e.touches[0].clientX;
         this.endY = e.touches[0].clientY;
+        this.hasMoved = true;
 
         const diffX = this.endX - this.startX;
         const diffY = this.endY - this.startY;
@@ -73,11 +78,17 @@ class SwipeGestureHandler {
     }
 
     handleTouchEnd(e) {
+        // Use changedTouches for accurate end position
+        if (e.changedTouches && e.changedTouches[0]) {
+            this.endX = e.changedTouches[0].clientX;
+            this.endY = e.changedTouches[0].clientY;
+        }
+
         const diffX = this.endX - this.startX;
         const diffY = this.endY - this.startY;
 
-        // Check if horizontal swipe
-        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > this.minSwipeDistance) {
+        // Only trigger swipe if user actually moved (not just a tap)
+        if (this.hasMoved && Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > this.minSwipeDistance) {
             const direction = diffX > 0 ? 'YES' : 'NO';
             this.triggerStake(direction);
         }
@@ -89,6 +100,9 @@ class SwipeGestureHandler {
     handleMouseDown(e) {
         this.startX = e.clientX;
         this.startY = e.clientY;
+        this.endX = this.startX;
+        this.endY = this.startY;
+        this.hasMoved = false;
         if (this.activeElement) {
             this.activeElement.style.cursor = 'grabbing';
         }
@@ -99,6 +113,7 @@ class SwipeGestureHandler {
 
         this.endX = e.clientX;
         this.endY = e.clientY;
+        this.hasMoved = true;
 
         const diffX = this.endX - this.startX;
 
@@ -108,10 +123,15 @@ class SwipeGestureHandler {
     }
 
     handleMouseUp(e) {
+        // Get final position from mouse event
+        this.endX = e.clientX;
+        this.endY = e.clientY;
+
         const diffX = this.endX - this.startX;
         const diffY = this.endY - this.startY;
 
-        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > this.minSwipeDistance) {
+        // Only trigger swipe if user actually moved (not just a click)
+        if (this.hasMoved && Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > this.minSwipeDistance) {
             const direction = diffX > 0 ? 'YES' : 'NO';
             this.triggerStake(direction);
         }
@@ -176,6 +196,7 @@ class SwipeGestureHandler {
         this.startY = 0;
         this.endX = 0;
         this.endY = 0;
+        this.hasMoved = false;
     }
 }
 
