@@ -6985,6 +6985,10 @@
                 case 'quick-play-screen':
                     // Re-attach listener every time to refresh the "already staked" list
                     attachQuickPlayListener();
+                    // Initialize swipe gestures (cleans up old handlers first)
+                    if (window.initSwipeGestures) {
+                        setTimeout(() => initSwipeGestures(), 100);
+                    }
                     break;
                 case 'social-feed-screen':
                     loadSocialFeed();
@@ -7189,8 +7193,25 @@
 
                 standardMarketsUnsubscribe = onSnapshot(q, (snapshot) => {
                     let markets = [];
+                    const todayMs = new Date().setHours(0, 0, 0, 0);
                     snapshot.forEach(doc => {
-                        markets.push({ id: doc.id, ...doc.data() });
+                        const data = doc.data();
+                        // Filter out markets with past resolution dates
+                        let resolutionMs = null;
+                        if (data.resolutionDate) {
+                            // Handle both string dates (YYYY-MM-DD) and Firestore Timestamps
+                            if (typeof data.resolutionDate === 'string') {
+                                resolutionMs = new Date(data.resolutionDate).getTime();
+                            } else if (data.resolutionDate.toDate) {
+                                resolutionMs = data.resolutionDate.toDate().getTime();
+                            } else if (data.resolutionDate.seconds) {
+                                resolutionMs = data.resolutionDate.seconds * 1000;
+                            }
+                        }
+                        // Include market if no resolution date or resolution date is today or in the future
+                        if (!resolutionMs || resolutionMs >= todayMs) {
+                            markets.push({ id: doc.id, ...data });
+                        }
                     });
 
                     // Add the hardcoded mock market to the top
@@ -7260,10 +7281,24 @@
                 if (quickPlayUnsubscribe) quickPlayUnsubscribe(); 
                 quickPlayUnsubscribe = onSnapshot(q, (snapshot) => {
                     let realMarkets = [];
+                    const todayMs = new Date().setHours(0, 0, 0, 0);
                     snapshot.forEach(doc => {
-                        // Only include REAL markets that are NOT RESOLVED AND NOT STAKED
-                        if (!stakedMarketIds.has(doc.id)&& !localPledgeIds.has(doc.id))  {
-                            realMarkets.push({ id: doc.id, ...doc.data(), isMock: false }); 
+                        const data = doc.data();
+                        // Calculate resolution time from various possible formats
+                        let resolutionMs = null;
+                        const resField = data.resolutionDate || data.expiresAt;
+                        if (resField) {
+                            if (typeof resField === 'string') {
+                                resolutionMs = new Date(resField).getTime();
+                            } else if (resField.toDate) {
+                                resolutionMs = resField.toDate().getTime();
+                            } else if (resField.seconds) {
+                                resolutionMs = resField.seconds * 1000;
+                            }
+                        }
+                        // Only include markets that are NOT RESOLVED, NOT STAKED, and NOT EXPIRED
+                        if (!stakedMarketIds.has(doc.id) && !localPledgeIds.has(doc.id) && (!resolutionMs || resolutionMs >= todayMs)) {
+                            realMarkets.push({ id: doc.id, ...data, isMock: false }); 
                         }
                     });
 
@@ -8788,7 +8823,7 @@
                     </div>
                 </div>
                 <div class="text-center text-gray-400 text-xs pb-2">
-                    <p>Tap to make your pick</p>
+                    <p>Swipe or tap to make your pick</p>
                 </div>
             `;
         }

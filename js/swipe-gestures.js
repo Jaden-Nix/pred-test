@@ -11,21 +11,45 @@ class SwipeGestureHandler {
         this.endY = 0;
         this.minSwipeDistance = 50;
         this.activeElement = null;
+        this.boundHandlers = {};
     }
 
     init(element) {
         if (!element) return;
 
-        element.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: true });
-        element.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
-        element.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: true });
+        // Create bound handlers for proper removal
+        this.boundHandlers = {
+            touchStart: (e) => this.handleTouchStart(e),
+            touchMove: (e) => this.handleTouchMove(e),
+            touchEnd: (e) => this.handleTouchEnd(e),
+            mouseDown: (e) => this.handleMouseDown(e),
+            mouseMove: (e) => this.handleMouseMove(e),
+            mouseUp: (e) => this.handleMouseUp(e)
+        };
+
+        element.addEventListener('touchstart', this.boundHandlers.touchStart, { passive: true });
+        element.addEventListener('touchmove', this.boundHandlers.touchMove, { passive: false });
+        element.addEventListener('touchend', this.boundHandlers.touchEnd, { passive: true });
 
         // Mouse support for desktop
-        element.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-        element.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        element.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        element.addEventListener('mousedown', this.boundHandlers.mouseDown);
+        element.addEventListener('mousemove', this.boundHandlers.mouseMove);
+        element.addEventListener('mouseup', this.boundHandlers.mouseUp);
 
         this.activeElement = element;
+    }
+
+    destroy() {
+        if (this.activeElement && this.boundHandlers.touchStart) {
+            this.activeElement.removeEventListener('touchstart', this.boundHandlers.touchStart);
+            this.activeElement.removeEventListener('touchmove', this.boundHandlers.touchMove);
+            this.activeElement.removeEventListener('touchend', this.boundHandlers.touchEnd);
+            this.activeElement.removeEventListener('mousedown', this.boundHandlers.mouseDown);
+            this.activeElement.removeEventListener('mousemove', this.boundHandlers.mouseMove);
+            this.activeElement.removeEventListener('mouseup', this.boundHandlers.mouseUp);
+        }
+        this.activeElement = null;
+        this.boundHandlers = {};
     }
 
     handleTouchStart(e) {
@@ -65,7 +89,9 @@ class SwipeGestureHandler {
     handleMouseDown(e) {
         this.startX = e.clientX;
         this.startY = e.clientY;
-        this.activeElement.style.cursor = 'grabbing';
+        if (this.activeElement) {
+            this.activeElement.style.cursor = 'grabbing';
+        }
     }
 
     handleMouseMove(e) {
@@ -153,18 +179,27 @@ class SwipeGestureHandler {
     }
 }
 
+// Singleton swipe handler instance
+let currentSwipeHandler = null;
+
 // Initialize swipe gestures for Quick Play card screen ONLY
 function initSwipeGestures() {
     // Cleanup any leftover indicator elements from old code
     document.getElementById('swipe-indicator')?.remove();
     document.querySelectorAll('.stake-success-animation').forEach(el => el.parentElement?.remove());
     
+    // Destroy existing handler to prevent duplicate listeners
+    if (currentSwipeHandler) {
+        currentSwipeHandler.destroy();
+        currentSwipeHandler = null;
+    }
+    
     // Only attach to the Quick Play card container - NOT pledge pool
     const quickPlayCard = document.getElementById('quick-play-card');
     
     if (quickPlayCard) {
-        const swipeHandler = new SwipeGestureHandler();
-        swipeHandler.init(quickPlayCard);
+        currentSwipeHandler = new SwipeGestureHandler();
+        currentSwipeHandler.init(quickPlayCard);
         console.log('✨ Swipe gestures initialized for Quick Play card');
     } else {
         console.log('⚠️ Quick Play card not found for swipe gestures');
