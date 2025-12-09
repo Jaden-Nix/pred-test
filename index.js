@@ -694,20 +694,31 @@ async function autoResolveMarkets() {
                         }
                     }
                     
-                    // Commit atomically
+                    // IMPORTANT: Include market resolution in same batch for atomicity
+                    // This ensures payout and resolution happen together (both succeed or both fail)
+                    batch.update(doc.ref, { 
+                        isResolved: true, 
+                        winningOutcome: outcome, 
+                        resolvedAt: new Date(),
+                        status: 'resolved'
+                    });
+                    
+                    // Commit atomically - payouts AND resolution together
                     await batch.commit();
-                    console.log(`✅ ORACLE: Updated stats for ${userStatsMap.size} users on market ${marketId}`);
+                    console.log(`✅ ORACLE: Resolved ${market.title} as ${outcome} and updated stats for ${userStatsMap.size} users`);
                 } catch (payoutError) {
-                    console.error(`ORACLE: Payout failed for ${marketId}:`, payoutError.message);
+                    console.error(`ORACLE: Payout/resolution failed for ${marketId}:`, payoutError.message);
+                    // Market stays unresolved, will retry on next cron run
+                    continue;
                 }
                 
-                // 📢 SEND NOTIFICATIONS to all users who staked on this market
+                // 📢 SEND NOTIFICATIONS to all users who staked on this market (separate batch, non-critical)
                 try {
                     const allPledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
                     const allPledges = await allPledgesRef.where('marketId', '==', marketId).get();
                     
                     const notifiedUsers = new Set();
-                    const batch = db.batch();
+                    const notifBatch = db.batch();
                     
                     for (const pledgeSnap of allPledges.docs) {
                         const pledge = pledgeSnap.data();
@@ -725,7 +736,7 @@ async function autoResolveMarkets() {
                             
                             // Create notification for user using batch write
                             const notificationsRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile/${userIdToNotify}/notifications`).doc();
-                            batch.set(notificationsRef, {
+                            notifBatch.set(notificationsRef, {
                                 type: 'market_resolved',
                                 marketId: marketId,
                                 marketTitle: market.title,
@@ -740,7 +751,7 @@ async function autoResolveMarkets() {
                     
                     // Commit batch write
                     if (notifiedUsers.size > 0) {
-                        await batch.commit();
+                        await notifBatch.commit();
                         console.log(`📢 Market resolution notifications committed to ${notifiedUsers.size} users for ${market.title}`);
                         
                         // Send email notifications asynchronously (don't block)
@@ -751,9 +762,6 @@ async function autoResolveMarkets() {
                 } catch (notifError) {
                     console.error(`⚠️ Failed to send market resolution notifications:`, notifError.message);
                 }
-                
-                 await doc.ref.update({ isResolved: true, winningOutcome: outcome, resolvedAt: new Date() });
-                 console.log(`ORACLE: Resolved ${market.title} as ${outcome}`);
             }
         } catch (e) {
             console.error(`ORACLE: Failed market ${marketId}:`, e.message);
