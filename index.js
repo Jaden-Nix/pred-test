@@ -2971,6 +2971,55 @@ app.post('/api/admin/repair-markets', requireAdmin, requireFirebase, async (req,
 });
 
 // =============================================================================
+// ADMIN: CLEAR EXPIRED QUICK PLAY MARKETS
+// =============================================================================
+app.post('/api/admin/clear-expired-quickplays', requireAdmin, requireFirebase, async (req, res) => {
+    try {
+        console.log('🗑️ Admin clearing expired quick play markets...');
+        const today = new Date().toISOString().split('T')[0];
+        const collectionPath = `artifacts/${APP_ID}/public/data/quick_play_markets`;
+        
+        const snapshot = await db.collection(collectionPath)
+            .where('isResolved', '==', false)
+            .get();
+        
+        let expiredCount = 0;
+        let deletedCount = 0;
+        const batch = db.batch();
+        
+        for (const doc of snapshot.docs) {
+            const market = doc.data();
+            const resolutionDate = market.resolutionDate;
+            
+            if (resolutionDate && resolutionDate < today) {
+                batch.update(doc.ref, {
+                    isResolved: true,
+                    winningOutcome: 'EXPIRED',
+                    resolvedAt: new Date(),
+                    status: 'expired'
+                });
+                expiredCount++;
+                console.log(`🗑️ Marking as expired: ${market.title}`);
+            }
+        }
+        
+        if (expiredCount > 0) {
+            await batch.commit();
+        }
+        
+        console.log(`✅ Cleared ${expiredCount} expired quick play markets`);
+        res.json({ 
+            success: true, 
+            expiredCount,
+            message: `Marked ${expiredCount} expired quick play markets as resolved` 
+        });
+    } catch (error) {
+        console.error('❌ Clear expired quick plays failed:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// =============================================================================
 // HEALTH CHECK
 // =============================================================================
 app.get('/api/health', (req, res) => {

@@ -3680,6 +3680,14 @@
                     </button>
                 </div>
 
+                <div class="ui-panel p-4 space-y-3">
+                    <h2 class="text-lg font-semibold text-sky-400">⚡ Clear Expired Quick Play Markets</h2>
+                    <p class="text-sm text-gray-400">Marks all past-due Quick Play markets as expired/resolved. This allows the oracle to create fresh new Quick Play markets.</p>
+                    <button onclick="clearExpiredQuickPlays()" class="btn" style="background-color: #0369a1; color: white;">
+                        Clear Expired Quick Plays
+                    </button>
+                </div>
+
             </div>
 
 
@@ -4553,7 +4561,7 @@
             "https://res.cloudinary.com/djslxbghy/image/upload/IMG_4948_qskmio.png"
         ];
 
-        const ADMIN_PASSWORD = "predora-admin";
+        const ADMIN_PASSWORD = "predora-admin-2024";
         let adminSecret = null; // Store admin secret after validation
 
         // --- GEMINI API CONSTANTS ---
@@ -12427,6 +12435,43 @@ ${historyText}`;
                 showLoadingOverlay(false);
                 console.error("Failed to run Oracle jobs:", error);
                 showToast(`Oracle failed: ${error.message}`);
+            }
+        }
+
+        /**
+         * Admin function to clear expired Quick Play markets.
+         */
+        async function clearExpiredQuickPlays() {
+            if (!adminSecret) {
+                showToast("Please log in as admin first");
+                return;
+            }
+
+            showLoadingOverlay(true, "Clearing expired Quick Play markets...");
+
+            try {
+                const response = await fetch('/api/admin/clear-expired-quickplays', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-admin-secret': adminSecret
+                    }
+                });
+
+                const result = await response.json();
+                showLoadingOverlay(false);
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Unknown server error');
+                }
+
+                console.log("Cleared expired quick plays:", result);
+                showToast(`✅ Cleared ${result.expiredCount} expired Quick Plays`);
+
+            } catch (error) {
+                showLoadingOverlay(false);
+                console.error("Failed to clear expired Quick Plays:", error);
+                showToast(`Error: ${error.message}`);
             }
         }
 
