@@ -4511,7 +4511,7 @@
 
         // --- GEMINI API CONSTANTS ---
 
-          const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
+          const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent";
         const GEMINI_API_KEY = "";
 
         // --- FIRESTORE PATHS ---
@@ -9377,7 +9377,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         prompt: `Analyze this prediction market question and suggest when it should be resolved:\n\n"${title}"\n\nProvide ONLY the date in YYYY-MM-DD format. If the event has a specific date (like "Super Bowl 2025"), use that exact date. If it's an ongoing question (like "Will BTC hit $100k in 2025?"), suggest December 31 of the current/relevant year. Return ONLY the date, nothing else.`,
-                        model: 'gemini-1.5-pro'
+                        model: 'gemini-2.5-pro'
                     })
                 });
 

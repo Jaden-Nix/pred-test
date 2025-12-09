@@ -170,7 +170,7 @@ The platform uses a sophisticated multi-agent verification system (`swarm-verify
 
 ### AI Services
 - **Google Gemini AI** (`@google/generative-ai` npm package)
-  - Model: `gemini-1.5-pro`
+  - Model: `gemini-2.5-pro`
   - Purpose: Market resolution oracle, content moderation, AI mentor chatbot, market insights
   - Upgraded to Pro for better reasoning and accuracy
   - Requires `GEMINI_API_KEY` environment variable
