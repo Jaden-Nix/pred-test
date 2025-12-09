@@ -280,7 +280,7 @@ app.post('/api/gemini', async (req, res) => {
 
     const payload = {
         systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text: userPrompt }] }]
+        contents: [{ role: "user", parts: [{ text: userPrompt }] }]
     };
 
     if (jsonSchema) {
@@ -598,7 +598,7 @@ async function autoResolveMarkets() {
             const systemPrompt = `As of ${today}, verify the outcome of: "${market.title}". Respond ONLY 'YES', 'NO', 'AMBIGUOUS'.`;
             const payload = {
                 systemInstruction: { parts: [{ text: systemPrompt }] },
-                contents: [{ parts: [{ text: `Market: "${market.title}"` }] }],
+                contents: [{ role: "user", parts: [{ text: `Market: "${market.title}"` }] }],
                 tools: [{ "google_search": {} }]
             };
 
@@ -1089,7 +1089,7 @@ REQUIREMENTS:
 
         const payload = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: [{ parts: [{ text: userPrompt }] }],
+            contents: [{ role: "user", parts: [{ text: userPrompt }] }],
             generationConfig: { responseMimeType: "application/json" }
         };
 
@@ -1260,7 +1260,7 @@ TASK: Generate 6 SMART quick plays for Nov 26-27:
 
         const payload = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: [{ parts: [{ text: userPrompt }] }],
+            contents: [{ role: "user", parts: [{ text: userPrompt }] }],
             generationConfig: { responseMimeType: "application/json" }
         };
 
