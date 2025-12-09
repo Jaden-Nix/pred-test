@@ -930,6 +930,167 @@ async function autoResolveQuickPolls() {
     }
 }
 
+// --- ORACLE: Auto-Resolve Quick Play Markets ---
+async function autoResolveQuickPlays() {
+    console.log("⚡ ORACLE: Running autoResolveQuickPlays...");
+    
+    if (!db) {
+        console.warn("⚠️ Database not initialized, skipping quick plays resolution");
+        return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const collectionPath = `artifacts/${APP_ID}/public/data/quick_play_markets`;
+    const snapshot = await db.collection(collectionPath).where('isResolved', '==', false).get();
+
+    if (snapshot.empty) {
+        console.log("⚡ ORACLE: No unresolved quick play markets.");
+        return;
+    }
+
+    // Filter markets past their resolution date
+    const marketsToResolve = snapshot.docs.filter(doc => {
+        const market = doc.data();
+        return market.resolutionDate && market.resolutionDate <= today;
+    });
+
+    console.log(`⚡ ORACLE: Resolving ${marketsToResolve.length} quick play markets...`);
+
+    for (const doc of marketsToResolve) {
+        const market = doc.data();
+        const marketId = doc.id;
+
+        try {
+            // Use AI to determine outcome
+            const systemPrompt = `As of ${today}, verify the outcome of this quick play market: "${market.title}". 
+Research the actual result using web search. Respond ONLY with one word: 'YES', 'NO', or 'AMBIGUOUS' if truly uncertain.`;
+            
+            const payload = {
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                contents: [{ role: "user", parts: [{ text: `Quick Play Market: "${market.title}"\nCategory: ${market.category || 'General'}\nResolution Date: ${market.resolutionDate}` }] }],
+                tools: [{ "google_search": {} }]
+            };
+
+            const response = await callGoogleApi(payload);
+            const outcomeText = response.candidates[0].content.parts[0].text.trim().toUpperCase();
+            
+            // Determine outcome
+            let outcome;
+            if (outcomeText.includes('YES')) {
+                outcome = 'YES';
+            } else if (outcomeText.includes('NO')) {
+                outcome = 'NO';
+            } else {
+                outcome = 'EXPIRED'; // Mark as expired if ambiguous
+            }
+
+            // Process payouts for YES/NO outcomes
+            if (outcome === 'YES' || outcome === 'NO') {
+                try {
+                    const pledgesRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`);
+                    const pledgeSnaps = await pledgesRef.where('marketId', '==', marketId).get();
+                    
+                    const allPledges = pledgeSnaps.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    
+                    let totalWinningStakeUsd = 0;
+                    let totalLosingStakeUsd = 0;
+                    const winners = [];
+                    const losers = [];
+
+                    for (const pledge of allPledges) {
+                        const stakeUsd = pledge.amountUsd || 0;
+                        if (pledge.pick === outcome) {
+                            totalWinningStakeUsd += stakeUsd;
+                            winners.push(pledge);
+                        } else {
+                            totalLosingStakeUsd += stakeUsd;
+                            losers.push(pledge);
+                        }
+                    }
+
+                    // Distribute winnings proportionally
+                    if (winners.length > 0 && totalWinningStakeUsd > 0) {
+                        const batch = db.batch();
+                        
+                        for (const winner of winners) {
+                            const stakeUsd = winner.amountUsd || 0;
+                            const shareOfPool = stakeUsd / totalWinningStakeUsd;
+                            const winnings = stakeUsd + (shareOfPool * totalLosingStakeUsd);
+                            
+                            // Update user balance
+                            const profileRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(winner.userId);
+                            batch.set(profileRef, { 
+                                balance: admin.firestore.FieldValue.increment(winnings),
+                                totalWinnings: admin.firestore.FieldValue.increment(winnings - stakeUsd),
+                                wins: admin.firestore.FieldValue.increment(1)
+                            }, { merge: true });
+                            
+                            // Update leaderboard
+                            const leaderboardRef = db.collection(`artifacts/${APP_ID}/public/data/leaderboard`).doc(winner.userId);
+                            batch.set(leaderboardRef, { 
+                                balance: admin.firestore.FieldValue.increment(winnings),
+                                wins: admin.firestore.FieldValue.increment(1)
+                            }, { merge: true });
+
+                            // Mark pledge as resolved
+                            const pledgeRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`).doc(winner.id);
+                            batch.update(pledgeRef, { 
+                                isResolved: true, 
+                                didWin: true, 
+                                payout: winnings,
+                                resolvedAt: new Date()
+                            });
+
+                            console.log(`⚡ QUICK PLAY: ${winner.userId} won $${winnings.toFixed(2)}`);
+                        }
+
+                        // Mark losing pledges as resolved
+                        for (const loser of losers) {
+                            const pledgeRef = db.collection(`artifacts/${APP_ID}/public/data/pledges`).doc(loser.id);
+                            batch.update(pledgeRef, { 
+                                isResolved: true, 
+                                didWin: false, 
+                                payout: 0,
+                                resolvedAt: new Date()
+                            });
+                            
+                            // Update loser stats
+                            const profileRef = db.collection(`artifacts/${APP_ID}/public/data/user_profile`).doc(loser.userId);
+                            batch.set(profileRef, { 
+                                losses: admin.firestore.FieldValue.increment(1)
+                            }, { merge: true });
+                        }
+
+                        await batch.commit();
+                    }
+                } catch (payoutError) {
+                    console.error(`⚡ ORACLE: Payout failed for quick play ${marketId}:`, payoutError.message);
+                }
+            }
+
+            // Update market as resolved
+            await doc.ref.update({ 
+                isResolved: true, 
+                winningOutcome: outcome, 
+                resolvedAt: new Date(),
+                status: outcome === 'EXPIRED' ? 'expired' : 'resolved'
+            });
+            console.log(`⚡ ORACLE: Resolved quick play "${market.title}" as ${outcome}`);
+
+        } catch (e) {
+            console.error(`⚡ ORACLE: Failed quick play ${marketId}:`, e.message);
+            // Mark as expired on error to prevent blocking
+            await doc.ref.update({ 
+                isResolved: true, 
+                winningOutcome: 'EXPIRED', 
+                resolvedAt: new Date(),
+                status: 'expired',
+                errorMessage: e.message
+            });
+        }
+    }
+}
+
 // Enhanced market data fetch with sentiment, volatility, and technical analysis
 async function getAdvancedMarketData() {
     try {
@@ -1365,6 +1526,7 @@ app.post('/api/run-jobs', async (req, res) => {
     try {
         await autoResolveMarkets();
         await autoResolveQuickPolls();
+        await autoResolveQuickPlays();
         await createDailyMarkets();
         await autoGenerateQuickPlays();
         res.status(200).json({ success: true });
@@ -3247,6 +3409,7 @@ cron.schedule('*/5 * * * *', async () => {
     try {
         await autoResolveMarkets();
         await autoResolveQuickPolls();
+        await autoResolveQuickPlays();
         await createDailyMarkets();
         await autoGenerateQuickPlays();
         console.log('✅ [ORACLE CRON] All oracle jobs completed successfully');
