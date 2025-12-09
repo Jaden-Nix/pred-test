@@ -3645,6 +3645,21 @@
                             </div>
                         </div>
                     </button>
+
+                    <!-- Pending Review Markets -->
+                    <button onclick="showScreen('admin-pending-screen'); loadPendingMarkets();" class="admin-nav-card text-left">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center border border-amber-500/30">
+                                <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-white">⚠️ Pending Review</h3>
+                                <p class="text-sm text-gray-400">AI-flagged markets needing manual resolution</p>
+                            </div>
+                        </div>
+                    </button>
                 </div>
 
                 <button id="admin-logout-btn" class="btn btn-secondary w-full">Log Out of Admin</button>
@@ -3839,6 +3854,38 @@
                     <div id="polls-resolution-list" class="space-y-4">
                         <p class="text-gray-400 text-center py-8">Loading polls...</p>
                     </div>
+                </div>
+            </div>
+
+            <!-- ADMIN PENDING REVIEW SCREEN -->
+            <div id="admin-pending-screen" class="screen screen-inactive space-y-6">
+                <button onclick="showScreen('admin-panel-screen')" class="flex items-center text-sky-400 font-medium transition-colors hover:text-sky-300">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Admin Panel
+                </button>
+                <div class="text-center">
+                    <h1 class="text-3xl font-bold gradient-text mb-2">⚠️ Pending Review</h1>
+                    <p class="text-gray-400 text-sm">Markets flagged by AI as AMBIGUOUS - need manual resolution</p>
+                </div>
+                <div class="ui-panel p-4 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-semibold text-white">Markets Awaiting Decision</h2>
+                        <button onclick="loadPendingMarkets()" class="btn btn-secondary btn-sm">Refresh</button>
+                    </div>
+                    <div id="pending-markets-list" class="space-y-4">
+                        <p class="text-gray-400 text-center py-8">Loading pending markets...</p>
+                    </div>
+                </div>
+                <div class="ui-panel p-4 space-y-3 bg-amber-900/20 border-amber-500/30">
+                    <h3 class="text-amber-400 font-semibold">📋 How to Resolve</h3>
+                    <ol class="text-sm text-gray-300 space-y-2 list-decimal list-inside">
+                        <li>Review the market question and AI confidence score</li>
+                        <li>Research the actual outcome using reliable sources</li>
+                        <li>Click YES or NO to manually resolve the market</li>
+                        <li>Winners will be paid automatically after resolution</li>
+                    </ol>
                 </div>
             </div>
 
@@ -4773,7 +4820,7 @@
                             if (desktopSignOutBtn) desktopSignOutBtn.classList.remove('hidden');
                             if (guestSignInBtn) guestSignInBtn.style.display = 'none';
                             // Don't override admin screens that were accessed via URL/tap
-                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen'];
+                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen', 'admin-pending-screen'];
                             console.log('🔐 Session resume check - isAdminMode:', isAdminMode, 'currentScreenId:', currentScreenId);
                             if (!isAdminMode && !adminScreens.includes(currentScreenId)) {
                                 showScreen('home-screen');
@@ -4818,7 +4865,7 @@
                             console.log('📋 Email user first login check:', isFirstLogin, 'displayName:', userProfile.displayName);
                             
                             // Don't override admin screens that were accessed via URL/tap
-                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen'];
+                            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen', 'admin-pending-screen'];
                             console.log('🔐 Session resume check - isAdminMode:', isAdminMode, 'currentScreenId:', currentScreenId);
                             
                             if (!isAdminMode && !adminScreens.includes(currentScreenId)) {
@@ -5639,7 +5686,7 @@
             if (!screenId) return;
             
             // Protect admin screens from being redirected away unless explicitly allowed
-            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen'];
+            const adminScreens = ['admin-password-screen', 'admin-panel-screen', 'admin-resolution-screen', 'admin-quickplay-screen', 'admin-quickpoll-screen', 'admin-jury-screen', 'admin-safety-screen', 'admin-pending-screen'];
             if (adminScreens.includes(currentScreenId) && !adminScreens.includes(screenId) && !forceOverride) {
                 console.log('🔒 Blocked redirect from admin screen. isAdminMode:', isAdminMode);
                 return;
@@ -11589,6 +11636,150 @@ ${historyText}`;
             const max = baseAmount * (1 + variation);
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
+
+        /**
+         * Load markets that need manual resolution (status = pending-review)
+         */
+        async function loadPendingMarkets() {
+            const container = document.getElementById('pending-markets-list');
+            if (!container) return;
+            
+            container.innerHTML = '<p class="text-gray-400 text-center py-8">Loading pending markets...</p>';
+            
+            try {
+                const { getDocs, collection, query, where } = window.firebase.firestore;
+                const marketsRef = collection(db, `artifacts/${APP_ID}/public/data/standard_markets`);
+                const q = query(marketsRef, where('status', '==', 'pending-review'));
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) {
+                    container.innerHTML = '<p class="text-green-400 text-center py-8">✅ No markets pending review!</p>';
+                    return;
+                }
+                
+                let html = '';
+                snapshot.forEach(doc => {
+                    const m = doc.data();
+                    const confidence = m.swarmConfidence || 0;
+                    const aiOutcome = m.swarmOutcome || 'UNKNOWN';
+                    
+                    html += `
+                        <div class="ui-panel p-4 border-amber-500/30">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="text-xs text-amber-400 font-mono">${doc.id}</span>
+                                <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded">AI: ${aiOutcome} (${confidence}%)</span>
+                            </div>
+                            <h3 class="text-white font-medium mb-2">${m.title}</h3>
+                            <p class="text-gray-400 text-sm mb-3">${m.description || ''}</p>
+                            <p class="text-xs text-gray-500 mb-3">Resolution Date: ${m.resolutionDate}</p>
+                            <div class="flex gap-2">
+                                <button onclick="manualResolveMarket('${doc.id}', 'YES')" class="btn btn-sm flex-1" style="background-color: #22c55e; color: white;">✓ YES</button>
+                                <button onclick="manualResolveMarket('${doc.id}', 'NO')" class="btn btn-sm flex-1" style="background-color: #ef4444; color: white;">✗ NO</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            } catch (err) {
+                console.error('Error loading pending markets:', err);
+                container.innerHTML = '<p class="text-red-400 text-center py-8">Error loading markets</p>';
+            }
+        }
+        window.loadPendingMarkets = loadPendingMarkets;
+
+        /**
+         * Manually resolve a market and process payouts
+         */
+        async function manualResolveMarket(marketId, outcome) {
+            if (!confirm(`Resolve this market as ${outcome}? Winners will be paid automatically.`)) return;
+            
+            showLoadingOverlay(true, `Resolving market as ${outcome}...`);
+            
+            try {
+                const { doc, getDoc, updateDoc, getDocs, collection, query, where, writeBatch } = window.firebase.firestore;
+                
+                const marketRef = doc(db, `artifacts/${APP_ID}/public/data/standard_markets`, marketId);
+                const marketSnap = await getDoc(marketRef);
+                
+                if (!marketSnap.exists()) {
+                    showToast('Market not found', 'error');
+                    return;
+                }
+                
+                // Mark as resolved
+                await updateDoc(marketRef, {
+                    isResolved: true,
+                    winningOutcome: outcome,
+                    status: 'resolved',
+                    resolutionMethod: 'manual-admin',
+                    resolvedAt: new Date()
+                });
+                
+                // Process payouts
+                const pledgesRef = collection(db, `artifacts/${APP_ID}/public/data/pledges`);
+                const pledgeQ = query(pledgesRef, where('marketId', '==', marketId));
+                const pledgeSnaps = await getDocs(pledgeQ);
+                
+                let totalWinningStake = 0, totalLosingStake = 0;
+                const allPledges = [];
+                
+                pledgeSnaps.forEach(doc => {
+                    const p = { id: doc.id, ref: doc.ref, ...doc.data() };
+                    const stake = p.amountUsd || p.amount || 0;
+                    if (p.pick === outcome) {
+                        totalWinningStake += stake;
+                    } else {
+                        totalLosingStake += stake;
+                    }
+                    allPledges.push({ ...p, stake });
+                });
+                
+                const batch = writeBatch(db);
+                const profileRef = collection(db, `artifacts/${APP_ID}/public/data/profile`);
+                
+                for (const pledge of allPledges) {
+                    const isWinner = pledge.pick === outcome;
+                    if (isWinner) {
+                        const stakeShare = totalWinningStake > 0 ? pledge.stake / totalWinningStake : 0;
+                        const winnings = stakeShare * totalLosingStake;
+                        const payout = pledge.stake + winnings;
+                        
+                        batch.update(pledge.ref, { payout, status: 'won', resolvedAt: new Date() });
+                        
+                        // Update user balance
+                        const userRef = doc(db, `artifacts/${APP_ID}/public/data/profile`, pledge.userId);
+                        const userSnap = await getDoc(userRef);
+                        if (userSnap.exists()) {
+                            const userData = userSnap.data();
+                            batch.update(userRef, { 
+                                balance: (userData.balance || 0) + payout,
+                                wins: (userData.wins || 0) + 1
+                            });
+                        }
+                    } else {
+                        batch.update(pledge.ref, { payout: 0, status: 'lost', resolvedAt: new Date() });
+                        const userRef = doc(db, `artifacts/${APP_ID}/public/data/profile`, pledge.userId);
+                        const userSnap = await getDoc(userRef);
+                        if (userSnap.exists()) {
+                            batch.update(userRef, { losses: (userSnap.data().losses || 0) + 1 });
+                        }
+                    }
+                }
+                
+                await batch.commit();
+                
+                showLoadingOverlay(false);
+                showToast(`Market resolved as ${outcome}! Payouts processed.`, 'success');
+                loadPendingMarkets(); // Refresh list
+                
+            } catch (err) {
+                console.error('Manual resolve error:', err);
+                showLoadingOverlay(false);
+                showToast('Error resolving market: ' + err.message, 'error');
+            }
+        }
+        window.manualResolveMarket = manualResolveMarket;
 
         /**
          * Admin function to wipe all demo data from Firestore (comprehensive).
