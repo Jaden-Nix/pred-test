@@ -8773,6 +8773,8 @@
                         </p>
                     </div>
                 `;
+                // Mark card as empty so swipe gestures don't trigger
+                cardEl.dataset.isEmpty = 'true';
                 // Hide the buttons
                 document.querySelector('.quick-play-btn-no').classList.add('hidden');
                 document.querySelector('.quick-play-btn-skip').classList.add('hidden');
@@ -8781,7 +8783,8 @@
             }
             // --- END FIX ---
 
-            // Un-hide buttons in case they were hidden
+            // Clear empty flag and un-hide buttons in case they were hidden
+            cardEl.dataset.isEmpty = 'false';
             document.querySelector('.quick-play-btn-no').classList.remove('hidden');
             document.querySelector('.quick-play-btn-skip').classList.remove('hidden');
             document.querySelector('.quick-play-btn-yes').classList.remove('hidden');

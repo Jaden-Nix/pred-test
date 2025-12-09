@@ -165,6 +165,13 @@ class SwipeGestureHandler {
     }
 
     triggerStake(direction) {
+        // Don't trigger stake if showing "All Caught Up" message
+        const card = document.getElementById('quick-play-card');
+        if (card && card.dataset.isEmpty === 'true') {
+            console.log('Swipe ignored - no markets available');
+            return;
+        }
+        
         console.log('Swipe stake:', direction);
         
         // Haptic feedback (if supported)
