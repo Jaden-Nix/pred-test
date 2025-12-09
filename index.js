@@ -8,6 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import admin from 'firebase-admin';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import sgMail from '@sendgrid/mail';
 import crypto from 'crypto';
 import cron from 'node-cron';
@@ -25,10 +26,13 @@ import { swarmVerifyResolution, secondPassReview } from './swarm-verify-oracle.j
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 5000;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
 const CRON_SECRET = process.env.CRON_SECRET;
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+const GEMINI_BASE_URL = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
+const GEMINI_URL = GEMINI_BASE_URL 
+    ? `${GEMINI_BASE_URL}/models/gemini-2.5-flash:generateContent`
+    : "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
 const APP_ID = 'predora-hackathon';
 
 // In-memory OTP backup store (fallback when Firestore quota exceeded)
@@ -36,11 +40,23 @@ const otpMemoryStore = new Map();
 
 // OpenAI removed - now using Gemini for all AI features including content moderation
 
-// Initialize Gemini for AI Assistant Chat (free tier)
+// Initialize Gemini for AI Assistant Chat (supports both Replit AI Integrations and direct API key)
 let geminiClient = null;
-if (GEMINI_API_KEY) {
-    geminiClient = new GoogleGenerativeAI(GEMINI_API_KEY);
-    console.log("✅ Gemini AI initialized successfully for AI Assistant.");
+let geminiAiClient = null;
+if (GEMINI_BASE_URL && process.env.AI_INTEGRATIONS_GEMINI_API_KEY) {
+    // Use Replit AI Integrations (charges to your Replit credits)
+    geminiAiClient = new GoogleGenAI({
+        apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+        httpOptions: {
+            apiVersion: "",
+            baseUrl: GEMINI_BASE_URL,
+        },
+    });
+    geminiClient = new GoogleGenerativeAI(process.env.AI_INTEGRATIONS_GEMINI_API_KEY);
+    console.log("✅ Gemini AI initialized via Replit AI Integrations (charges to your credits).");
+} else if (process.env.GEMINI_API_KEY) {
+    geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    console.log("✅ Gemini AI initialized with direct API key.");
 } else {
     console.warn("⚠️ Gemini API key not set. AI Assistant will be disabled.");
 }
@@ -528,10 +544,25 @@ app.post('/api/admin/request-second-swarm', requireAdmin, requireFirebase, async
 async function callGoogleApi(payload) {
     if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set.");
 
+    // Build URL and headers based on whether using Replit AI Integrations or direct API
+    let apiUrl, headers;
+    if (GEMINI_BASE_URL) {
+        // Replit AI Integrations - use bearer token auth
+        apiUrl = `${GEMINI_BASE_URL}/models/gemini-2.5-flash:generateContent`;
+        headers = { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${GEMINI_API_KEY}`
+        };
+    } else {
+        // Direct Google API - use API key in URL
+        apiUrl = `${GEMINI_URL}?key=${GEMINI_API_KEY}`;
+        headers = { 'Content-Type': 'application/json' };
+    }
+
     // USE THE RETRY FUNCTION HERE TOO
-    const googleResponse = await fetchWithRetry(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+    const googleResponse = await fetchWithRetry(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(payload)
     });
 

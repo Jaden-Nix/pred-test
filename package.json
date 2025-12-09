@@ -8,6 +8,7 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "@google/genai": "^1.32.0",
     "@google/generative-ai": "^0.24.1",
     "@sendgrid/mail": "^8.1.6",
     "cors": "^2.8.5",
