@@ -7198,21 +7198,22 @@
                         const data = doc.data();
                         // Filter out markets with past resolution dates
                         let resolutionMs = null;
-                        if (data.resolutionDate) {
+                        const resField = data.resolutionDate || data.expiresAt;
+                        if (resField) {
                             // Handle string dates, Firestore Timestamps, and numeric epochs
-                            if (typeof data.resolutionDate === 'string') {
-                                resolutionMs = new Date(data.resolutionDate).getTime();
-                            } else if (typeof data.resolutionDate === 'number') {
+                            if (typeof resField === 'string') {
+                                resolutionMs = new Date(resField).getTime();
+                            } else if (typeof resField === 'number') {
                                 // Numeric epoch - check if seconds or milliseconds
-                                resolutionMs = data.resolutionDate < 1e12 ? data.resolutionDate * 1000 : data.resolutionDate;
-                            } else if (data.resolutionDate.toDate) {
-                                resolutionMs = data.resolutionDate.toDate().getTime();
-                            } else if (data.resolutionDate.seconds) {
-                                resolutionMs = data.resolutionDate.seconds * 1000;
+                                resolutionMs = resField < 1e12 ? resField * 1000 : resField;
+                            } else if (resField.toDate) {
+                                resolutionMs = resField.toDate().getTime();
+                            } else if (resField.seconds) {
+                                resolutionMs = resField.seconds * 1000;
                             }
                         }
-                        // Include market if no resolution date or resolution date is today or in the future
-                        if (!resolutionMs || resolutionMs >= todayMs) {
+                        // Include market if resolution date is valid and in the future (or no date set)
+                        if (!Number.isFinite(resolutionMs) || resolutionMs >= todayMs) {
                             markets.push({ id: doc.id, ...data });
                         }
                     });
@@ -7303,7 +7304,7 @@
                             }
                         }
                         // Only include markets that are NOT RESOLVED, NOT STAKED, and NOT EXPIRED
-                        if (!stakedMarketIds.has(doc.id) && !localPledgeIds.has(doc.id) && (!resolutionMs || resolutionMs >= todayMs)) {
+                        if (!stakedMarketIds.has(doc.id) && !localPledgeIds.has(doc.id) && (!Number.isFinite(resolutionMs) || resolutionMs >= todayMs)) {
                             realMarkets.push({ id: doc.id, ...data, isMock: false }); 
                         }
                     });
