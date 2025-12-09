@@ -1240,21 +1240,27 @@ Return ONLY a JSON array with objects containing:
 Example binary: [{"title": "Will BTC hit X by date?", "category": "Crypto", "description": "...", "confidence": "HIGH", "type": "binary"}]
 Example multi: [{"title": "Which team wins...", "category": "Sports", "type": "multi", "options": ["Team A", "Team B", "Team C"]}]`;
 
-        const userPrompt = `TODAY: November 25, 2025
+        // Calculate dynamic dates for standard markets
+        const todayDate = new Date();
+        const todayDateStr = todayDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const nextMonth = new Date(todayDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const nextMonthStr = nextMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        
+        const userPrompt = `TODAY: ${todayDateStr}
 
 CRYPTO MARKET DATA (for reference):
 Bitcoin: $${Math.round(marketData.btc.price)} (24h: ${marketData.btc.change24h.toFixed(2)}%) | Sentiment: ${marketData.btc.sentiment.label}
 Ethereum: $${Math.round(marketData.eth.price)} (24h: ${marketData.eth.change24h.toFixed(2)}%) | Sentiment: ${marketData.eth.sentiment.label}
 
-TASK: Generate 5 SMART prediction markets for December 2025.
+TASK: Generate 5 SMART prediction markets for the next 30-45 days (through ${nextMonthStr}).
 REQUIREMENTS:
 - Mix categories: generate crypto, sports, entertainment, tech, and other predictions
 - Include 3 BINARY markets (YES/NO) and 2 MULTI-OPTION markets (3-4 outcomes each)
 - Make them INTERESTING and TRADABLE - focus on hot topics people care about
-- For sports: use real upcoming games/tournaments in Dec 2025
+- For sports: use real upcoming games/tournaments
 - For entertainment: use real events (awards, releases, streaming)
 - For tech: use real company announcements or AI developments
-- All dates must be in December 2025 or early Jan 2026`;
+- All dates must be within the next 30-45 days from today`;
 
         const payload = {
             systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -1385,6 +1391,14 @@ async function autoGenerateQuickPlays() {
         const qpMarketData = await getAdvancedMarketData();
         
         // Use Gemini to generate DIVERSE quick play questions
+        // Calculate dynamic dates
+        const today = new Date();
+        const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+        const dayAfter = new Date(today.getTime() + 48 * 60 * 60 * 1000);
+        const todayStr = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const tomorrowStr = tomorrow.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dayAfterStr = dayAfter.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
         const systemPrompt = `You are an EXPERT quick play market specialist across ALL categories. Generate 6 HOTTEST quick-play predictions (24-48 hour resolution).
 
 EXPERTISE:
@@ -1402,7 +1416,7 @@ RULES:
 3. Consider daily volatility when setting targets
 4. DIVERSITY: Include crypto, sports, entertainment, and gaming quick plays
 5. Focus on HIGH-PROBABILITY + HIGH-INTEREST events
-6. Create events happening Nov 26-27, 2025
+6. Create events happening ${tomorrowStr}-${dayAfterStr}, 2025 (the NEXT 24-48 hours)
 
 Return ONLY a JSON array with:
 - title: specific, short-term prediction
@@ -1412,16 +1426,16 @@ Return ONLY a JSON array with:
 - options: [for multi only] array of outcomes
 - rationale: why this move is likely
 
-Example binary: [{"title": "Will BTC stay above $X on Nov 26?", "category": "Crypto", "duration": "24h", "type": "binary"}]
+Example binary: [{"title": "Will BTC stay above $X on ${tomorrowStr}?", "category": "Crypto", "duration": "24h", "type": "binary"}]
 Example multi: [{"title": "Which team wins...", "category": "Sports", "duration": "24h", "type": "multi", "options": ["Team A", "Team B"]}]`;
 
-        const userPrompt = `TODAY: November 25, 2025 - Generate quick plays for Nov 26-27 events
+        const userPrompt = `TODAY: ${todayStr} - Generate quick plays for ${tomorrowStr}-${dayAfterStr} events
 
 CRYPTO DATA:
 Bitcoin: $${Math.round(qpMarketData.btc.price)} | 24h: ${qpMarketData.btc.change24h.toFixed(2)}% | Volatility: ${qpMarketData.btc.volatility.toFixed(1)}%
 Ethereum: $${Math.round(qpMarketData.eth.price)} | 24h: ${qpMarketData.eth.change24h.toFixed(2)}% | Volatility: ${qpMarketData.eth.volatility.toFixed(1)}%
 
-TASK: Generate 6 SMART quick plays for Nov 26-27:
+TASK: Generate 6 SMART quick plays for ${tomorrowStr}-${dayAfterStr}:
 - 2-3 crypto/finance quick plays (24h duration) with realistic price targets
 - 2-3 sports/entertainment quick plays (24h-48h) with multi-option outcomes
 - Make them HIGH-ENERGY and TRADABLE
