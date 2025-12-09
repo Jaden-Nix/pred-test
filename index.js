@@ -31,8 +31,8 @@ const CRON_SECRET = process.env.CRON_SECRET;
 const ADMIN_SECRET = process.env.ADMIN_SECRET;
 const GEMINI_BASE_URL = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
 const GEMINI_URL = GEMINI_BASE_URL 
-    ? `${GEMINI_BASE_URL}/models/gemini-2.5-flash:generateContent`
-    : "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+    ? `${GEMINI_BASE_URL}/models/gemini-1.5-pro:generateContent`
+    : "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
 const APP_ID = 'predora-hackathon';
 
 // In-memory OTP backup store (fallback when Firestore quota exceeded)
@@ -548,7 +548,7 @@ async function callGoogleApi(payload) {
     let apiUrl, headers;
     if (GEMINI_BASE_URL) {
         // Replit AI Integrations - use bearer token auth
-        apiUrl = `${GEMINI_BASE_URL}/models/gemini-2.5-flash:generateContent`;
+        apiUrl = `${GEMINI_BASE_URL}/models/gemini-1.5-pro:generateContent`;
         headers = { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${GEMINI_API_KEY}`

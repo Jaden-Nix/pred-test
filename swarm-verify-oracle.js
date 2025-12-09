@@ -70,7 +70,7 @@ function withTimeout(promise, ms) {
 async function callGemini(geminiClient, prompt, systemPrompt = '') {
     try {
         if (!geminiClient) throw new Error('Gemini client not available');
-        const model = geminiClient.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = geminiClient.getGenerativeModel({ model: 'gemini-1.5-pro' });
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             systemInstruction: systemPrompt,

@@ -123,7 +123,7 @@ export async function moderateContentWithGemini(content, geminiClient) {
     try {
         if (!geminiClient) throw new Error('Gemini client not available');
         
-        const model = geminiClient.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const model = geminiClient.getGenerativeModel({ model: 'gemini-1.5-pro' });
         
         const systemPrompt = `You are a content moderation system. Analyze the given content and determine if it violates policies.
 
