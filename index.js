@@ -3161,6 +3161,7 @@ app.post('/api/admin/clear-expired-quickplays', requireAdmin, requireFirebase, a
     try {
         console.log('🗑️ Admin clearing expired quick play markets...');
         const today = new Date().toISOString().split('T')[0];
+        const currentMonth = new Date().toLocaleDateString('en-US', { month: 'short' });
         const collectionPath = `artifacts/${APP_ID}/public/data/quick_play_markets`;
         
         const snapshot = await db.collection(collectionPath)
@@ -3168,14 +3169,25 @@ app.post('/api/admin/clear-expired-quickplays', requireAdmin, requireFirebase, a
             .get();
         
         let expiredCount = 0;
-        let deletedCount = 0;
         const batch = db.batch();
+        
+        // List of past months to clean up (markets with these months in title are expired)
+        const pastMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'];
+        // Remove current month from past months list
+        const monthsToExpire = pastMonths.filter(m => m !== currentMonth);
         
         for (const doc of snapshot.docs) {
             const market = doc.data();
             const resolutionDate = market.resolutionDate;
+            const title = market.title || '';
             
-            if (resolutionDate && resolutionDate < today) {
+            // Check if resolution date is past OR if title contains a past month
+            const isDateExpired = resolutionDate && resolutionDate < today;
+            const hasPastMonthInTitle = monthsToExpire.some(month => 
+                title.includes(` ${month} `) || title.includes(` ${month},`) || title.includes(` ${month}?`)
+            );
+            
+            if (isDateExpired || hasPastMonthInTitle) {
                 batch.update(doc.ref, {
                     isResolved: true,
                     winningOutcome: 'EXPIRED',
